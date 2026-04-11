@@ -3,29 +3,31 @@ import { RedisProcessedUrlStore } from "../../src/storage/redis-processed-url-st
 
 describe("RedisProcessedUrlStore", () => {
     let store: RedisProcessedUrlStore;
+    let mockRedis: any;
 
     beforeEach(() => {
-        store = new RedisProcessedUrlStore();
-        // Mock Bun.redis methods
-        (Bun.redis as any).sismember = mock(async () => 0);
-        (Bun.redis as any).sadd = mock(async () => 1);
-        (Bun.redis as any).set = mock(async () => "OK");
-        (Bun.redis as any).del = mock(async () => 1);
+        mockRedis = {
+            sismember: mock(async () => 0),
+            sadd: mock(async () => 1),
+            send: mock(async () => "OK"),
+            del: mock(async () => 1),
+        };
+        store = new RedisProcessedUrlStore(mockRedis);
     });
 
     it("should check if a URL is in the set using has()", async () => {
         const url = "https://example.com";
-        (Bun.redis as any).sismember.mockResolvedValue(1);
+        mockRedis.sismember.mockResolvedValue(1);
         
         const result = await store.has(url);
 
         expect(result).toBe(true);
-        expect((Bun.redis as any).sismember).toHaveBeenCalledWith("processed_urls", url);
+        expect(mockRedis.sismember).toHaveBeenCalledWith("processed_urls", url);
     });
 
     it("should return false for has() if URL is not in the set", async () => {
         const url = "https://not-found.com";
-        (Bun.redis as any).sismember.mockResolvedValue(0);
+        mockRedis.sismember.mockResolvedValue(0);
         
         const result = await store.has(url);
 
@@ -37,28 +39,28 @@ describe("RedisProcessedUrlStore", () => {
         
         await store.mark(url);
 
-        expect((Bun.redis as any).sadd).toHaveBeenCalledWith("processed_urls", url);
+        expect(mockRedis.sadd).toHaveBeenCalledWith("processed_urls", url);
     });
 
     it("should claim a URL using SET key value EX ttl NX", async () => {
         const url = "https://example.com";
-        (Bun.redis as any).set.mockResolvedValue("OK");
+        mockRedis.send.mockResolvedValue("OK");
         
         const result = await store.claim(url);
 
         expect(result).toBe(true);
-        expect((Bun.redis as any).set).toHaveBeenCalledWith(
+        expect(mockRedis.send).toHaveBeenCalledWith("SET", [
             expect.stringContaining(url), 
             "1", 
             "EX", 
-            expect.any(Number), 
+            expect.any(String), 
             "NX"
-        );
+        ]);
     });
 
     it("should return false if claim() fails because the key already exists", async () => {
         const url = "https://example.com";
-        (Bun.redis as any).set.mockResolvedValue(null); // SET NX returns null if already exists
+        mockRedis.send.mockResolvedValue(null); // SET NX returns null if already exists
         
         const result = await store.claim(url);
 
@@ -70,6 +72,6 @@ describe("RedisProcessedUrlStore", () => {
         
         await store.release(url);
 
-        expect((Bun.redis as any).del).toHaveBeenCalledWith(expect.stringContaining(url));
+        expect(mockRedis.del).toHaveBeenCalledWith(expect.stringContaining(url));
     });
 });

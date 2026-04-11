@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { configSchema } from "../../src/config/config.js";
+import { configSchema } from "../../src/config/appConfig.js";
 
 describe("Config Validation", () => {
   const validEnv = {
@@ -30,7 +30,6 @@ describe("Config Validation", () => {
     expect(result.CRAWLER_REQUEST_TIMEOUT_MS).toBe(60000);
     expect(result.CRAWLER_NAVIGATION_TIMEOUT_MS).toBe(30000);
     expect(result.CRAWLER_PROXY_URLS).toBeUndefined();
-    expect(result.CRAWLER_SUBREDDIT_MAX_PAGES).toBe(4);
     expect(result.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE).toBe(true);
     expect(result.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS).toBeUndefined();
   });
@@ -49,11 +48,9 @@ describe("Config Validation", () => {
   test("should parse subreddit crawler settings", () => {
     const result = configSchema.parse({
       ...validEnv,
-      CRAWLER_SUBREDDIT_MAX_PAGES: "10",
       CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE: "false",
       CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS: "1",
     });
-    expect(result.CRAWLER_SUBREDDIT_MAX_PAGES).toBe(10);
     expect(result.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE).toBe(false);
     expect(result.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS).toBe(1);
   });

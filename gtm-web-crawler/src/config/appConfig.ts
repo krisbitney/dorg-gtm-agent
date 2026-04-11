@@ -35,11 +35,11 @@ export const configSchema = z.object({
   CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS: z.coerce.number().int().nonnegative().optional(),
 });
 
-export type Config = z.infer<typeof configSchema>;
+export type AppConfig = z.infer<typeof configSchema>;
 
 /**
  * Validated configuration object loaded from environment variables.
  */
-export const config = process.env.NODE_ENV === "test"
-  ? {} as Config
+export const appConfig = process.env.NODE_ENV === "test"
+  ? {} as AppConfig
   : configSchema.parse(process.env);

@@ -5,7 +5,7 @@ import {
     PlaywrightCrawlerOptions,
     ProxyConfiguration,
 } from 'crawlee';
-import type { Config } from '../config/config.js';
+import type { AppConfig } from '../config/appConfig.js';
 
 /**
  * Builds the PlaywrightCrawler options based on the configuration.
@@ -14,7 +14,7 @@ import type { Config } from '../config/config.js';
  * @returns PlaywrightCrawlerOptions
  */
 export async function buildCrawlerOptions(
-    config: Config,
+    config: AppConfig,
     router: ReturnType<typeof createPlaywrightRouter>
 ): Promise<PlaywrightCrawlerOptions> {
     let proxyConfiguration: ProxyConfiguration | undefined;

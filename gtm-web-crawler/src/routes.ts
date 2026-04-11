@@ -1,5 +1,5 @@
 import { createPlaywrightRouter } from 'crawlee';
-import { config } from './config/config.js';
+import { appConfig } from './config/appConfig.js';
 import { LABELS } from './constants/labels.js';
 import { extractSubredditName } from './lib/reddit-url.js';
 import { transformPostRequest, transformSubredditRequest } from './lib/route-helpers.js';
@@ -22,7 +22,7 @@ export function createRouter(postProcessor: PostProcessor) {
         log.info(`Processing subreddit: ${topic} (page ${pageNumber})`, { url: request.url });
 
         // 0. Check age of the top post if configured
-        if (config.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS !== undefined) {
+        if (appConfig.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS !== undefined) {
             const topPostTimestamp = await page.$eval('.thing.link time', (time) => {
                 return (time as HTMLTimeElement).dateTime;
             }).catch(() => null);
@@ -32,8 +32,8 @@ export function createRouter(postProcessor: PostProcessor) {
                 const now = Date.now();
                 const ageDays = (now - postDate) / (1000 * 60 * 60 * 24);
 
-                if (ageDays > config.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS) {
-                    log.info(`Top post on ${topic} (page ${pageNumber}) is too old: ${ageDays.toFixed(2)} days (max: ${config.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS}). Stopping crawl.`);
+                if (ageDays > appConfig.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS) {
+                    log.info(`Top post on ${topic} (page ${pageNumber}) is too old: ${ageDays.toFixed(2)} days (max: ${appConfig.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS}). Stopping crawl.`);
                     return; // Stop processing this page and don't paginate
                 }
             } else {
@@ -58,7 +58,7 @@ export function createRouter(postProcessor: PostProcessor) {
             if (await postProcessor.isDuplicate(url)) {
                 log.info(`Duplicate post encountered: ${url}`);
                 duplicateFound = true;
-                if (config.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
+                if (appConfig.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
                     break;
                 }
             } else {
@@ -84,7 +84,7 @@ export function createRouter(postProcessor: PostProcessor) {
         }
 
         // 3. Handle pagination
-        if (duplicateFound && config.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
+        if (duplicateFound && appConfig.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
             log.info(`Stopping pagination for ${topic} because a duplicate post was encountered.`);
         }
     });

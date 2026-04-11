@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { DrizzlePostRepository } from "../../src/storage/drizzle-post-repository.js";
-import { posts } from "../../src/storage/schema.js";
+import {posts} from "../../src/storage/posts-db-schema.ts";
 
 // Mock the db object with stable results to capture calls
 const mockValues = mock(async () => { });
@@ -13,19 +13,13 @@ const mockUpdateResult = { set: mockSet };
 const mockDb = {
     insert: mock(() => mockInsertResult),
     update: mock(() => mockUpdateResult),
-};
-
-mock.module("../../src/storage/db.js", () => {
-    return {
-        db: mockDb,
-    };
-});
+} as any;
 
 describe("DrizzlePostRepository", () => {
     let repository: DrizzlePostRepository;
 
     beforeEach(() => {
-        repository = new DrizzlePostRepository();
+        repository = new DrizzlePostRepository(mockDb);
         mockDb.insert.mockClear();
         mockDb.update.mockClear();
         mockValues.mockClear();

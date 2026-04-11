@@ -295,36 +295,36 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 8 - Harden The Crawler Against Blocking And Operational Failures
 
-- [ ] Keep Camoufox as the browser launcher because the project requirements prioritize anti-detection.
-- [ ] Keep Crawlee fingerprint spoofing disabled when Camoufox is active so the two approaches do not fight each other.
-- [ ] Add session-aware crawling options deliberately, not accidentally:
-- [ ] low concurrency
-- [ ] reasonable navigation timeout
-- [ ] session persistence if useful
-- [ ] optional proxy support behind configuration
-- [ ] Configure proxy support in a way that can be turned on in production and off in development.
-- [ ] Add explicit detection for block states such as:
-- [ ] login walls
-- [ ] rate-limited pages
-- [ ] Cloudflare or other challenge pages
-- [ ] empty placeholder pages that still return HTTP 200
-- [ ] When a blocked page is detected, fail the request in a way Crawlee can retry instead of silently storing nonsense.
-- [ ] Add structured logs for:
-- [ ] seed URL count
-- [ ] discovered post count
-- [ ] skipped duplicates
-- [ ] inserted rows
-- [ ] queue publishes
-- [ ] parse failures
-- [ ] blocked/challenged requests
-- [ ] Unit tests to add:
-- [ ] `crawler-options.test.ts` verifies the options builder enables Camoufox correctly.
-- [ ] `crawler-options.test.ts` verifies proxy config is applied only when configured.
-- [ ] `block-detection.test.ts` verifies known blocked-page fixtures or markers are recognized.
-- [ ] `log-context.test.ts` verifies helper log context builders do not omit the canonical URL or topic.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
-- [ ] do one controlled manual crawl twice and confirm the second run mostly skips duplicates
+- [x] Keep Camoufox as the browser launcher because the project requirements prioritize anti-detection.
+- [x] Keep Crawlee fingerprint spoofing disabled when Camoufox is active so the two approaches do not fight each other.
+- [x] Add session-aware crawling options deliberately, not accidentally:
+- [x] low concurrency
+- [x] reasonable navigation timeout
+- [x] session persistence if useful
+- [x] optional proxy support behind configuration
+- [x] Configure proxy support in a way that can be turned on in production and off in development.
+- [x] Add explicit detection for block states such as:
+- [x] login walls
+- [x] rate-limited pages
+- [x] Cloudflare or other challenge pages
+- [x] empty placeholder pages that still return HTTP 200
+- [x] When a blocked page is detected, fail the request in a way Crawlee can retry instead of silently storing nonsense.
+- [x] Add structured logs for:
+- [x] seed URL count
+- [x] discovered post count
+- [x] skipped duplicates
+- [x] inserted rows
+- [x] queue publishes
+- [x] parse failures
+- [x] blocked/challenged requests
+- [x] Unit tests to add:
+- [x] `crawler-options.test.ts` verifies the options builder enables Camoufox correctly.
+- [x] `crawler-options.test.ts` verifies proxy config is applied only when configured.
+- [x] `block-detection.test.ts` verifies known blocked-page fixtures or markers are recognized.
+- [x] `log-context.test.ts` verifies helper log context builders do not omit the canonical URL or topic.
+- [x] Checkpoint verification:
+- [x] run `bun test`
+- [x] do one controlled manual crawl twice and confirm the second run mostly skips duplicates
 
 ## Checkpoint 9 - Final Cleanup, Documentation, And Regression Safety
 

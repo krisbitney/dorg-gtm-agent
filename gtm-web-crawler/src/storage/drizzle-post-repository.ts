@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { PostRepository } from "../services/interfaces.js";
 import type { PendingPostRecord, CrawlStatus } from "../domain/post.js";
 import {drizzle} from "drizzle-orm/bun-sql";
-import {config} from "../config/config.js";
+import {appConfig} from "../config/appConfig.js";
 import * as schema from "./posts-db-schema.js";
 import {NewPost} from "./posts-db-schema.js";
 
@@ -11,7 +11,7 @@ import {NewPost} from "./posts-db-schema.js";
  */
 export class DrizzlePostRepository implements PostRepository {
 
-    constructor(private readonly db = drizzle(config.DATABASE_URL, { schema })) {}
+    constructor(private readonly db = drizzle(appConfig.DATABASE_URL, { schema })) {}
 
     /**
      * Inserts a pending post record into the database.

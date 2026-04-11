@@ -29,6 +29,8 @@ describe("Post Route Core Logic", () => {
         const mockPage = {
             url: () => url,
             content: async () => html,
+            title: mock(async () => "Post Title"),
+            innerText: mock(async () => "Post content"),
         };
         const request = {
             userData: { topic },

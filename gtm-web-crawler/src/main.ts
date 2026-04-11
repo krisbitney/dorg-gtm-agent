@@ -3,7 +3,7 @@ import { PlaywrightCrawler, log } from 'crawlee';
 
 import { createRouter } from './routes.js';
 import { redditStartUrls } from "./start-urls.js";
-import { config } from "./config/config.js";
+import { appConfig } from "./config/appConfig.js";
 import { PostProcessor } from "./services/post-processor.js";
 import { extractSubredditName } from "./lib/reddit-url.js";
 import { LABELS } from "./constants/labels.js";
@@ -34,7 +34,7 @@ const postProcessor = new PostProcessor(
 const router = createRouter(postProcessor);
 
 // 4. Configure the crawler
-const crawlerOptions = await buildCrawlerOptions(config, router);
+const crawlerOptions = await buildCrawlerOptions(appConfig, router);
 const crawler = new PlaywrightCrawler(crawlerOptions);
 
 // 5. Run the crawler with seed requests

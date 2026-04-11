@@ -16,7 +16,7 @@ export function createRouter(postProcessor: PostProcessor) {
      * Handler for subreddit listing pages.
      * Discovers post links and enqueues them.
      */
-    router.addHandler(LABELS.SUBREDDIT, async ({ page, enqueueLinks, request, log }) => {
+    router.addHandler(LABELS.SUBREDDIT, async ({ page, enqueueLinks, request, log, }) => {
         const topic = request.userData.topic || extractSubredditName(request.url);
         const pageNumber = request.userData.pageNumber || 1;
         log.info(`Processing subreddit: ${topic} (page ${pageNumber})`, { url: request.url });
@@ -84,31 +84,8 @@ export function createRouter(postProcessor: PostProcessor) {
         }
 
         // 3. Handle pagination
-        const shouldStop = duplicateFound && config.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE;
-        if (!shouldStop && pageNumber < config.CRAWLER_SUBREDDIT_MAX_PAGES) {
-            // Check for next button (supports both old and new Reddit structures)
-            const nextButton = await page.$('.next-button a, a[rel="next"]');
-            if (nextButton) {
-                await enqueueLinks({
-                    selector: '.next-button a, a[rel="next"]',
-                    label: LABELS.SUBREDDIT,
-                    transformRequestFunction: (req) => {
-                        const transformed = transformSubredditRequest(req.url, pageNumber + 1);
-                        if (transformed) {
-                            req.userData = transformed.userData;
-                            req.uniqueKey = transformed.uniqueKey;
-                            return req;
-                        }
-                        return false;
-                    }
-                });
-            } else {
-                log.info(`No next button found for ${topic} on page ${pageNumber}`);
-            }
-        } else if (shouldStop) {
+        if (duplicateFound && config.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
             log.info(`Stopping pagination for ${topic} because a duplicate post was encountered.`);
-        } else {
-            log.info(`Reached max pages (${config.CRAWLER_SUBREDDIT_MAX_PAGES}) or no more pages for ${topic}.`);
         }
     });
 

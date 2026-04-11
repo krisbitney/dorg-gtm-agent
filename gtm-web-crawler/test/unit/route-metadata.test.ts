@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { transformPostRequest, transformSubredditRequest } from "../../src/lib/route-helpers.js";
-import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
+import { ROUTE_LABELS } from "../../src/constants/route-labels.js";
 
 describe("Route Metadata (via Route Helpers)", () => {
     describe("transformPostRequest", () => {

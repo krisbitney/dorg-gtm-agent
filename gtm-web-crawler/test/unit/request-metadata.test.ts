@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
+import { ROUTE_LABELS } from "../../src/constants/route-labels.js";
 import {
   createSubredditUserData,
   createPostUserData,

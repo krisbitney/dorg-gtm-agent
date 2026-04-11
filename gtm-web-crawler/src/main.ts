@@ -6,7 +6,7 @@ import { redditStartUrls } from "./start-urls.js";
 import { appConfig } from "./config/appConfig.js";
 import { PostProcessor } from "./services/post-processor.js";
 import { extractSubredditName } from "./lib/reddit-url.js";
-import { ROUTE_LABELS } from "./constants/ROUTE_LABELS.js";
+import { ROUTE_LABELS } from "./constants/route-labels.js";
 import { DrizzlePostRepository } from "./storage/drizzle-post-repository.js";
 import { RedisQueuePublisher } from "./storage/redis-queue-publisher.js";
 import { RedisProcessedUrlStore } from "./storage/redis-processed-url-store.js";

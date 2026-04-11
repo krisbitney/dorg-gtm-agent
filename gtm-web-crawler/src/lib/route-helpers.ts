@@ -1,4 +1,4 @@
-import { ROUTE_LABELS } from '../constants/ROUTE_LABELS.js';
+import { ROUTE_LABELS } from '../constants/route-labels.js';
 import { isPostUrl, isSubredditUrl, extractSubredditName } from './reddit-url.js';
 import { createPostUserData, getPostUniqueKey, createSubredditUserData, getSubredditUniqueKey } from './request-metadata.js';
 

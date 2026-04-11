@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { createRouter } from "../../src/routes.js";
-import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
+import { ROUTE_LABELS } from "../../src/constants/route-labels.js";
 
 describe("Post Route Core Logic", () => {
     let mockPostProcessor: any;

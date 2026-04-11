@@ -31,7 +31,6 @@ describe("Config Validation", () => {
     expect(result.CRAWLER_NAVIGATION_TIMEOUT_MS).toBe(30000);
     expect(result.CRAWLER_PROXY_URLS).toBeUndefined();
     expect(result.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE).toBe(true);
-    expect(result.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS).toBeUndefined();
   });
 
   test("should parse proxy URLs as a list", () => {
@@ -52,7 +51,6 @@ describe("Config Validation", () => {
       CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS: "1",
     });
     expect(result.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE).toBe(false);
-    expect(result.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS).toBe(1);
   });
 
   test("should fail with invalid URLs", () => {

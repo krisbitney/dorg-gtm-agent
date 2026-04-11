@@ -1,4 +1,4 @@
-import { ROUTE_LABELS } from "../constants/ROUTE_LABELS.js";
+import { ROUTE_LABELS } from "../constants/route-labels.js";
 import { canonicalizePostUrl, canonicalizeListingUrl } from "./reddit-url.js";
 
 /**

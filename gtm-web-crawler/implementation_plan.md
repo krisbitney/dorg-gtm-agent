@@ -198,36 +198,36 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 5 - Design The Safe Post-Processing Orchestrator Before Using Real Redis Or SQL
 
-- [ ] Define small interfaces for the external dependencies so the core workflow can be unit-tested with fakes:
-- [ ] `ProcessedUrlStore`
-- [ ] `PostRepository`
-- [ ] `LeadQueuePublisher`
-- [ ] `Clock`
-- [ ] `IdGenerator`
-- [ ] Implement a single orchestrator for one discovered post. Its job should be:
-- [ ] normalize the final post URL
-- [ ] decide whether the post has already been processed
-- [ ] optionally acquire a temporary claim/lock to reduce cross-run races
-- [ ] parse the page into an `ExtractedRedditPost`
-- [ ] build the pending DB record
-- [ ] insert the row
-- [ ] publish the queue payload
-- [ ] mark the URL as permanently processed only after the insert and queue publish both succeed
-- [ ] return a typed result such as `inserted`, `duplicate`, or `failed`
-- [ ] Decide and document failure behavior now:
-- [ ] if the repository insert fails, do not mark the URL processed
-- [ ] if queue publish fails after insert, do not mark the URL processed
-- [ ] if queue publish fails after insert, update the row to an error state or implement another explicit recovery path
-- [ ] if parsing fails because the page shape changed, log enough context to debug it without storing sensitive junk
-- [ ] Unit tests to add:
-- [ ] `process-post.test.ts` verifies already-seen posts short-circuit correctly.
-- [ ] `process-post.test.ts` verifies the happy path inserts and publishes exactly once.
-- [ ] `process-post.test.ts` verifies repository failures do not mark the URL processed.
-- [ ] `process-post.test.ts` verifies queue failures after insert leave a recoverable state.
-- [ ] `process-post.test.ts` verifies locks or claims are released correctly on failure.
-- [ ] `process-post.test.ts` verifies the pending record contains the required fields from `high_level_design.md`.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
+- [x] Define small interfaces for the external dependencies so the core workflow can be unit-tested with fakes:
+- [x] `ProcessedUrlStore`
+- [x] `PostRepository`
+- [x] `LeadQueuePublisher`
+- [x] `Clock`
+- [x] `IdGenerator`
+- [x] Implement a single orchestrator for one discovered post. Its job should be:
+- [x] normalize the final post URL
+- [x] decide whether the post has already been processed
+- [x] optionally acquire a temporary claim/lock to reduce cross-run races
+- [x] parse the page into an `ExtractedRedditPost`
+- [x] build the pending DB record
+- [x] insert the row
+- [x] publish the queue payload
+- [x] mark the URL as permanently processed only after the insert and queue publish both succeed
+- [x] return a typed result such as `inserted`, `duplicate`, or `failed`
+- [x] Decide and document failure behavior now:
+- [x] if the repository insert fails, do not mark the URL processed
+- [x] if queue publish fails after insert, do not mark the URL processed
+- [x] if queue publish fails after insert, update the row to an error state or implement another explicit recovery path
+- [x] if parsing fails because the page shape changed, log enough context to debug it without storing sensitive junk
+- [x] Unit tests to add:
+- [x] `process-post.test.ts` verifies already-seen posts short-circuit correctly.
+- [x] `process-post.test.ts` verifies the happy path inserts and publishes exactly once.
+- [x] `process-post.test.ts` verifies repository failures do not mark the URL processed.
+- [x] `process-post.test.ts` verifies queue failures after insert leave a recoverable state.
+- [x] `process-post.test.ts` verifies locks or claims are released correctly on failure.
+- [x] `process-post.test.ts` verifies the pending record contains the required fields from `high_level_design.md`.
+- [x] Checkpoint verification:
+- [x] run `bun test`
 
 ## Checkpoint 6 - Refactor Crawlee Wiring Around Labeled Routes And Narrow Link Discovery
 

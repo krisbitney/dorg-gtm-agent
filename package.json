@@ -3,6 +3,11 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "gtm-ai",
+    "gtm-web-crawler",
+    "gtm-workers"
+  ],
   "devDependencies": {
     "@types/bun": "latest"
   },

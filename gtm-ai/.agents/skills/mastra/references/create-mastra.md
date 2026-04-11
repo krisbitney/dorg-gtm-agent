@@ -112,7 +112,7 @@ Create `.env` with your API key:
 GOOGLE_GENERATIVE_AI_API_KEY=<your-api-key>
 ```
 
-Or use `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.
+Or use `OLLAMA_API_KEY`, `ANTHROPIC_API_KEY`, etc.
 
 ### Step 6: Create weather tool
 

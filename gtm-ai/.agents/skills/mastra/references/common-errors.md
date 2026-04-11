@@ -425,7 +425,7 @@ await storage.init(); // Creates tables if needed
 **Symptoms**:
 
 ```bash
-Error: OPENAI_API_KEY environment variable is not set
+Error: OLLAMA_API_KEY environment variable is not set
 401 Unauthorized
 ```
 
@@ -440,7 +440,7 @@ Error: OPENAI_API_KEY environment variable is not set
 1. Create .env file:
 
 ```env
-OPENAI_API_KEY=sk-...
+OLLAMA_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_GENERATIVE_AI_API_KEY=...
 ```
@@ -454,8 +454,8 @@ import "dotenv/config"; // At top of entry file
 3. Verify variable is loaded:
 
 ```typescript
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY is required");
+if (!process.env.OLLAMA_API_KEY) {
+  throw new Error("OLLAMA_API_KEY is required");
 }
 ```
 

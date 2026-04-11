@@ -1,0 +1,55 @@
+services:
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    restart: always
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgresql
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gtm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  gtm-ai:
+    build:
+      context: ./gtm-ai
+      dockerfile: Dockerfile
+    container_name: gtm-ai
+    ports:
+      - "4111:4111"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
+      - REDIS_URL=redis://valkey:6379
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+    depends_on:
+      - postgres
+      - valkey
+    restart: always
+
+  gtm-web-crawler:
+    build:
+      context: ./gtm-web-crawler
+      dockerfile: Dockerfile
+    container_name: gtm-web-crawler
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
+      - REDIS_URL=redis://valkey:6379
+    depends_on:
+      - postgres
+      - valkey
+    restart: always
+
+volumes:
+  postgres_data:
+  valkey_data:

@@ -75,3 +75,12 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 - Use zod for validation.
 - Use centralized configuration for environmental variables.
 - Use TypeScript for type safety.
+
+# Documentation
+
+## Crawlee
+In local directory: gtm-web-crawler/crawlee-docs
+
+## Mastra
+- [Mastra Documentation](https://mastra.ai/llms.txt)
+- [Mastra .well-known skills discovery](https://mastra.ai/.well-known/skills/index.json)

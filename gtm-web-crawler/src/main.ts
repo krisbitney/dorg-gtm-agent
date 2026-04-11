@@ -1,11 +1,10 @@
 // For more information, see https://crawlee.dev/
-import { launchOptions } from 'camoufox-js';
-import { PlaywrightCrawler, ProxyConfiguration } from 'crawlee';
-import { firefox } from 'playwright';
+import {launchOptions} from 'camoufox-js';
+import {PlaywrightCrawler} from 'crawlee';
+import {firefox} from 'playwright';
 
-import { router } from './routes.js';
-
-const startUrls = ['https://crawlee.dev'];
+import {router} from './routes.js';
+import {redditStartUrls} from "./start-urls.js";
 
 const crawler = new PlaywrightCrawler({
     // proxyConfiguration: new ProxyConfiguration({ proxyUrls: ['...'] }),
@@ -19,13 +18,18 @@ const crawler = new PlaywrightCrawler({
     launchContext: {
         launcher: firefox,
         launchOptions: await launchOptions({
-            headless: false,
+            headless: true,
             // Pass your own Camoufox parameters here...
             // block_images: true,
             // fonts: ['Times New Roman'],
             // ...
         }),
     },
+    postNavigationHooks: [
+        async ({ handleCloudflareChallenge }) => {
+            await handleCloudflareChallenge();
+        },
+    ],
 });
 
-await crawler.run(startUrls);
+await crawler.run(redditStartUrls);

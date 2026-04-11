@@ -22,7 +22,7 @@ Flow:
 4. insert into sql database table with UUIDv7 id primary key and status "pending"
 5. append payload { id: UUIDv7; platform: "reddit" } to redis-based queue.
 
-The gtm web crawler should be use reasonable rate limits and production-ready anti-detection measures to ensure it is not flagged as a web crawler by Reddit.
+The gtm web crawler should be respect rate limits and use production-ready anti-detection measures (e.g. Camoufox) to ensure it is not flagged as a web crawler by Reddit. Avoiding detection is a much higher priority than crawl speed.
 
 Tech stack: 
 - typescript

@@ -2,29 +2,29 @@
     "name": "gtm-web-crawler",
     "version": "0.0.1",
     "type": "module",
-    "description": "This is an example of a Crawlee project.",
+    "description": "GTM Web Crawler for finding leads in Reddit subreddits.",
     "dependencies": {
-        "camoufox-js": "^0.9.0",
-        "crawlee": "^3.0.0",
-        "playwright": "1.58.2"
+        "camoufox-js": "^0.9.3",
+        "cheerio": "^1.2.0",
+        "crawlee": "^3.16.0",
+        "drizzle-orm": "^0.45.2",
+        "playwright": "^1.59.1",
+        "uuidv7": "^1.2.1",
+        "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@apify/tsconfig": "^0.1.0",
-        "@types/fs-extra": "^11",
         "@types/node": "^24.0.0",
-        "fs-extra": "^11.3.0",
-        "tsx": "^4.4.0",
-        "typescript": "~6.0.0"
+        "typescript": "^5.7.3",
+        "drizzle-kit": "^0.24.2"
     },
     "scripts": {
-        "start": "npm run start:dev",
-        "start:prod": "node dist/main.js",
-        "start:dev": "tsx src/main.ts",
-        "build": "tsc",
-        "test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1",
-        "get-binaries": "camoufox-js fetch",
-        "postinstall": "npm run get-binaries"
+        "start": "bun run src/main.ts",
+        "start:dev": "bun run src/main.ts",
+        "start:prod": "bun run dist/main.js",
+        "build": "bun build src/main.ts --outdir ./dist --target bun",
+        "test": "bun test",
+        "get-binaries": "bunx camoufox-js fetch",
+        "postinstall": "bun run get-binaries"
     },
-    "author": "It's not you it's me",
     "license": "ISC"
 }

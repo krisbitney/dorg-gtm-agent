@@ -27,12 +27,15 @@ export async function buildCrawlerOptions(
 
     return {
         requestHandler: router,
-        maxRequestsPerCrawl: config.CRAWLER_MAX_REQUESTS_PER_CRAWL,
+        ignoreIframes: true,
+        ignoreShadowRoots: true,
+        maxRequestsPerCrawl: config.CRAWLER_MAX_REQUESTS_PER_CRAWL ?? undefined,
         maxCrawlDepth: config.CRAWLER_MAX_CRAWL_DEPTH,
         maxConcurrency: config.CRAWLER_MAX_CONCURRENCY,
         maxRequestsPerMinute: config.CRAWLER_MAX_REQUESTS_PER_MINUTE,
-        maxRequestRetries: 5,
-        maxSessionRotations:10,
+        sameDomainDelaySecs: config.CRAWLER_SAME_DOMAIN_DELAY_SECS,
+        maxRequestRetries: 1,
+        maxSessionRotations: 10,
         requestHandlerTimeoutSecs: Math.floor(config.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
         navigationTimeoutSecs: Math.floor(config.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
         useSessionPool: true,

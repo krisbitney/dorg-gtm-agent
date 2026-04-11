@@ -21,6 +21,26 @@ export function createRouter(postProcessor: PostProcessor) {
         const pageNumber = request.userData.pageNumber || 1;
         log.info(`Processing subreddit: ${topic} (page ${pageNumber})`, { url: request.url });
 
+        // 0. Check age of the top post if configured
+        if (config.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS !== undefined) {
+            const topPostTimestamp = await page.$eval('.thing.link time', (time) => {
+                return (time as HTMLTimeElement).dateTime;
+            }).catch(() => null);
+
+            if (topPostTimestamp) {
+                const postDate = new Date(topPostTimestamp).getTime();
+                const now = Date.now();
+                const ageDays = (now - postDate) / (1000 * 60 * 60 * 24);
+
+                if (ageDays > config.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS) {
+                    log.info(`Top post on ${topic} (page ${pageNumber}) is too old: ${ageDays.toFixed(2)} days (max: ${config.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS}). Stopping crawl.`);
+                    return; // Stop processing this page and don't paginate
+                }
+            } else {
+                log.info(`Could not find top post timestamp on ${topic} (page ${pageNumber})`);
+            }
+        }
+
         // 1. Get all post links on the current page
         const postLinks = await page.$$eval('a', (links) => {
             return links

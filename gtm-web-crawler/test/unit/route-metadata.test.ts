@@ -15,7 +15,7 @@ describe("Route Metadata (via Route Helpers)", () => {
                 expect(result.label).toBe(LABELS.POST);
                 expect(result.userData.topic).toBe(topic);
                 expect(result.userData.label).toBe(LABELS.POST);
-                expect(result.uniqueKey).toBe("https://www.old.reddit.com/r/CryptoCurrency/comments/123/title");
+                expect(result.uniqueKey).toBe("https://old.reddit.com/r/CryptoCurrency/comments/123/title");
             }
         });
 
@@ -36,7 +36,7 @@ describe("Route Metadata (via Route Helpers)", () => {
                 expect(result.label).toBe(LABELS.SUBREDDIT);
                 expect(result.userData.topic).toBe("Bitcoin");
                 expect(result.userData.label).toBe(LABELS.SUBREDDIT);
-                expect(result.uniqueKey).toBe("https://www.old.reddit.com/r/Bitcoin/new");
+                expect(result.uniqueKey).toBe("https://old.reddit.com/r/Bitcoin/new");
             }
         });
 

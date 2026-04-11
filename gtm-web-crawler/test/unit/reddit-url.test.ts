@@ -11,8 +11,8 @@ describe("Reddit URL Utilities", () => {
   describe("isSubredditUrl", () => {
     test("should return true for valid subreddit URLs", () => {
       expect(isSubredditUrl("https://www.reddit.com/r/CryptoCurrency")).toBe(true);
-      expect(isSubredditUrl("https://www.old.reddit.com/r/Bitcoin/")).toBe(true);
-      expect(isSubredditUrl("https://www.old.reddit.com/r/Bitcoin/new/")).toBe(true);
+      expect(isSubredditUrl("https://old.reddit.com/r/Bitcoin/")).toBe(true);
+      expect(isSubredditUrl("https://old.reddit.com/r/Bitcoin/new/")).toBe(true);
     });
 
     test("should return false for post URLs", () => {
@@ -28,7 +28,7 @@ describe("Reddit URL Utilities", () => {
   describe("isPostUrl", () => {
     test("should return true for valid post URLs", () => {
       expect(isPostUrl("https://www.reddit.com/r/CryptoCurrency/comments/123/title/")).toBe(true);
-      expect(isPostUrl("https://www.old.reddit.com/r/Bitcoin/comments/456/slug")).toBe(true);
+      expect(isPostUrl("https://old.reddit.com/r/Bitcoin/comments/456/slug")).toBe(true);
     });
 
     test("should return false for subreddit listing URLs", () => {
@@ -39,7 +39,7 @@ describe("Reddit URL Utilities", () => {
   describe("extractSubredditName", () => {
     test("should extract subreddit name from various URLs", () => {
       expect(extractSubredditName("https://www.reddit.com/r/CryptoCurrency")).toBe("CryptoCurrency");
-      expect(extractSubredditName("https://www.old.reddit.com/r/Bitcoin/comments/123/title")).toBe("Bitcoin");
+      expect(extractSubredditName("https://old.reddit.com/r/Bitcoin/comments/123/title")).toBe("Bitcoin");
     });
 
     test("should return null for non-subreddit URLs", () => {
@@ -50,19 +50,19 @@ describe("Reddit URL Utilities", () => {
   describe("canonicalizePostUrl", () => {
     test("should remove tracking parameters and fragments", () => {
       const url = "https://www.reddit.com/r/CryptoCurrency/comments/123/title/?utm_source=share&utm_medium=web2x&context=3#fragment";
-      const expected = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title";
+      const expected = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
       expect(canonicalizePostUrl(url)).toBe(expected);
     });
 
-    test("should ensure hostname is www.old.reddit.com", () => {
+    test("should ensure hostname is old.reddit.com", () => {
       const url = "https://reddit.com/r/CryptoCurrency/comments/123/title";
-      const expected = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title";
+      const expected = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
       expect(canonicalizePostUrl(url)).toBe(expected);
     });
     
     test("should remove trailing slash", () => {
-      const url = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title/";
-      const expected = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title";
+      const url = "https://old.reddit.com/r/CryptoCurrency/comments/123/title/";
+      const expected = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
       expect(canonicalizePostUrl(url)).toBe(expected);
     });
   });
@@ -78,7 +78,7 @@ describe("Reddit URL Utilities", () => {
 
     test("should normalize hostname and remove fragment", () => {
       const url = "https://sh.reddit.com/r/CryptoCurrency/#top";
-      const expected = "https://www.old.reddit.com/r/CryptoCurrency";
+      const expected = "https://old.reddit.com/r/CryptoCurrency";
       expect(canonicalizeListingUrl(url)).toBe(expected);
     });
   });

@@ -254,8 +254,6 @@ Use this as the intended destination, not something to build all at once:
 - [ ] hand the page HTML or parsed DOM to the orchestrator instead of writing inline persistence code
 - [ ] Keep development crawl sizes small and configurable. Use low request caps until the selectors and parser are stable.
 - [ ] Unit tests to add:
-- [ ] `discover-post-links.test.ts` verifies only valid post links are emitted from listing fixtures.
-- [ ] `discover-post-links.test.ts` verifies pagination links are handled explicitly and not mixed with post links.
 - [ ] `route-metadata.test.ts` verifies topic and labels are attached to discovered requests.
 - [ ] `post-route.test.ts` verifies the post route delegates to the orchestrator with the right arguments.
 - [ ] Checkpoint verification:

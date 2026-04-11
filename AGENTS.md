@@ -32,3 +32,46 @@ test("hello world", () => {
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+
+# General Code Style & Formatting
+- Use English for all code and documentation.
+- Always declare the type of each variable and function (parameters and return value).
+- Avoid using any.
+- Create necessary types.
+- Use JSDoc to document public classes and methods.
+- Write high-quality, maintainable code.
+- Avoid class inheritance. Use composition over inheritance.
+- One export per file.
+
+# Naming Conventions
+- Use PascalCase for classes.
+- Use camelCase for variables, functions, and methods.
+- Use kebab-case for file and directory names.
+- Use UPPERCASE for environment variables.
+- Avoid magic numbers and define constants.
+
+# Functions & Logic
+- Keep functions short and single-purpose (<30 lines).
+- Avoid deeply nested blocks by:
+    - Using early returns.
+    - Extracting logic into utility functions.
+- Use higher-order functions (map, filter, reduce) to simplify logic.
+- Use arrow functions for simple cases, named functions otherwise.
+- Use RO-RO (Receive Object, Return Object) for passing and returning multiple parameters.
+- Functions should not mutate their inputs.
+
+# Data Handling
+- Avoid excessive use of primitive types; encapsulate data in composite types.
+- Avoid placing validation inside functions. Use classes with internal validation instead.
+- Prefer immutability for data:
+    - Use readonly for immutable properties.
+    - Use as const for literals that never change.
+    - Functions should not mutate their inputs.
+
+# Tech Stack
+- Use Bun as the runtime environment.
+- Use drizzle for the SQL database ORM.
+- Use zod for validation.
+- Use centralized configuration for environmental variables.
+- Use TypeScript for type safety.

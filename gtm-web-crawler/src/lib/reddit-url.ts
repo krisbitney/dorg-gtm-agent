@@ -2,8 +2,8 @@
  * Utility functions for handling Reddit URLs.
  */
 
-const REDDIT_HOSTNAMES = ["www.reddit.com", "old.reddit.com", "www.old.reddit.com", "sh.reddit.com"];
-const CANONICAL_HOSTNAME = "www.old.reddit.com";
+const REDDIT_HOSTNAMES = ["www.reddit.com", "old.reddit.com", "sh.reddit.com"];
+const CANONICAL_HOSTNAME = "old.reddit.com";
 
 /**
  * Checks if a URL is a subreddit listing page.

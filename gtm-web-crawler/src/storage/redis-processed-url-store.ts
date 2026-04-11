@@ -1,5 +1,5 @@
 import type { ProcessedUrlStore } from "../services/interfaces.js";
-import { config } from "../config/config.js";
+import { appConfig } from "../config/appConfig.js";
 
 /**
  * Concrete implementation of ProcessedUrlStore using Bun's built-in Redis client.
@@ -10,7 +10,7 @@ export class RedisProcessedUrlStore implements ProcessedUrlStore {
     private readonly claimPrefix = "claim:";
     private readonly claimTtlSecs = 3600; // 1 hour
 
-    constructor(private readonly redis = new Bun.RedisClient(config.REDIS_URL)) {}
+    constructor(private readonly redis = new Bun.RedisClient(appConfig.REDIS_URL)) {}
 
     /**
      * Checks if the URL has already been processed using a Redis SET.

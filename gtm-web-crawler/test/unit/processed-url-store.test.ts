@@ -7,7 +7,7 @@ describe("RedisProcessedUrlStore", () => {
 
     beforeEach(() => {
         mockRedis = {
-            sismember: mock(async () => 0),
+            sismember: mock(async () => false),
             sadd: mock(async () => 1),
             send: mock(async () => "OK"),
             del: mock(async () => 1),
@@ -17,7 +17,7 @@ describe("RedisProcessedUrlStore", () => {
 
     it("should check if a URL is in the set using has()", async () => {
         const url = "https://example.com";
-        mockRedis.sismember.mockResolvedValue(1);
+        mockRedis.sismember.mockResolvedValue(true);
         
         const result = await store.has(url);
 
@@ -27,7 +27,7 @@ describe("RedisProcessedUrlStore", () => {
 
     it("should return false for has() if URL is not in the set", async () => {
         const url = "https://not-found.com";
-        mockRedis.sismember.mockResolvedValue(0);
+        mockRedis.sismember.mockResolvedValue(false);
         
         const result = await store.has(url);
 

@@ -3,9 +3,9 @@ import { createRouter } from "../../src/routes.js";
 import { LABELS } from "../../src/constants/labels.js";
 
 // Mock the config module
-mock.module("../../src/config/config.js", () => {
+mock.module("../../src/config/appConfig.js", () => {
   return {
-    config: {
+    appConfig: {
       CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS: 1,
       CRAWLER_SUBREDDIT_MAX_PAGES: 4,
       CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE: true,
@@ -38,6 +38,9 @@ describe("Subreddit Route Age Stopping", () => {
     const tooOldDate = new Date(Date.now() - 1.1 * 24 * 60 * 60 * 1000).toISOString(); // 1.1 days ago
 
     const mockPage = {
+      title: mock(async () => "Reddit"),
+      url: mock(() => "https://old.reddit.com/r/test"),
+      innerText: mock(async () => "Welcome to Reddit"),
       $eval: mock(async (selector: string, fn: any) => {
         if (selector === ".thing.link time") {
           return fn({ dateTime: tooOldDate });
@@ -61,9 +64,12 @@ describe("Subreddit Route Age Stopping", () => {
   });
 
   test("should continue crawling if top post is new enough", async () => {
-    const newEnoughDate = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(); // 1 hour ago
+    const newEnoughDate = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1 hour ago
 
     const mockPage = {
+      title: mock(async () => "Reddit"),
+      url: mock(() => "https://old.reddit.com/r/test"),
+      innerText: mock(async () => "Welcome to Reddit"),
       $eval: mock(async (selector: string, fn: any) => {
         if (selector === ".thing.link time") {
           return fn({ dateTime: newEnoughDate });

@@ -1,6 +1,10 @@
 import { firefox } from 'playwright';
 import { launchOptions } from 'camoufox-js';
-import {PlaywrightCrawler, PlaywrightCrawlerOptions, ProxyConfiguration, Router} from 'crawlee';
+import {
+    createPlaywrightRouter,
+    PlaywrightCrawlerOptions,
+    ProxyConfiguration,
+} from 'crawlee';
 import type { Config } from '../config/config.js';
 
 /**
@@ -11,7 +15,7 @@ import type { Config } from '../config/config.js';
  */
 export async function buildCrawlerOptions(
     config: Config,
-    router: Router
+    router: ReturnType<typeof createPlaywrightRouter>
 ): Promise<PlaywrightCrawlerOptions> {
     let proxyConfiguration: ProxyConfiguration | undefined;
     if (config.CRAWLER_PROXY_URLS && config.CRAWLER_PROXY_URLS.length > 0) {

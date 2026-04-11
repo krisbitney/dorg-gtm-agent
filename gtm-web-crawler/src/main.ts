@@ -1,7 +1,5 @@
 // For more information, see https://crawlee.dev/
-import { launchOptions } from 'camoufox-js';
-import { PlaywrightCrawler } from 'crawlee';
-import { firefox } from 'playwright';
+import { PlaywrightCrawler, log } from 'crawlee';
 
 import { createRouter } from './routes.js';
 import { redditStartUrls } from "./start-urls.js";
@@ -13,7 +11,8 @@ import { DrizzlePostRepository } from "./storage/drizzle-post-repository.js";
 import { RedisQueuePublisher } from "./storage/redis-queue-publisher.js";
 import { RedisProcessedUrlStore } from "./storage/redis-processed-url-store.js";
 import { RealIdGen, RealClock } from "./services/simple.js";
-import {createSubredditUserData, getSubredditUniqueKey} from "./lib/request-metadata.js";
+import { createSubredditUserData, getSubredditUniqueKey } from "./lib/request-metadata.js";
+import { buildCrawlerOptions } from "./lib/crawler-options.js";
 
 // 1. Initialize services (Checkpoint 7: SQL/Redis)
 const urlStore = new RedisProcessedUrlStore();
@@ -35,28 +34,8 @@ const postProcessor = new PostProcessor(
 const router = createRouter(postProcessor);
 
 // 4. Configure the crawler
-const crawler = new PlaywrightCrawler({
-    requestHandler: router,
-    maxRequestsPerCrawl: config.CRAWLER_MAX_REQUESTS_PER_CRAWL,
-    maxConcurrency: config.CRAWLER_MAX_CONCURRENCY,
-    requestHandlerTimeoutSecs: Math.floor(config.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
-    navigationTimeoutSecs: Math.floor(config.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
-    browserPoolOptions: {
-        // Disable the default fingerprint spoofing to avoid conflicts with Camoufox.
-        useFingerprints: false,
-    },
-    launchContext: {
-        launcher: firefox,
-        launchOptions: await launchOptions({
-            headless: config.CRAWLER_HEADLESS,
-        }),
-    },
-    postNavigationHooks: [
-        async ({ handleCloudflareChallenge }) => {
-            await handleCloudflareChallenge();
-        },
-    ],
-});
+const crawlerOptions = await buildCrawlerOptions(config, router);
+const crawler = new PlaywrightCrawler(crawlerOptions);
 
 // 5. Run the crawler with seed requests
 const startRequests = redditStartUrls.map(url => {
@@ -69,4 +48,6 @@ const startRequests = redditStartUrls.map(url => {
     };
 });
 
+log.info(`Starting crawl with ${startRequests.length} seed URLs.`);
 await crawler.run(startRequests);
+log.info('Crawl finished.');

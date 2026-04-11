@@ -80,24 +80,24 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 1 - Replace Template Defaults And Build A Test Harness
 
-- [ ] Replace the template mindset. Remove assumptions that this project crawls `crawlee.dev`; it must now crawl Reddit only.
-- [ ] Update `package.json` scripts to be Bun-first. Replace `npm`/`tsx`/`node` style scripts with Bun equivalents for running, building, and testing.
-- [ ] Add any missing dependencies required by the final architecture, such as `zod`, `drizzle-orm`, migration tooling, and a direct HTML parser dependency if fixture-based parser tests need one.
-- [ ] Create `test/unit` and `test/fixtures/reddit` directories.
-- [ ] Capture and sanitize at least four HTML fixtures before parser work begins:
-- [ ] one subreddit listing page with normal posts visible
-- [ ] one subreddit listing page with pagination or "next/older" navigation visible
-- [ ] one normal post detail page
-- [ ] one edge-case post detail page, such as deleted author, removed body, or abbreviated counts
-- [ ] Rename `popularCryptoSubreddits` to a domain-specific name such as `redditStartUrls`.
-- [ ] Fix malformed or inconsistent Reddit seed URLs before continuing.
-- [ ] Add the first real test command so `bun test` executes actual tests instead of a placeholder failure.
-- [ ] Unit tests to add:
-- [ ] `start-urls.test.ts` verifies every seed URL is a valid Reddit subreddit URL.
-- [ ] `start-urls.test.ts` verifies there are no duplicate seed URLs after normalization.
-- [ ] `reddit-fixture-sanity.test.ts` verifies fixture files load and contain the markers your later parser tests will depend on.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
+- [x] Replace the template mindset. Remove assumptions that this project crawls `crawlee.dev`; it must now crawl Reddit only.
+- [x] Update `package.json` scripts to be Bun-first. Replace `npm`/`tsx`/`node` style scripts with Bun equivalents for running, building, and testing.
+- [x] Add any missing dependencies required by the final architecture, such as `zod`, `drizzle-orm`, migration tooling, and a direct HTML parser dependency if fixture-based parser tests need one.
+- [x] Create `test/unit` and `test/fixtures/reddit` directories.
+- [x] Capture and sanitize at least four HTML fixtures before parser work begins:
+- [x] one subreddit listing page with normal posts visible
+- [x] one subreddit listing page with pagination or "next/older" navigation visible
+- [x] one normal post detail page
+- [x] one edge-case post detail page, such as deleted author, removed body, or abbreviated counts
+- [x] Rename `popularCryptoSubreddits` to a domain-specific name such as `redditStartUrls`.
+- [x] Fix malformed or inconsistent Reddit seed URLs before continuing.
+- [x] Add the first real test command so `bun test` executes actual tests instead of a placeholder failure.
+- [x] Unit tests to add:
+- [x] `start-urls.test.ts` verifies every seed URL is a valid Reddit subreddit URL.
+- [x] `start-urls.test.ts` verifies there are no duplicate seed URLs after normalization.
+- [x] `reddit-fixture-sanity.test.ts` verifies fixture files load and contain the markers your later parser tests will depend on.
+- [x] Checkpoint verification:
+- [x] run `bun test`
 
 ## Checkpoint 2 - Define Configuration, Labels, Domain Types, And Testable Contracts
 
@@ -124,13 +124,11 @@ Use this as the intended destination, not something to build all at once:
 - [ ] `PendingPostRecord`
 - [ ] `QueuePayload`
 - [ ] `ProcessPostResult`
-- [ ] Add injectable abstractions for the current time and ID generation so tests can be deterministic.
 - [ ] Keep one export per file where it keeps the code simple and readable.
 - [ ] Unit tests to add:
 - [ ] `config.test.ts` verifies valid config parses successfully.
 - [ ] `config.test.ts` verifies missing required env vars fail with clear error messages.
 - [ ] `request-labels.test.ts` verifies labels are stable constants used by the rest of the code.
-- [ ] `clock-and-id.test.ts` verifies deterministic test doubles can drive the orchestrator later.
 - [ ] Checkpoint verification:
 - [ ] run `bun test`
 

@@ -61,14 +61,15 @@ export class PostProcessor {
 
       // 4. Build the record
       const id = this.idGen.generate();
-      
+
+      const now = this.clock.now();
       const record: PendingPostRecord = {
         ...extracted,
         id,
         url: canonicalUrl,
         platform: "reddit",
         status: "pending",
-        createdAt: this.clock.now(),
+        createdAt: now,
       };
 
       // 5. Insert the row into SQL

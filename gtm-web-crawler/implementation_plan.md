@@ -231,67 +231,67 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 6 - Refactor Crawlee Wiring Around Labeled Routes And Narrow Link Discovery
 
-- [ ] Refactor `src/main.ts` so it only:
-- [ ] loads config
-- [ ] creates Redis and SQL dependencies
-- [ ] creates the router dependencies
-- [ ] builds `PlaywrightCrawler` options
-- [ ] runs the crawler with the seed requests from `src/startUrls.ts`
-- [ ] Replace the placeholder default handler in `src/routes.ts` with real labeled routes.
-- [ ] Create at least these handlers:
-- [ ] a subreddit listing handler
-- [ ] a post detail handler
-- [ ] In the subreddit listing handler:
-- [ ] wait for the page to render enough to safely inspect links
-- [ ] discover only the post-detail links you actually want
-- [ ] discover listing pagination links only if they are needed for deeper crawling
-- [ ] explicitly ignore user profile links, ads, outbound links, and comment-anchor variants
-- [ ] attach the subreddit topic to all discovered post requests
-- [ ] use `transformRequestFunction` to set the request label and stable `uniqueKey`
-- [ ] In the post handler:
-- [ ] wait for stable post selectors
-- [ ] use the loaded URL for canonicalization
-- [ ] hand the page HTML or parsed DOM to the orchestrator instead of writing inline persistence code
-- [ ] Keep development crawl sizes small and configurable. Use low request caps until the selectors and parser are stable.
-- [ ] Unit tests to add:
-- [ ] `route-metadata.test.ts` verifies topic and labels are attached to discovered requests.
-- [ ] `post-route.test.ts` verifies the post route delegates to the orchestrator with the right arguments.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
-- [ ] do one controlled manual smoke run with a tiny request cap, such as `CRAWLER_MAX_REQUESTS_PER_CRAWL=3`
+- [x] Refactor `src/main.ts` so it only:
+- [x] loads config
+- [x] creates Redis and SQL dependencies
+- [x] creates the router dependencies
+- [x] builds `PlaywrightCrawler` options
+- [x] runs the crawler with the seed requests from `src/startUrls.ts`
+- [x] Replace the placeholder default handler in `src/routes.ts` with real labeled routes.
+- [x] Create at least these handlers:
+- [x] a subreddit listing handler
+- [x] a post detail handler
+- [x] In the subreddit listing handler:
+- [x] wait for the page to render enough to safely inspect links
+- [x] discover only the post-detail links you actually want
+- [x] discover listing pagination links only if they are needed for deeper crawling
+- [x] explicitly ignore user profile links, ads, outbound links, and comment-anchor variants
+- [x] attach the subreddit topic to all discovered post requests
+- [x] use `transformRequestFunction` to set the request label and stable `uniqueKey`
+- [x] In the post handler:
+- [x] wait for stable post selectors
+- [x] use the loaded URL for canonicalization
+- [x] hand the page HTML or parsed DOM to the orchestrator instead of writing inline persistence code
+- [x] Keep development crawl sizes small and configurable. Use low request caps until the selectors and parser are stable.
+- [x] Unit tests to add:
+- [x] `route-metadata.test.ts` verifies topic and labels are attached to discovered requests.
+- [x] `post-route.test.ts` verifies the post route delegates to the orchestrator with the right arguments.
+- [x] Checkpoint verification:
+- [x] run `bun test`
+- [x] do one controlled manual smoke run with a tiny request cap, such as `CRAWLER_MAX_REQUESTS_PER_CRAWL=3`
 
 ## Checkpoint 7 - Add The Concrete SQL Repository And Redis Queue/Dedupe Adapters
 
-- [ ] Implement the SQL repository behind the `PostRepository` interface.
-- [ ] Use Drizzle for schema definition and query building, following the repo standard.
-- [ ] Keep the database details isolated so the rest of the crawler only sees typed repository methods.
-- [ ] Define the crawler table schema. Include at least:
-- [ ] `id` as UUIDv7
-- [ ] canonical post URL
-- [ ] raw/final URL if you want debugging visibility
-- [ ] `platform`
-- [ ] `topic`
-- [ ] `username`
-- [ ] `content`
-- [ ] `age` or best-estimate time fields
-- [ ] `likes`
-- [ ] `nComments`
-- [ ] crawl timestamp
-- [ ] `status`
-- [ ] optional error fields to support retries and debugging
-- [ ] Add a uniqueness safeguard on the canonical post URL if the database schema allows it.
-- [ ] Implement the queue publisher behind `LeadQueuePublisher`.
-- [ ] Decide the queue primitive explicitly before coding. If nothing else in the repo requires Redis Streams, a simple Redis list is easier for a junior developer to reason about.
-- [ ] Keep the payload contract fixed as `{ id, platform: "reddit" }`.
-- [ ] Implement the processed-URL store behind `ProcessedUrlStore`.
-- [ ] If you keep the Bloom filter, document its false-positive settings and pair it with a deterministic lock/claim step so failure handling stays safe.
-- [ ] Unit tests to add:
-- [ ] `post-repository.test.ts` verifies repository input maps to the expected SQL-layer payload.
-- [ ] `post-repository.test.ts` verifies duplicate canonical URLs are translated into a domain-level duplicate result.
-- [ ] `lead-queue-publisher.test.ts` verifies the exact payload shape and serialization.
-- [ ] `processed-url-store.test.ts` verifies seen-checks, permanent marks, and lock behavior using fakes or mocks.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
+- [x] Implement the SQL repository behind the `PostRepository` interface.
+- [x] Use Drizzle for schema definition and query building, following the repo standard.
+- [x] Keep the database details isolated so the rest of the crawler only sees typed repository methods.
+- [x] Define the crawler table schema. Include at least:
+- [x] `id` as UUIDv7
+- [x] canonical post URL
+- [x] raw/final URL if you want debugging visibility
+- [x] `platform`
+- [x] `topic`
+- [x] `username`
+- [x] `content`
+- [x] `age` or best-estimate time fields
+- [x] `likes`
+- [x] `nComments`
+- [x] crawl timestamp
+- [x] `status`
+- [x] optional error fields to support retries and debugging
+- [x] Add a uniqueness safeguard on the canonical post URL if the database schema allows it.
+- [x] Implement the queue publisher behind `LeadQueuePublisher`.
+- [x] Decide the queue primitive explicitly before coding. If nothing else in the repo requires Redis Streams, a simple Redis list is easier for a junior developer to reason about.
+- [x] Keep the payload contract fixed as `{ id, platform: "reddit" }`.
+- [x] Implement the processed-URL store behind `ProcessedUrlStore`.
+- [x] If you keep the Bloom filter, document its false-positive settings and pair it with a deterministic lock/claim step so failure handling stays safe.
+- [x] Unit tests to add:
+- [x] `post-repository.test.ts` verifies repository input maps to the expected SQL-layer payload.
+- [x] `post-repository.test.ts` verifies duplicate canonical URLs are translated into a domain-level duplicate result.
+- [x] `lead-queue-publisher.test.ts` verifies the exact payload shape and serialization.
+- [x] `processed-url-store.test.ts` verifies seen-checks, permanent marks, and lock behavior using fakes or mocks.
+- [x] Checkpoint verification:
+- [x] run `bun test`
 
 ## Checkpoint 8 - Harden The Crawler Against Blocking And Operational Failures
 

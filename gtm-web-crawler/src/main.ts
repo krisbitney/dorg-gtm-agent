@@ -9,19 +9,16 @@ import { config } from "./config/config.js";
 import { PostProcessor } from "./services/post-processor.js";
 import { extractSubredditName } from "./lib/reddit-url.js";
 import { LABELS } from "./constants/labels.js";
-import { 
-    FakeUrlStore, 
-    FakePostRepo, 
-    FakeQueuePublisher, 
-    RealIdGen, 
-    RealClock 
-} from "./services/fakes.js";
+import { DrizzlePostRepository } from "./storage/drizzle-post-repository.js";
+import { RedisQueuePublisher } from "./storage/redis-queue-publisher.js";
+import { RedisProcessedUrlStore } from "./storage/redis-processed-url-store.js";
+import { RealIdGen, RealClock } from "./services/simple.js";
 import {createSubredditUserData, getSubredditUniqueKey} from "./lib/request-metadata.js";
 
-// 1. Initialize services (Checkpoint 7 will replace these with real SQL/Redis)
-const urlStore = new FakeUrlStore();
-const postRepo = new FakePostRepo();
-const queuePublisher = new FakeQueuePublisher();
+// 1. Initialize services (Checkpoint 7: SQL/Redis)
+const urlStore = new RedisProcessedUrlStore();
+const postRepo = new DrizzlePostRepository();
+const queuePublisher = new RedisQueuePublisher();
 const idGen = new RealIdGen();
 const clock = new RealClock();
 

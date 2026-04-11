@@ -46,6 +46,7 @@ export async function buildCrawlerOptions(
             launcher: firefox,
             launchOptions: await launchOptions({
                 headless: config.CRAWLER_HEADLESS,
+                locale: "en-US",
                 humanize: 1.5,
                 block_webrtc: true,
                 enable_cache: true,

@@ -2,7 +2,7 @@ import { describe, it, expect, mock } from "bun:test";
 
 // Mock camoufox-js before importing crawler-options
 mock.module("camoufox-js", () => ({
-  launchOptions: async (options: any) => ({ ...options, mockLaunchOptions: true }),
+  launchOptions: async (options: Record<string, unknown>) => ({ ...options, mockLaunchOptions: true }),
 }));
 
 import { buildCrawlerOptions } from "../../src/lib/crawler-options.js";
@@ -30,11 +30,19 @@ describe("Crawler Options", () => {
         expect(options.maxConcurrency).toBe(1);
         expect(options.requestHandlerTimeoutSecs).toBe(60);
         expect(options.navigationTimeoutSecs).toBe(30);
+        expect(options.maxRequestRetries).toBe(5);
+        expect(options.maxSessionRotations).toBe(10);
+        expect(options.useSessionPool).toBe(true);
+        expect(options.persistCookiesPerSession).toBe(true);
         expect(options.browserPoolOptions?.useFingerprints).toBe(false);
         expect(options.proxyConfiguration).toBeUndefined();
         
-        const launchOptions = options.launchContext?.launchOptions as any;
+        const launchOptions = options.launchContext?.launchOptions as Record<string, unknown>;
         expect(launchOptions.headless).toBe(true);
+        expect(launchOptions.locale).toBe("en-US");
+        expect(launchOptions.humanize).toBe(1.5);
+        expect(launchOptions.block_webrtc).toBe(true);
+        expect(launchOptions.enable_cache).toBe(true);
         expect(launchOptions.mockLaunchOptions).toBe(true);
     });
 

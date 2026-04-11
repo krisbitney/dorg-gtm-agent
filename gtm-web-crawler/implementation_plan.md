@@ -303,12 +303,12 @@ Use this as the intended destination, not something to build all at once:
 - [x] session persistence if useful
 - [x] optional proxy support behind configuration
 - [x] Configure proxy support in a way that can be turned on in production and off in development.
-- [x] Add explicit detection for block states such as:
-- [x] login walls
-- [x] rate-limited pages
-- [x] Cloudflare or other challenge pages
-- [x] empty placeholder pages that still return HTTP 200
-- [x] When a blocked page is detected, fail the request in a way Crawlee can retry instead of silently storing nonsense.
+- [x] Add explicit detection and handling for block states such as:
+- [ ] login walls
+- [ ] rate-limited pages
+- [ ] recaptcha challenges
+- [ ] empty placeholder pages that still return HTTP 200
+- [ ] When a blocked page is detected, fail the request in a way Crawlee can retry instead of silently storing nonsense.
 - [x] Add structured logs for:
 - [x] seed URL count
 - [x] discovered post count
@@ -324,7 +324,7 @@ Use this as the intended destination, not something to build all at once:
 - [x] `log-context.test.ts` verifies helper log context builders do not omit the canonical URL or topic.
 - [x] Checkpoint verification:
 - [x] run `bun test`
-- [x] do one controlled manual crawl twice and confirm the second run mostly skips duplicates
+- [ ] do one controlled manual crawl twice and confirm the second run skips duplicates
 
 ## Checkpoint 9 - Final Cleanup, Documentation, And Regression Safety
 

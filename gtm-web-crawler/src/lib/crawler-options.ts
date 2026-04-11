@@ -27,8 +27,6 @@ export async function buildCrawlerOptions(
 
     return {
         requestHandler: router,
-        ignoreIframes: true,
-        ignoreShadowRoots: true,
         maxRequestsPerCrawl: config.CRAWLER_MAX_REQUESTS_PER_CRAWL ?? undefined,
         maxCrawlDepth: config.CRAWLER_MAX_CRAWL_DEPTH,
         maxConcurrency: config.CRAWLER_MAX_CONCURRENCY,
@@ -38,6 +36,8 @@ export async function buildCrawlerOptions(
         maxSessionRotations: 10,
         requestHandlerTimeoutSecs: Math.floor(config.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
         navigationTimeoutSecs: Math.floor(config.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
+        ignoreIframes: true,
+        ignoreShadowRoots: true,
         useSessionPool: true,
         persistCookiesPerSession: true,
         proxyConfiguration,
@@ -49,6 +49,7 @@ export async function buildCrawlerOptions(
             launcher: firefox,
             launchOptions: await launchOptions({
                 headless: config.CRAWLER_HEADLESS,
+                geoip: true,
                 locale: "en-US",
                 humanize: 1.5,
                 block_webrtc: true,

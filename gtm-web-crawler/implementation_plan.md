@@ -135,29 +135,29 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 3 - Build Reddit URL Normalization And Request Metadata Helpers
 
-- [ ] Create a small URL utility module dedicated to Reddit.
-- [ ] Implement separate helpers for:
-- [ ] detecting whether a URL is a subreddit listing page
-- [ ] detecting whether a URL is a Reddit post detail page
-- [ ] extracting the subreddit name from a Reddit URL
-- [ ] canonicalizing a post URL for dedupe and persistence
-- [ ] canonicalizing a listing URL for request-queue use without destroying pagination tokens
-- [ ] generating a stable Crawlee `uniqueKey` for post requests
-- [ ] generating request metadata and `userData` for discovered requests
-- [ ] Use `request.loadedUrl ?? request.url` as the source of truth after navigation, especially for canonical post URLs.
-- [ ] Decide now which query parameters must be preserved on listing URLs and which must be removed from post URLs.
-- [ ] Use Crawlee's `transformRequestFunction` when enqueueing discovered links so each request gets:
-- [ ] the correct label
-- [ ] a stable `uniqueKey`
-- [ ] the current subreddit topic in `userData`
-- [ ] Unit tests to add:
-- [ ] `reddit-url.test.ts` verifies valid subreddit URLs are accepted and invalid ones are rejected.
-- [ ] `reddit-url.test.ts` verifies post canonicalization removes fragments and tracking noise.
-- [ ] `reddit-url.test.ts` verifies listing canonicalization preserves pagination tokens.
-- [ ] `reddit-url.test.ts` verifies subreddit extraction works for all seed URLs.
-- [ ] `request-metadata.test.ts` verifies discovered post requests receive the right label, `uniqueKey`, and topic.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
+- [x] Create a small URL utility module dedicated to Reddit.
+- [x] Implement separate helpers for:
+- [x] detecting whether a URL is a subreddit listing page
+- [x] detecting whether a URL is a Reddit post detail page
+- [x] extracting the subreddit name from a Reddit URL
+- [x] canonicalizing a post URL for dedupe and persistence
+- [x] canonicalizing a listing URL for request-queue use without destroying pagination tokens
+- [x] generating a stable Crawlee `uniqueKey` for post requests
+- [x] generating request metadata and `userData` for discovered requests
+- [x] Use `request.loadedUrl ?? request.url` as the source of truth after navigation, especially for canonical post URLs.
+- [x] Decide now which query parameters must be preserved on listing URLs and which must be removed from post URLs.
+- [x] Use Crawlee's `transformRequestFunction` when enqueueing discovered links so each request gets:
+- [x] the correct label
+- [x] a stable `uniqueKey`
+- [x] the current subreddit topic in `userData`
+- [x] Unit tests to add:
+- [x] `reddit-url.test.ts` verifies valid subreddit URLs are accepted and invalid ones are rejected.
+- [x] `reddit-url.test.ts` verifies post canonicalization removes fragments and tracking noise.
+- [x] `reddit-url.test.ts` verifies listing canonicalization preserves pagination tokens.
+- [x] `reddit-url.test.ts` verifies subreddit extraction works for all seed URLs.
+- [x] `request-metadata.test.ts` verifies discovered post requests receive the right label, `uniqueKey`, and topic.
+- [x] Checkpoint verification:
+- [x] run `bun test`
 
 ## Checkpoint 4 - Build Pure Extraction Helpers From Saved Reddit Fixtures
 

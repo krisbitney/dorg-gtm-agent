@@ -161,40 +161,40 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 4 - Build Pure Extraction Helpers From Saved Reddit Fixtures
 
-- [ ] Do not start inside Playwright. Start with pure parsing helpers that work on saved HTML fixtures.
-- [ ] Decide the minimum required source for each field from `high_level_design.md`:
-- [ ] `username of poster`
-- [ ] `post content`
-- [ ] `age of post (best estimate)`
-- [ ] `likes`
-- [ ] `nComments`
-- [ ] Create small pure helpers instead of one giant parser. Examples:
-- [ ] `normalizeWhitespace(...)`
-- [ ] `parseCompactNumber(...)` for values like `12`, `1.2k`, or `3m`
-- [ ] `extractAuthor(...)`
-- [ ] `extractPostTitle(...)`
-- [ ] `extractPostBody(...)`
-- [ ] `extractPostContent(...)` that combines title and body cleanly
-- [ ] `extractPostTimestamp(...)`
-- [ ] `extractScore(...)`
-- [ ] `extractCommentCount(...)`
-- [ ] `extractTopicFromPage(...)` as a fallback check against the URL-derived topic
-- [ ] Prefer machine-readable time attributes if the page exposes them.
-- [ ] If you can only derive a relative age string, store the raw value and document the conversion strategy.
-- [ ] Treat missing data carefully:
-- [ ] missing score is not the same as score `0`
-- [ ] removed content is not the same as empty content
-- [ ] deleted author is not the same as parsing failure
-- [ ] Combine the pure helpers into one higher-level parser that returns a typed object with nullable fields where appropriate.
-- [ ] Unit tests to add:
-- [ ] `parse-compact-number.test.ts` covers plain numbers, `k`, `m`, and malformed text.
-- [ ] `extract-author.test.ts` covers normal users, deleted users, and missing selectors.
-- [ ] `extract-content.test.ts` covers title-only posts, self-text posts, removed posts, and whitespace cleanup.
-- [ ] `extract-timestamp.test.ts` covers machine-readable time and fallback text extraction.
-- [ ] `extract-metrics.test.ts` covers score and comment-count parsing from normal and abbreviated text.
-- [ ] `extract-post.test.ts` covers at least one happy path fixture and one edge-case fixture end-to-end.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
+- [x] Do not start inside Playwright. Start with pure parsing helpers that work on saved HTML fixtures.
+- [x] Decide the minimum required source for each field from `high_level_design.md`:
+- [x] `username of poster`
+- [x] `post content`
+- [x] `age of post (best estimate)`
+- [x] `likes`
+- [x] `nComments`
+- [x] Create small pure helpers instead of one giant parser. Examples:
+- [x] `normalizeWhitespace(...)`
+- [x] `parseCompactNumber(...)` for values like `12`, `1.2k`, or `3m`
+- [x] `extractAuthor(...)`
+- [x] `extractPostTitle(...)`
+- [x] `extractPostBody(...)`
+- [x] `extractPostContent(...)` that combines title and body cleanly
+- [x] `extractPostTimestamp(...)`
+- [x] `extractScore(...)`
+- [x] `extractCommentCount(...)`
+- [x] `extractTopicFromPage(...)` as a fallback check against the URL-derived topic
+- [x] Prefer machine-readable time attributes if the page exposes them.
+- [x] If you can only derive a relative age string, store the raw value and document the conversion strategy.
+- [x] Treat missing data carefully:
+- [x] missing score is not the same as score `0`
+- [x] removed content is not the same as empty content
+- [x] deleted author is not the same as parsing failure
+- [x] Combine the pure helpers into one higher-level parser that returns a typed object with nullable fields where appropriate.
+- [x] Unit tests to add:
+- [x] `parse-compact-number.test.ts` covers plain numbers, `k`, `m`, and malformed text.
+- [x] `extract-author.test.ts` covers normal users, deleted users, and missing selectors.
+- [x] `extract-content.test.ts` covers title-only posts, self-text posts, removed posts, and whitespace cleanup.
+- [x] `extract-timestamp.test.ts` covers machine-readable time and fallback text extraction.
+- [x] `extract-metrics.test.ts` covers score and comment-count parsing from normal and abbreviated text.
+- [x] `extract-post.test.ts` covers at least one happy path fixture and one edge-case fixture end-to-end.
+- [x] Checkpoint verification:
+- [x] run `bun test`
 
 ## Checkpoint 5 - Design The Safe Post-Processing Orchestrator Before Using Real Redis Or SQL
 

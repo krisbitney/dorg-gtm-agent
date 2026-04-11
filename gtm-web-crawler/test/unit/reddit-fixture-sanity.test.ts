@@ -16,24 +16,23 @@ describe("Reddit Fixture Sanity", () => {
     test(`fixture ${fixture} should load and not be empty`, async () => {
       const content = await readFile(join(FIXTURE_DIR, fixture), "utf-8");
       expect(content.length).toBeGreaterThan(0);
-      expect(content).toContain("shreddit-post");
+      expect(content).toContain('class="thing');
     });
   }
 
   test("subreddit-listing.html should contain multiple posts", async () => {
     const content = await readFile(join(FIXTURE_DIR, "subreddit-listing.html"), "utf-8");
-    const postCount = (content.match(/<shreddit-post/g) || []).length;
+    const postCount = (content.match(/class="thing/g) || []).length;
     expect(postCount).toBeGreaterThanOrEqual(2);
   });
 
   test("subreddit-listing-pagination.html should contain next link", async () => {
     const content = await readFile(join(FIXTURE_DIR, "subreddit-listing-pagination.html"), "utf-8");
-    expect(content).toContain("pagination-next");
+    expect(content).toContain('rel="nofollow next"');
   });
 
-  test("post-detail-edge-case.html should contain MEME marker and author", async () => {
+  test("post-detail-edge-case.html should contain deleted marker", async () => {
     const content = await readFile(join(FIXTURE_DIR, "post-detail-edge-case.html"), "utf-8");
-    expect(content).toContain("[MEME]");
-    expect(content).toContain("Odd-Radio-8500");
+    expect(content).toContain("[deleted]");
   });
 });

@@ -2,7 +2,8 @@
  * Utility functions for handling Reddit URLs.
  */
 
-const REDDIT_BASE_URL = "old.reddit.com";
+const REDDIT_HOSTNAMES = ["www.reddit.com", "old.reddit.com", "www.old.reddit.com", "sh.reddit.com"];
+const CANONICAL_HOSTNAME = "www.old.reddit.com";
 
 /**
  * Checks if a URL is a subreddit listing page.
@@ -11,11 +12,15 @@ const REDDIT_BASE_URL = "old.reddit.com";
 export function isSubredditUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname !== REDDIT_BASE_URL) return false;
+    if (!REDDIT_HOSTNAMES.includes(parsed.hostname)) return false;
     
-    // Pattern: /r/<subreddit_name>/ or /r/<subreddit_name>
+    // Patterns: /r/<subreddit_name>/ or /r/<subreddit_name>/new/ etc.
     const parts = parsed.pathname.split("/").filter(Boolean);
-    return parts.length === 2 && parts[0] === "r";
+    if (parts.length < 2 || parts[0] !== "r") return false;
+    
+    // Subreddit listing pages are usually /r/<name>/ or /r/<name>/<suffix>/
+    // But they are NOT /r/<name>/comments/...
+    return parts[2] !== "comments";
   } catch {
     return false;
   }
@@ -28,7 +33,7 @@ export function isSubredditUrl(url: string): boolean {
 export function isPostUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname !== REDDIT_BASE_URL) return false;
+    if (!REDDIT_HOSTNAMES.includes(parsed.hostname)) return false;
     
     // Pattern: /r/<subreddit_name>/comments/<id>/<slug>/
     const parts = parsed.pathname.split("/").filter(Boolean);
@@ -63,8 +68,8 @@ export function extractSubredditName(url: string): string | null {
 export function canonicalizePostUrl(url: string): string {
   try {
     const parsed = new URL(url);
-    // Ensure we are on the main domain for consistency
-    parsed.hostname = REDDIT_BASE_URL;
+    // Ensure we are on the canonical domain for consistency
+    parsed.hostname = CANONICAL_HOSTNAME;
     // Clear all query params for post URLs as they are usually tracking or UI state
     parsed.search = "";
     // Clear fragment
@@ -90,7 +95,7 @@ export function canonicalizePostUrl(url: string): string {
 export function canonicalizeListingUrl(url: string): string {
   try {
     const parsed = new URL(url);
-    parsed.hostname = REDDIT_BASE_URL;
+    parsed.hostname = CANONICAL_HOSTNAME;
     parsed.hash = "";
     
     const preservedParams = ["after", "before", "count"];

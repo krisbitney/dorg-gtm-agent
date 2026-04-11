@@ -3,7 +3,7 @@ import { redditStartUrls } from "../../src/start-urls";
 
 describe("redditStartUrls", () => {
   test("every seed URL is a valid Reddit subreddit URL", () => {
-    const redditSubredditRegex = /^https:\/\/www\.reddit\.com\/r\/[a-zA-Z0-9_]+\/?$/;
+    const redditSubredditRegex = /^https:\/\/www\.old\.reddit\.com\/r\/[a-zA-Z0-9_]+\/new\/?$/;
     for (const url of redditStartUrls) {
       expect(url).toMatch(redditSubredditRegex);
     }

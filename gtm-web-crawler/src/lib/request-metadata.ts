@@ -4,11 +4,13 @@ import { canonicalizePostUrl, canonicalizeListingUrl } from "./reddit-url.js";
 /**
  * Creates user data for a subreddit listing request.
  * @param topic The subreddit name.
+ * @param pageNumber The current page number (default 1).
  */
-export function createSubredditUserData(topic: string) {
+export function createSubredditUserData(topic: string, pageNumber: number = 1) {
   return {
     label: LABELS.SUBREDDIT,
     topic,
+    pageNumber,
   };
 }
 

@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeEach } from "bun:test";
+import { expect, describe, beforeEach } from "bun:test";
 import { PostProcessor } from "../../src/services/post-processor.js";
 import type { 
   ProcessedUrlStore, 
@@ -79,7 +79,7 @@ describe("PostProcessor", () => {
 
   test("should insert and publish exactly once on happy path", async () => {
     const result = await processor.process(
-      "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title",
+      "https://old.reddit.com/r/CryptoCurrency/comments/123/title",
       HAPPY_PATH_HTML,
       "CryptoCurrency"
     );
@@ -87,18 +87,18 @@ describe("PostProcessor", () => {
     expect(result).toBe("inserted");
     expect(postRepo.records.length).toBe(1);
     expect(queuePublisher.payloads.length).toBe(1);
-    expect(await urlStore.has("https://www.old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(true);
-    expect(urlStore.claims.has("https://www.old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false); // released
+    expect(await urlStore.has("https://old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(true);
+    expect(urlStore.claims.has("https://old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false); // released
     
     const record = postRepo.records[0];
-    expect(record.id).toBe("test-id");
-    expect(record.username).toBe("testuser");
-    expect(record.topic).toBe("CryptoCurrency");
-    expect(record.status).toBe("pending");
+    expect(record?.id).toBe("test-id");
+    expect(record?.username).toBe("testuser");
+    expect(record?.topic).toBe("CryptoCurrency");
+    expect(record?.status).toBe("pending");
   });
 
   test("should short-circuit if already processed", async () => {
-    const url = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title";
+    const url = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
     await urlStore.mark(url);
 
     const result = await processor.process(url, HAPPY_PATH_HTML, "CryptoCurrency");
@@ -108,7 +108,7 @@ describe("PostProcessor", () => {
   });
 
   test("should short-circuit if claim fails", async () => {
-    const url = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title";
+    const url = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
     await urlStore.claim(url);
 
     const result = await processor.process(url, HAPPY_PATH_HTML, "CryptoCurrency");
@@ -121,28 +121,48 @@ describe("PostProcessor", () => {
     postRepo.insert = async () => { throw new Error("DB Error"); };
 
     const result = await processor.process(
-      "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title",
+      "https://old.reddit.com/r/CryptoCurrency/comments/123/title",
       HAPPY_PATH_HTML,
       "CryptoCurrency"
     );
 
     expect(result).toBe("failed");
-    expect(await urlStore.has("https://www.old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false);
-    expect(urlStore.claims.has("https://www.old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false); // released
+    expect(await urlStore.has("https://old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false);
+    expect(urlStore.claims.has("https://old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false); // released
   });
 
   test("should update to error state if queue failure after insert", async () => {
     queuePublisher.publish = async () => { throw new Error("Queue Error"); };
 
     const result = await processor.process(
-      "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title",
+      "https://old.reddit.com/r/CryptoCurrency/comments/123/title",
       HAPPY_PATH_HTML,
       "CryptoCurrency"
     );
 
     expect(result).toBe("failed");
     expect(postRepo.records.length).toBe(1);
-    expect(postRepo.records[0].status).toBe("error");
-    expect(await urlStore.has("https://www.old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false);
+    expect(postRepo.records[0]?.status).toBe("error");
+    expect(await urlStore.has("https://old.reddit.com/r/CryptoCurrency/comments/123/title")).toBe(false);
+  });
+
+  describe("isDuplicate", () => {
+    test("should return true if already processed", async () => {
+      const url = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
+      await urlStore.mark(url);
+      expect(await processor.isDuplicate(url)).toBe(true);
+    });
+
+    test("should return false if not processed", async () => {
+      const url = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
+      expect(await processor.isDuplicate(url)).toBe(false);
+    });
+
+    test("should canonicalize URL before checking", async () => {
+      const canonicalUrl = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
+      const nonCanonicalUrl = "https://www.reddit.com/r/CryptoCurrency/comments/123/title/?utm_source=share";
+      await urlStore.mark(canonicalUrl);
+      expect(await processor.isDuplicate(nonCanonicalUrl)).toBe(true);
+    });
   });
 });

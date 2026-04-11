@@ -22,9 +22,10 @@ export function transformPostRequest(url: string, topic: string) {
 /**
  * Transforms a discovered link into a labeled SUBREDDIT request.
  * @param url The URL of the discovered link.
+ * @param pageNumber The current page number (default 1).
  * @returns A request object or false to ignore.
  */
-export function transformSubredditRequest(url: string) {
+export function transformSubredditRequest(url: string, pageNumber: number = 1) {
     if (!isSubredditUrl(url)) return false;
 
     const topic = extractSubredditName(url);
@@ -33,7 +34,7 @@ export function transformSubredditRequest(url: string) {
     return {
         url,
         label: LABELS.SUBREDDIT,
-        userData: createSubredditUserData(topic),
+        userData: createSubredditUserData(topic, pageNumber),
         uniqueKey: getSubredditUniqueKey(url),
     };
 }

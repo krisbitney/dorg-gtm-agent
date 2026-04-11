@@ -23,6 +23,15 @@ export class PostProcessor {
   ) {}
 
   /**
+   * Checks if a post has already been processed.
+   * @param url The post URL.
+   */
+  async isDuplicate(url: string): Promise<boolean> {
+    const canonicalUrl = canonicalizePostUrl(url);
+    return await this.urlStore.has(canonicalUrl);
+  }
+
+  /**
    * Processes a single discovered post.
    * @param url The final loaded URL of the post.
    * @param html The HTML content of the page.

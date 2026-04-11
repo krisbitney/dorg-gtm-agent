@@ -14,6 +14,7 @@ describe("Request Metadata Helpers", () => {
     expect(result).toEqual({
       label: LABELS.SUBREDDIT,
       topic: "CryptoCurrency",
+      pageNumber: 1,
     });
   });
 
@@ -28,7 +29,7 @@ describe("Request Metadata Helpers", () => {
 
   test("getPostUniqueKey should return canonical post URL", () => {
     const url = "https://www.reddit.com/r/CryptoCurrency/comments/123/title/?utm_source=share";
-    const expected = "https://www.old.reddit.com/r/CryptoCurrency/comments/123/title";
+    const expected = "https://old.reddit.com/r/CryptoCurrency/comments/123/title";
     expect(getPostUniqueKey(url)).toBe(expected);
   });
 

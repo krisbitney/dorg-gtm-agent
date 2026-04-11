@@ -38,6 +38,7 @@ Build a production-ready Reddit crawler that:
 - Do not strip pagination cursor parameters from subreddit listing requests, or you may stop discovering older posts.
 - Do strip irrelevant tracking parameters and fragments from post URLs before dedupe and persistence.
 - A pure Bloom filter can produce false positives. Use a SQL unique constraint on post URL to as a failsafe to detect duplicates.
+- Eventually the crawler will crawl other social media sites as well, so design considerations should be made to support extensibility.
 
 ## Recommended Target File Layout
 
@@ -101,36 +102,36 @@ Use this as the intended destination, not something to build all at once:
 
 ## Checkpoint 2 - Define Configuration, Labels, Domain Types, And Testable Contracts
 
-- [ ] Create a centralized config loader using `zod`.
-- [ ] Validate only the settings the crawler truly needs at first. Start small:
-- [ ] `DATABASE_URL`
-- [ ] `REDIS_URL`
-- [ ] `CRAWLER_HEADLESS`
-- [ ] `CRAWLER_MAX_REQUESTS_PER_CRAWL`
-- [ ] `CRAWLER_MAX_CONCURRENCY`
-- [ ] `CRAWLER_REQUEST_TIMEOUT_MS`
-- [ ] `CRAWLER_NAVIGATION_TIMEOUT_MS`
-- [ ] `CRAWLER_PROXY_URLS` or equivalent proxy config input
-- [ ] Define request labels as constants, not ad-hoc strings. Start with:
-- [ ] `SUBREDDIT`
-- [ ] `POST`
-- [ ] Define the core domain types before wiring services:
-- [ ] `Platform` with `'reddit'`
-- [ ] `CrawlStatus` with at least `'pending'` and `'error'`
-- [ ] `RedditStartUrl`
-- [ ] `CanonicalPostUrl`
-- [ ] `PostMetrics`
-- [ ] `ExtractedRedditPost`
-- [ ] `PendingPostRecord`
-- [ ] `QueuePayload`
-- [ ] `ProcessPostResult`
-- [ ] Keep one export per file where it keeps the code simple and readable.
-- [ ] Unit tests to add:
-- [ ] `config.test.ts` verifies valid config parses successfully.
-- [ ] `config.test.ts` verifies missing required env vars fail with clear error messages.
-- [ ] `request-labels.test.ts` verifies labels are stable constants used by the rest of the code.
-- [ ] Checkpoint verification:
-- [ ] run `bun test`
+- [x] Create a centralized config loader using `zod`.
+- [x] Validate only the settings the crawler truly needs at first. Start small:
+- [x] `DATABASE_URL`
+- [x] `REDIS_URL`
+- [x] `CRAWLER_HEADLESS`
+- [x] `CRAWLER_MAX_REQUESTS_PER_CRAWL`
+- [x] `CRAWLER_MAX_CONCURRENCY`
+- [x] `CRAWLER_REQUEST_TIMEOUT_MS`
+- [x] `CRAWLER_NAVIGATION_TIMEOUT_MS`
+- [x] `CRAWLER_PROXY_URLS` or equivalent proxy config input
+- [x] Define request labels as constants, not ad-hoc strings. Start with:
+- [x] `SUBREDDIT`
+- [x] `POST`
+- [x] Define the core domain types before wiring services:
+- [x] `Platform` with `'reddit'`
+- [x] `CrawlStatus` with at least `'pending'` and `'error'`
+- [x] `RedditStartUrl`
+- [x] `CanonicalPostUrl`
+- [x] `PostMetrics`
+- [x] `ExtractedRedditPost`
+- [x] `PendingPostRecord`
+- [x] `QueuePayload`
+- [x] `ProcessPostResult`
+- [x] Keep one export per file where it keeps the code simple and readable.
+- [x] Unit tests to add:
+- [x] `config.test.ts` verifies valid config parses successfully.
+- [x] `config.test.ts` verifies missing required env vars fail with clear error messages.
+- [x] `request-labels.test.ts` verifies labels are stable constants used by the rest of the code.
+- [x] Checkpoint verification:
+- [x] run `bun test`
 
 ## Checkpoint 3 - Build Reddit URL Normalization And Request Metadata Helpers
 

@@ -42,7 +42,6 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 - Use JSDoc to document public classes and methods.
 - Write high-quality, maintainable code.
 - Avoid class inheritance. Use composition over inheritance.
-- One export per file.
 
 # Naming Conventions
 - Use PascalCase for classes.

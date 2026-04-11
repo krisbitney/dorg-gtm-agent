@@ -11,7 +11,7 @@ Flow:
 2. parse the post to obtain:
    - username of poster
    - post content
-   - age of post (best estimate)
+   - post creation timestamp
    - likes # number of likes
    - nComments # number of comments
 3. combine parsed content with:

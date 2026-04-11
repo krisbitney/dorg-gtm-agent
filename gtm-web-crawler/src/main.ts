@@ -6,7 +6,7 @@ import { redditStartUrls } from "./start-urls.js";
 import { appConfig } from "./config/appConfig.js";
 import { PostProcessor } from "./services/post-processor.js";
 import { extractSubredditName } from "./lib/reddit-url.js";
-import { LABELS } from "./constants/labels.js";
+import { ROUTE_LABELS } from "./constants/ROUTE_LABELS.js";
 import { DrizzlePostRepository } from "./storage/drizzle-post-repository.js";
 import { RedisQueuePublisher } from "./storage/redis-queue-publisher.js";
 import { RedisProcessedUrlStore } from "./storage/redis-processed-url-store.js";
@@ -42,7 +42,7 @@ const startRequests = redditStartUrls.map(url => {
     const topic = extractSubredditName(url) || 'unknown';
     return {
         url,
-        label: LABELS.SUBREDDIT,
+        label: ROUTE_LABELS.SUBREDDIT,
         userData: createSubredditUserData(topic),
         uniqueKey: getSubredditUniqueKey(url),
     };

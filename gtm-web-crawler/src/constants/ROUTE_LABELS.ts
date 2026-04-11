@@ -1,9 +1,9 @@
 /**
  * Request labels for Crawlee routing.
  */
-export const LABELS = Object.freeze({
+export const ROUTE_LABELS = Object.freeze({
   SUBREDDIT: "SUBREDDIT",
   POST: "POST",
 } as const);
 
-export type Label = keyof typeof LABELS;
+export type RouteLabel = keyof typeof ROUTE_LABELS;

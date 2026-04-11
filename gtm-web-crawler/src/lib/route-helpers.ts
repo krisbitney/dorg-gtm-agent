@@ -1,4 +1,4 @@
-import { LABELS } from '../constants/labels.js';
+import { ROUTE_LABELS } from '../constants/ROUTE_LABELS.js';
 import { isPostUrl, isSubredditUrl, extractSubredditName } from './reddit-url.js';
 import { createPostUserData, getPostUniqueKey, createSubredditUserData, getSubredditUniqueKey } from './request-metadata.js';
 
@@ -13,7 +13,7 @@ export function transformPostRequest(url: string, topic: string) {
 
     return {
         url,
-        label: LABELS.POST,
+        label: ROUTE_LABELS.POST,
         userData: createPostUserData(topic),
         uniqueKey: getPostUniqueKey(url),
     };
@@ -33,7 +33,7 @@ export function transformSubredditRequest(url: string, pageNumber: number = 1) {
 
     return {
         url,
-        label: LABELS.SUBREDDIT,
+        label: ROUTE_LABELS.SUBREDDIT,
         userData: createSubredditUserData(topic, pageNumber),
         uniqueKey: getSubredditUniqueKey(url),
     };

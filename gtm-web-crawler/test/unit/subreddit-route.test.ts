@@ -1,6 +1,6 @@
 import { test, expect, describe, mock, beforeEach } from "bun:test";
 import { createRouter } from "../../src/routes.js";
-import { LABELS } from "../../src/constants/labels.js";
+import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
 
 // Mock the config module
 mock.module("../../src/config/appConfig.js", () => {
@@ -53,8 +53,8 @@ describe("Subreddit Route Age Stopping", () => {
 
     const request = {
       url: "https://old.reddit.com/r/test",
-      userData: { label: LABELS.SUBREDDIT },
-      label: LABELS.SUBREDDIT,
+      userData: { label: ROUTE_LABELS.SUBREDDIT },
+      label: ROUTE_LABELS.SUBREDDIT,
     };
 
     await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog });
@@ -82,8 +82,8 @@ describe("Subreddit Route Age Stopping", () => {
 
     const request = {
       url: "https://old.reddit.com/r/test",
-      userData: { label: LABELS.SUBREDDIT },
-      label: LABELS.SUBREDDIT,
+      userData: { label: ROUTE_LABELS.SUBREDDIT },
+      label: ROUTE_LABELS.SUBREDDIT,
     };
 
     await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog });

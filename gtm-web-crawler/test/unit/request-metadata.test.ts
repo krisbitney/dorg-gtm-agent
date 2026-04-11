@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { LABELS } from "../../src/constants/labels.js";
+import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
 import {
   createSubredditUserData,
   createPostUserData,
@@ -12,7 +12,7 @@ describe("Request Metadata Helpers", () => {
     const topic = "CryptoCurrency";
     const result = createSubredditUserData(topic);
     expect(result).toEqual({
-      label: LABELS.SUBREDDIT,
+      label: ROUTE_LABELS.SUBREDDIT,
       topic: "CryptoCurrency",
       pageNumber: 1,
     });
@@ -22,7 +22,7 @@ describe("Request Metadata Helpers", () => {
     const topic = "Bitcoin";
     const result = createPostUserData(topic);
     expect(result).toEqual({
-      label: LABELS.POST,
+      label: ROUTE_LABELS.POST,
       topic: "Bitcoin",
     });
   });

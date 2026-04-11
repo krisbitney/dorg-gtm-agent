@@ -1,6 +1,6 @@
 import { createPlaywrightRouter } from 'crawlee';
 import { appConfig } from './config/appConfig.js';
-import { LABELS } from './constants/labels.js';
+import { ROUTE_LABELS } from './constants/ROUTE_LABELS.js';
 import { extractSubredditName } from './lib/reddit-url.js';
 import { transformPostRequest, transformSubredditRequest } from './lib/route-helpers.js';
 import type { PostProcessor } from './services/post-processor.js';
@@ -16,7 +16,7 @@ export function createRouter(postProcessor: PostProcessor) {
      * Handler for subreddit listing pages.
      * Discovers post links and enqueues them.
      */
-    router.addHandler(LABELS.SUBREDDIT, async ({ page, enqueueLinks, request, log, }) => {
+    router.addHandler(ROUTE_LABELS.SUBREDDIT, async ({ page, enqueueLinks, request, log, }) => {
         const topic = request.userData.topic || extractSubredditName(request.url);
         const pageNumber = request.userData.pageNumber || 1;
         log.info(`Processing subreddit: ${topic} (page ${pageNumber})`, { url: request.url });
@@ -70,7 +70,7 @@ export function createRouter(postProcessor: PostProcessor) {
         if (linksToEnqueue.length > 0) {
             await enqueueLinks({
                 urls: linksToEnqueue,
-                label: LABELS.POST,
+                label: ROUTE_LABELS.POST,
                 transformRequestFunction: (req) => {
                     const transformed = transformPostRequest(req.url, topic);
                     if (transformed) {
@@ -93,7 +93,7 @@ export function createRouter(postProcessor: PostProcessor) {
      * Handler for post detail pages.
      * Extracts post data and hands it to the post processor.
      */
-    router.addHandler(LABELS.POST, async ({ page, request, log }) => {
+    router.addHandler(ROUTE_LABELS.POST, async ({ page, request, log }) => {
         const url = page.url();
         const topic = request.userData.topic;
         log.info(`Processing post: ${url}`, { topic });
@@ -114,7 +114,7 @@ export function createRouter(postProcessor: PostProcessor) {
             // Treat as subreddit if it looks like one
             await enqueueLinks({
                 urls: [request.url],
-                label: LABELS.SUBREDDIT,
+                label: ROUTE_LABELS.SUBREDDIT,
                 transformRequestFunction: (req) => {
                     const transformed = transformSubredditRequest(req.url, 1);
                     if (transformed) {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { transformPostRequest, transformSubredditRequest } from "../../src/lib/route-helpers.js";
-import { LABELS } from "../../src/constants/labels.js";
+import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
 
 describe("Route Metadata (via Route Helpers)", () => {
     describe("transformPostRequest", () => {
@@ -12,9 +12,9 @@ describe("Route Metadata (via Route Helpers)", () => {
             
             expect(result).not.toBe(false);
             if (result) {
-                expect(result.label).toBe(LABELS.POST);
+                expect(result.label).toBe(ROUTE_LABELS.POST);
                 expect(result.userData.topic).toBe(topic);
-                expect(result.userData.label).toBe(LABELS.POST);
+                expect(result.userData.label).toBe(ROUTE_LABELS.POST);
                 expect(result.uniqueKey).toBe("https://old.reddit.com/r/CryptoCurrency/comments/123/title");
             }
         });
@@ -33,9 +33,9 @@ describe("Route Metadata (via Route Helpers)", () => {
             
             expect(result).not.toBe(false);
             if (result) {
-                expect(result.label).toBe(LABELS.SUBREDDIT);
+                expect(result.label).toBe(ROUTE_LABELS.SUBREDDIT);
                 expect(result.userData.topic).toBe("Bitcoin");
-                expect(result.userData.label).toBe(LABELS.SUBREDDIT);
+                expect(result.userData.label).toBe(ROUTE_LABELS.SUBREDDIT);
                 expect(result.uniqueKey).toBe("https://old.reddit.com/r/Bitcoin/new");
             }
         });

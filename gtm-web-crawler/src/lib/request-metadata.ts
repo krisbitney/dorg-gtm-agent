@@ -1,4 +1,4 @@
-import { LABELS } from "../constants/labels.js";
+import { ROUTE_LABELS } from "../constants/ROUTE_LABELS.js";
 import { canonicalizePostUrl, canonicalizeListingUrl } from "./reddit-url.js";
 
 /**
@@ -8,7 +8,7 @@ import { canonicalizePostUrl, canonicalizeListingUrl } from "./reddit-url.js";
  */
 export function createSubredditUserData(topic: string, pageNumber: number = 1) {
   return {
-    label: LABELS.SUBREDDIT,
+    label: ROUTE_LABELS.SUBREDDIT,
     topic,
     pageNumber,
   };
@@ -20,7 +20,7 @@ export function createSubredditUserData(topic: string, pageNumber: number = 1) {
  */
 export function createPostUserData(topic: string) {
   return {
-    label: LABELS.POST,
+    label: ROUTE_LABELS.POST,
     topic,
   };
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { createRouter } from "../../src/routes.js";
-import { LABELS } from "../../src/constants/labels.js";
+import { ROUTE_LABELS } from "../../src/constants/ROUTE_LABELS.js";
 
 describe("Post Route Core Logic", () => {
     let mockPostProcessor: any;
@@ -34,7 +34,7 @@ describe("Post Route Core Logic", () => {
         };
         const request = {
             userData: { topic },
-            label: LABELS.POST,
+            label: ROUTE_LABELS.POST,
         };
 
         await router({ page: mockPage, request, log: mockLog });

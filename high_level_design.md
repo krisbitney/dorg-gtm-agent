@@ -24,6 +24,8 @@ Flow:
 
 The gtm web crawler should be respect rate limits and use production-ready anti-detection measures (e.g. Camoufox) to ensure it is not flagged as a web crawler by Reddit. Avoiding detection is a much higher priority than crawl speed.
 
+Eventually the crawler will crawl other social media sites as well, so design considerations should be made to support extensibility.
+
 Tech stack: 
 - typescript
 - crawlee

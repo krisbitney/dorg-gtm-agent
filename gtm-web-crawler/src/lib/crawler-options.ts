@@ -7,6 +7,7 @@ import {
 } from 'crawlee';
 import type { AppConfig } from '../config/appConfig.js';
 
+
 /**
  * Builds the PlaywrightCrawler options based on the configuration.
  * @param config The validated configuration.
@@ -30,8 +31,12 @@ export async function buildCrawlerOptions(
         maxCrawlDepth: config.CRAWLER_MAX_CRAWL_DEPTH,
         maxConcurrency: config.CRAWLER_MAX_CONCURRENCY,
         maxRequestsPerMinute: config.CRAWLER_MAX_REQUESTS_PER_MINUTE,
+        maxRequestRetries: 5,
+        maxSessionRotations:10,
         requestHandlerTimeoutSecs: Math.floor(config.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
         navigationTimeoutSecs: Math.floor(config.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
+        useSessionPool: true,
+        persistCookiesPerSession: true,
         proxyConfiguration,
         browserPoolOptions: {
             // Disable the default fingerprint spoofing to avoid conflicts with Camoufox.
@@ -41,6 +46,9 @@ export async function buildCrawlerOptions(
             launcher: firefox,
             launchOptions: await launchOptions({
                 headless: config.CRAWLER_HEADLESS,
+                humanize: 1.5,
+                block_webrtc: true,
+                enable_cache: true,
             }),
         },
         postNavigationHooks: [

@@ -1,4 +1,4 @@
-import { expect, describe, beforeEach } from "bun:test";
+import { test, expect, describe, beforeEach } from "bun:test";
 import { PostProcessor } from "../../src/services/post-processor.js";
 import type { 
   ProcessedUrlStore, 

@@ -1,5 +1,7 @@
+import { log } from "crawlee";
 import { canonicalizePostUrl } from "../lib/reddit-url.js";
 import { parsePostPage } from "../parsers/reddit-post-parser.js";
+import { buildCrawlerLogContext } from "../lib/logging.js";
 import type { ProcessPostResult, PendingPostRecord } from "../domain/post.js";
 import type { 
   ProcessedUrlStore, 
@@ -55,7 +57,7 @@ export class PostProcessor {
       // 3. Parse the page HTML into structured domain types
       const extracted = parsePostPage(html, topic);
       if (!extracted) {
-        console.error(`Failed to parse post content for: ${canonicalUrl}. The page shape might have changed.`);
+        log.error(`Failed to parse post content. The page shape might have changed.`, buildCrawlerLogContext(topic, canonicalUrl));
         return "failed";
       }
 
@@ -74,6 +76,7 @@ export class PostProcessor {
 
       // 5. Insert the row into SQL
       await this.postRepo.insert(record);
+      log.info(`Post inserted`, buildCrawlerLogContext(topic, canonicalUrl, { id, status: "pending" }));
 
       try {
         // 6. Push a payload to the worker queue
@@ -81,6 +84,7 @@ export class PostProcessor {
           id,
           platform: "reddit",
         });
+        log.info(`Post queued`, buildCrawlerLogContext(topic, canonicalUrl, { id, platform: "reddit" }));
 
         // 7. Mark as permanently processed in the cross-run store
         await this.urlStore.mark(canonicalUrl);
@@ -96,7 +100,7 @@ export class PostProcessor {
         return "failed";
       }
     } catch (error) {
-      console.error(`Error processing post ${canonicalUrl}:`, error);
+      log.error(`Error processing post`, buildCrawlerLogContext(topic, canonicalUrl, { error: error instanceof Error ? error.message : String(error) }));
       return "failed";
     } finally {
       // 8. Always release the claim/lock

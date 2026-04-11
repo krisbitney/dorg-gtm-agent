@@ -32,12 +32,15 @@ describe("Post Route Core Logic", () => {
             title: mock(async () => "Post Title"),
             innerText: mock(async () => "Post content"),
         };
+        const mockCrawler = {
+            stop: mock(async () => {}),
+        };
         const request = {
             userData: { topic },
             label: ROUTE_LABELS.POST,
         };
 
-        await router({ page: mockPage, request, log: mockLog });
+        await router({ page: mockPage, request, log: mockLog, crawler: mockCrawler });
         
         expect(mockPostProcessor.process).toHaveBeenCalledWith(url, html, topic);
         expect(mockLog.info).toHaveBeenCalled();

@@ -303,6 +303,11 @@ Use this as the intended destination, not something to build all at once:
 - [x] session persistence if useful
 - [x] optional proxy support behind configuration
 - [x] Configure proxy support in a way that can be turned on in production and off in development.
+- [x] Add explicit detection and handling for block states such as:
+- [x] login walls
+- [x] rate-limited pages
+- [x] recaptcha challenges
+- [x] When a blocked page is detected, log the issue and stop crawling immediately.
 - [x] Add structured logs for:
 - [x] seed URL count
 - [x] discovered post count
@@ -318,7 +323,7 @@ Use this as the intended destination, not something to build all at once:
 - [x] `log-context.test.ts` verifies helper log context builders do not omit the canonical URL or topic.
 - [x] Checkpoint verification:
 - [x] run `bun test`
-- [ ] do one controlled manual crawl twice and confirm the second run skips duplicates
+- [x] do one controlled manual crawl twice and confirm the second run skips duplicates
 
 ## Checkpoint 9 - Final Cleanup, Documentation, And Regression Safety
 

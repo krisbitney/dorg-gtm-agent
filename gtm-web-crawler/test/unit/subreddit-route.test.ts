@@ -39,6 +39,7 @@ describe("Subreddit Route Age Stopping", () => {
 
     const mockPage = {
       title: mock(async () => "Reddit"),
+      content: mock(async () => "<html><body>Welcome to Reddit</body></html>"),
       url: mock(() => "https://old.reddit.com/r/test"),
       innerText: mock(async () => "Welcome to Reddit"),
       $eval: mock(async (selector: string, fn: any) => {
@@ -51,13 +52,17 @@ describe("Subreddit Route Age Stopping", () => {
       $: mock(async () => null),
     };
 
+    const mockCrawler = {
+      stop: mock(async () => {}),
+    };
+
     const request = {
       url: "https://old.reddit.com/r/test",
       userData: { label: ROUTE_LABELS.SUBREDDIT },
       label: ROUTE_LABELS.SUBREDDIT,
     };
 
-    await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog });
+    await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog, crawler: mockCrawler });
 
     expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining("is too old"));
     expect(mockEnqueueLinks).not.toHaveBeenCalled();
@@ -68,6 +73,7 @@ describe("Subreddit Route Age Stopping", () => {
 
     const mockPage = {
       title: mock(async () => "Reddit"),
+      content: mock(async () => "<html><body>Welcome to Reddit</body></html>"),
       url: mock(() => "https://old.reddit.com/r/test"),
       innerText: mock(async () => "Welcome to Reddit"),
       $eval: mock(async (selector: string, fn: any) => {
@@ -80,15 +86,72 @@ describe("Subreddit Route Age Stopping", () => {
       $: mock(async () => null),
     };
 
+    const mockCrawler = {
+      stop: mock(async () => {}),
+    };
+
     const request = {
       url: "https://old.reddit.com/r/test",
       userData: { label: ROUTE_LABELS.SUBREDDIT },
       label: ROUTE_LABELS.SUBREDDIT,
     };
 
-    await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog });
+    await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog, crawler: mockCrawler });
 
     expect(mockEnqueueLinks).toHaveBeenCalled();
     expect(mockLog.info).not.toHaveProperty("calls.args", expect.arrayContaining([expect.stringContaining("is too old")]));
+  });
+
+  test("should skip duplicate posts and stop pagination if configured", async () => {
+    mockPostProcessor.isDuplicate = mock(async () => true); // All are duplicates
+    
+    const mockPage = {
+      title: mock(async () => "Reddit"),
+      content: mock(async () => "<html><body>Welcome to Reddit</body></html>"),
+      url: mock(() => "https://old.reddit.com/r/test"),
+      innerText: mock(async () => "Welcome to Reddit"),
+      $eval: mock(async () => null), // No age check
+      $$eval: mock(async () => ["https://old.reddit.com/r/test/comments/1/title"]),
+      $: mock(async () => null),
+    };
+
+    const mockCrawler = {
+      stop: mock(async () => {}),
+    };
+
+    const request = {
+      url: "https://old.reddit.com/r/test",
+      userData: { label: ROUTE_LABELS.SUBREDDIT },
+      label: ROUTE_LABELS.SUBREDDIT,
+    };
+
+    await router({ page: mockPage, enqueueLinks: mockEnqueueLinks, request, log: mockLog, crawler: mockCrawler });
+
+    expect(mockPostProcessor.isDuplicate).toHaveBeenCalled();
+    expect(mockEnqueueLinks).not.toHaveBeenCalled();
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining("Stopping pagination"), expect.any(Object));
+  });
+
+  test("should stop crawler if block is detected", async () => {
+    const mockPage = {
+      title: mock(async () => "Attention Required! | Cloudflare"),
+      content: mock(async () => "Please verify you are human"),
+      url: mock(() => "https://old.reddit.com/r/test"),
+    };
+
+    const mockCrawler = {
+      stop: mock(async () => {}),
+    };
+
+    const request = {
+      url: "https://old.reddit.com/r/test",
+      userData: { label: ROUTE_LABELS.SUBREDDIT },
+      label: ROUTE_LABELS.SUBREDDIT,
+    };
+
+    await router({ page: mockPage, request, log: mockLog, crawler: mockCrawler });
+
+    expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining("Blocked detected: cloudflare"), expect.any(Object));
+    expect(mockCrawler.stop).toHaveBeenCalled();
   });
 });

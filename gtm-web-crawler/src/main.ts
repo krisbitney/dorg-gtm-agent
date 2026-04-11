@@ -48,6 +48,6 @@ const startRequests = redditStartUrls.map(url => {
     };
 });
 
-log.info(`Starting crawl with ${startRequests.length} seed URLs.`);
+log.info(`Starting crawl with ${startRequests.length} seed URLs.`, { seedCount: startRequests.length });
 await crawler.run(startRequests);
 log.info('Crawl finished.');

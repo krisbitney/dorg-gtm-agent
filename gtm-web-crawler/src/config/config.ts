@@ -13,7 +13,9 @@ export const configSchema = z.object({
     }
     return val;
   }, z.boolean().default(true)),
+  CRAWLER_MAX_CRAWL_DEPTH: z.coerce.number().int().positive().default(5),
   CRAWLER_MAX_REQUESTS_PER_CRAWL: z.coerce.number().int().positive().default(20),
+  CRAWLER_MAX_REQUESTS_PER_MINUTE: z.coerce.number().int().positive().default(100),
   CRAWLER_MAX_CONCURRENCY: z.coerce.number().int().positive().default(1),
   CRAWLER_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   CRAWLER_NAVIGATION_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
@@ -23,7 +25,6 @@ export const configSchema = z.object({
     }
     return val;
   }, z.array(z.string().url()).optional()),
-  CRAWLER_SUBREDDIT_MAX_PAGES: z.coerce.number().int().positive().default(4),
   CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE: z.preprocess((val) => {
     if (typeof val === "string") {
       if (val.toLowerCase() === "true") return true;

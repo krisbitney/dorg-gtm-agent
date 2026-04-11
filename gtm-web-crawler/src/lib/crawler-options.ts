@@ -50,10 +50,6 @@ export async function buildCrawlerOptions(
             launchOptions: await launchOptions({
                 headless: config.CRAWLER_HEADLESS,
                 geoip: true,
-                locale: "en-US",
-                humanize: 1.5,
-                block_webrtc: true,
-                enable_cache: true,
             }),
         },
         postNavigationHooks: [

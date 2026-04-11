@@ -32,7 +32,6 @@ export const configSchema = z.object({
     }
     return val;
   }, z.boolean().default(true)),
-  CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS: z.coerce.number().int().nonnegative().optional(),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

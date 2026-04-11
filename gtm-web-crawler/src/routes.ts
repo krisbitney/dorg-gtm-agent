@@ -1,6 +1,6 @@
 import { createPlaywrightRouter } from 'crawlee';
 import { appConfig } from './config/appConfig.js';
-import { ROUTE_LABELS } from './constants/ROUTE_LABELS.js';
+import { ROUTE_LABELS } from './constants/route-labels.js';
 import { extractSubredditName } from './lib/reddit-url.js';
 import { transformPostRequest, transformSubredditRequest } from './lib/route-helpers.js';
 import { detectBlock } from './lib/block-detection.js';
@@ -29,26 +29,6 @@ export function createRouter(postProcessor: PostProcessor) {
             log.error(`Blocked detected`, buildCrawlerLogContext(topic, request.url, { blockType }));
             await crawler.stop();
             return;
-        }
-
-        // 0.5 Check age of the top post if configured
-        if (appConfig.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS !== undefined) {
-            const topPostTimestamp = await page.$eval('.thing.link time', (time) => {
-                return (time as HTMLTimeElement).dateTime;
-            }).catch(() => null);
-
-            if (topPostTimestamp) {
-                const postDate = new Date(topPostTimestamp).getTime();
-                const now = Date.now();
-                const ageDays = (now - postDate) / (1000 * 60 * 60 * 24);
-
-                if (ageDays > appConfig.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS) {
-                    log.info(`Top post on ${topic} (page ${pageNumber}) is too old: ${ageDays.toFixed(2)} days (max: ${appConfig.CRAWLER_SUBREDDIT_MAX_POST_AGE_DAYS}). Stopping crawl.`);
-                    return; // Stop processing this page and don't paginate
-                }
-            } else {
-                log.info(`Could not find top post timestamp on ${topic} (page ${pageNumber})`);
-            }
         }
 
         // 1. Get all post links on the current page

@@ -7,6 +7,8 @@ The gtm-web-crawler service will crawl a select set of web3-related subreddits a
 
 The gtm web crawler should be respect rate limits and use production-ready anti-detection measures (e.g. Camoufox) to ensure it is not flagged as a web crawler by Reddit. Avoiding detection is a much higher priority than crawl speed.
 
+The web crawler will be implemented using Crawlee and hosted on Apify as an Apify Actor.
+
 Tech stack: 
 - typescript
 - crawlee
@@ -36,13 +38,18 @@ There will be two parts to this service.
 The gtm-workers cron job will be responsible for
 1. running the gtm-web-crawler service using the Apify Client SDK
   - documentation: https://docs.apify.com/api/client/js/docs
-2. When the scraping run completes, fetch the dataset from Apify
-3. For each post in the dataset:
-  1. check post presence in redis-based bloom filter (and add to bloom filter set)
-    - add only the post url to the bloom filter, not the entire post data
-    - skip further processing of the post if its url is already in bloom filter 
-  2. insert post into sql database table with UUIDv7 id primary key and status "pending"
-  3. append payload { id: UUIDv7; platform: "reddit" } to redis-based queue.
+
+When the scraping run completes, this webhook will be called by Apify.
+
+The gtm-workers web hook will be responsible for
+1. fetch the dataset from Apify
+2. For each post in the dataset:
+   1. check post presence in redis-based bloom filter (and add to bloom filter set)
+      - add only the post url to the bloom filter, not the entire post data
+      - skip further processing of the post if its url is already in bloom filter
+   2. insert post into sql database table with UUIDv7 id primary key and status "pending"
+   3. append payload { id: UUIDv7; platform: "reddit" } to redis-based queue.
+
 
 The gtm-workers service will be responsible for
 1. reading from the queue of posts

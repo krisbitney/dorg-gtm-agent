@@ -51,7 +51,7 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 - Avoid magic numbers and define constants.
 
 # Functions & Logic
-- Keep functions short and single-purpose (<30 lines).
+- Keep functions single-purpose.
 - Avoid deeply nested blocks by:
     - Using early returns.
     - Extracting logic into utility functions.

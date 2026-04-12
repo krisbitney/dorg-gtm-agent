@@ -5,14 +5,9 @@ import { z } from "zod";
  */
 export const CrawlerPostInputSchema = z.object({
   id: z.uuid(),
-  platform: z.literal("reddit"),
-  topic: z.string(),
+  platform: z.string(),
   url: z.url(),
-  username: z.string().nullable(),
-  content: z.string(),
-  likes: z.number().int().nullable(),
-  nComments: z.number().int().nullable(),
-  postedAt: z.iso.datetime(),
+  post: z.json(),
 });
 
 export type CrawlerPostInput = z.infer<typeof CrawlerPostInputSchema>;

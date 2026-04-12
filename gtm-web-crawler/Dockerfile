@@ -3,45 +3,49 @@
 # You can also use any other image from Docker Hub.
 FROM apify/actor-node-playwright-camoufox:24-1.58.2 AS builder
 
-# Copy just package.json and package-lock.json
-# to speed up the build using Docker layer cache.
-COPY --chown=myuser package*.json ./
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV BUN_INSTALL="/home/myuser/.bun"
+ENV PATH="$BUN_INSTALL/bin:$PATH"
 
-# Install all dependencies. Don't audit to speed up the installation.
-RUN npm install --include=dev --audit=false
+# Copy dependency manifests first to leverage Docker layer cache.
+COPY --chown=myuser package.json ./
+
+# Install all dependencies.
+RUN bun install
 
 # Next, copy the source files using the user set
 # in the base image.
 COPY --chown=myuser . ./
 
-# Install all dependencies and build the project.
-# Don't audit to speed up the installation.
-RUN npm run build
+# Build the project.
+RUN bun run build
 
 # Create final image
 FROM apify/actor-node-playwright-camoufox:24-1.58.2
 
-# Copy only built JS files from builder image
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV BUN_INSTALL="/home/myuser/.bun"
+ENV PATH="$BUN_INSTALL/bin:$PATH"
+
+# Copy built output from builder image
 COPY --from=builder --chown=myuser /home/myuser/dist ./dist
 
-# Copy just package.json and package-lock.json
-# to speed up the build using Docker layer cache.
-COPY --chown=myuser package*.json ./
+# Copy dependency manifests first to leverage Docker layer cache.
+COPY --chown=myuser package.json ./
 
-# Install NPM packages, skip optional and development dependencies to
-# keep the image small. Avoid logging too much and print the dependency
-# tree for debugging
-RUN npm --quiet set progress=false \
-    && npm install --omit=dev \
-    && echo "Installed NPM packages:" \
-    && (npm list --omit=dev --all || true) \
+# Install production dependencies only and print versions for debugging
+RUN bun install --production \
+    && echo "Installed Bun packages:" \
+    && (bun pm ls || true) \
     && echo "Node.js version:" \
     && node --version \
-    && echo "NPM version:" \
-    && npm --version
+    && echo "Bun version:" \
+    && bun --version
 
 # Copy the source files and directories.
 COPY --chown=myuser . ./
 
 # Run the image.
-CMD npm run start:prod
+CMD ["bun", "run", "start:prod"]

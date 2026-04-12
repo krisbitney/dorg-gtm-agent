@@ -22,7 +22,7 @@ Your job is to analyze a social media post and determine if it's a lead for our 
    - "whyFit": explain why the post fits dOrg's services.
    - "needs": what the poster explicitly needs help with.
    - "timing": if a timeframe is mentioned, extract it. If not, use null.
-   - "contactInfo": if contact information (email, discord, twitter, etc) is mentioned, extract it. If not, use null.
+   - "contactInfo": if any contact information (username, email, discord, twitter, etc) is mentioned, extract all of it. If not, use null.
 3. If it is not a lead, return "isLead: false" and use null for all other fields.
 
 ### Anti-Hallucination Rules

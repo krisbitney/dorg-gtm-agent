@@ -7,8 +7,6 @@ export function buildSurfaceBrief(post: Post): string {
   const parts = [];
 
   parts.push(`Source: ${post.platform} (${post.url})`);
-  parts.push(`Topic: ${post.topic}`);
-  parts.push(`User: ${post.username}`);
   
   if (post.whyFit) {
     parts.push(`\nWhy it's a fit:\n${post.whyFit}`);

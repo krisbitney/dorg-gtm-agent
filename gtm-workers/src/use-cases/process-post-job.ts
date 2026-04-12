@@ -42,7 +42,6 @@ export class ProcessPostJob {
     const context = {
       postId,
       platform: post.platform,
-      topic: post.topic,
       source: "worker",
       workerRunId: this.workerRunId,
     };

@@ -115,12 +115,7 @@ export class ImportApifyRunDataset {
             id: postId,
             url: postData.url,
             platform: "reddit",
-            topic: postData.topic,
-            username: postData.username,
-            content: postData.content,
-            postedAt: new Date(postData.postedAt),
-            likes: postData.nLikes,
-            nComments: postData.nComments,
+            post: postData,
             apifyRunId,
             apifyDatasetId: datasetId,
           });

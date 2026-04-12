@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, doublePrecision, index, varchar, integer } from "drizzle-orm/pg-core";
+import {pgTable, text, uuid, timestamp, doublePrecision, index, varchar, integer, jsonb} from "drizzle-orm/pg-core";
 import { PostStatus } from "../../constants/post-status.js";
 
 /**
@@ -9,13 +9,7 @@ export const posts = pgTable("posts", {
   id: uuid("id").primaryKey(),
   url: text("url").notNull().unique(),
   platform: varchar("platform", { length: 50 }).notNull(),
-  topic: text("topic").notNull(),
-  username: text("username").notNull(),
-  content: text("content").notNull(),
-  postedAt: timestamp("posted_at").notNull(),
-  capturedAt: timestamp("captured_at").notNull().defaultNow(),
-  likes: integer("likes"),
-  nComments: integer("n_comments"),
+  post: jsonb("post").notNull(),
   status: varchar("status", { length: 50 }).notNull().default(PostStatus.PENDING),
   leadProbability: doublePrecision("lead_probability"),
   whyFit: text("why_fit"),

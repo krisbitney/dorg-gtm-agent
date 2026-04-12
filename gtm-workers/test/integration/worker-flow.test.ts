@@ -4,7 +4,6 @@ import { PostRepository } from "../../src/storage/repositories/post-repository.j
 import { db } from "../../src/storage/database.js";
 import { posts } from "../../src/storage/schema/posts-table.js";
 import { PostStatus } from "../../src/constants/post-status.js";
-import { uuidv7 } from "uuidv7";
 
 class FakeGtmAiClient {
   async scorePost() {
@@ -48,7 +47,7 @@ describe("Worker Flow Integration", () => {
 
   test("should process a post from pending to completed", async () => {
     // 1. Setup a pending post
-    const postId = uuidv7();
+    const postId = Bun.randomUUIDv7();
     await postRepository.insert({
       id: postId,
       url: "https://reddit.com/r/test/1",
@@ -72,7 +71,7 @@ describe("Worker Flow Integration", () => {
   });
 
   test("should stop processing if lead probability is below threshold", async () => {
-    const postId = uuidv7();
+    const postId = Bun.randomUUIDv7();
     await postRepository.insert({
       id: postId,
       url: "https://reddit.com/r/test/2",

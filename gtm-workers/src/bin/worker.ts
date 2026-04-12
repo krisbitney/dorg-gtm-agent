@@ -1,4 +1,3 @@
-import { uuidv7 } from "uuidv7";
 import { RedisLeadQueue } from "../storage/lead-queue.js";
 import { PostRepository } from "../storage/repositories/post-repository.js";
 import { GtmAiClient } from "../clients/gtm-ai-client.js";
@@ -11,7 +10,7 @@ import { appEnv } from "../config/app-env.js";
  * Entry point for the GTM Workers queue consumer.
  */
 async function main() {
-  const processRunId = uuidv7();
+  const processRunId = Bun.randomUUIDv7();
   console.log(`Starting GTM Workers Queue Consumer Process (ID: ${processRunId})...`);
 
   const leadQueue = new RedisLeadQueue();

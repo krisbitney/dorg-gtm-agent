@@ -6,7 +6,6 @@ import { CrawlRunStatus } from "../../src/constants/crawl-run-status.js";
 import { db } from "../../src/storage/database.js";
 import { posts } from "../../src/storage/schema/posts-table.js";
 import { crawlRuns } from "../../src/storage/schema/crawl-runs-table.js";
-import { uuidv7 } from "uuidv7";
 
 describe("Repositories", () => {
   const postRepository = new PostRepository();
@@ -19,12 +18,12 @@ describe("Repositories", () => {
   });
 
   describe("PostRepository", () => {
-    const postId = uuidv7();
+    const postId = Bun.randomUUIDv7();
 
     test("should insert and find a post", async () => {
       await postRepository.insert({
         id: postId,
-        url: `https://reddit.com/r/test/${uuidv7()}`,
+        url: `https://reddit.com/r/test/${Bun.randomUUIDv7()}`,
         platform: "reddit",
         topic: "test",
         username: "testuser",
@@ -40,10 +39,10 @@ describe("Repositories", () => {
     });
 
     test("should update post status", async () => {
-      const id = uuidv7();
+      const id = Bun.randomUUIDv7();
       await postRepository.insert({
         id,
-        url: `https://reddit.com/r/test/${uuidv7()}`,
+        url: `https://reddit.com/r/test/${Bun.randomUUIDv7()}`,
         platform: "reddit",
         topic: "test",
         username: "testuser",
@@ -58,10 +57,10 @@ describe("Repositories", () => {
     });
 
     test("should save lead score", async () => {
-      const id = uuidv7();
+      const id = Bun.randomUUIDv7();
       await postRepository.insert({
         id,
-        url: `https://reddit.com/r/test/${uuidv7()}`,
+        url: `https://reddit.com/r/test/${Bun.randomUUIDv7()}`,
         platform: "reddit",
         topic: "test",
         username: "testuser",

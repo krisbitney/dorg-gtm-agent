@@ -7,7 +7,7 @@ export const CrawlerPostInputSchema = z.object({
   id: z.uuid(),
   platform: z.string(),
   url: z.url(),
-  post: z.json(),
+  post: z.record(z.string(), z.unknown()),
 });
 
 export type CrawlerPostInput = z.infer<typeof CrawlerPostInputSchema>;

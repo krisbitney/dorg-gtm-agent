@@ -5,32 +5,11 @@ The purpose of the GTM Agent is to find leads for the dOrg web3 tech/dev consult
 ## GTM Web Crawler
 The gtm-web-crawler service will crawl a select set of web3-related subreddits and extract data from posts. 
 
-Flow:
-1. check url presence in redis-based bloom filter (and add to bloom filter set)
-  - skip if already in bloom filter
-2. parse the post to obtain:
-   - username of poster
-   - post content
-   - post creation timestamp
-   - likes # number of likes
-   - nComments # number of comments
-3. combine parsed content with:
-   - url
-   - platform ("reddit")
-   - topic (subreddit name)
-   - current datetime
-4. insert into sql database table with UUIDv7 id primary key and status "pending"
-5. append payload { id: UUIDv7; platform: "reddit" } to redis-based queue.
-
 The gtm web crawler should be respect rate limits and use production-ready anti-detection measures (e.g. Camoufox) to ensure it is not flagged as a web crawler by Reddit. Avoiding detection is a much higher priority than crawl speed.
-
-Eventually the crawler will crawl other social media sites as well, so design considerations should be made to support extensibility.
 
 Tech stack: 
 - typescript
 - crawlee
-- bun redis client
-- bun sql client
 
 ## GTM AI
 
@@ -52,7 +31,20 @@ Tech stack:
 
 ## GTM Workers
 
-The gtm-workers service will be responsible for:
+There will be two parts to this service.
+
+The gtm-workers cron job will be responsible for
+1. running the gtm-web-crawler service using the Apify Client SDK
+  - documentation: https://docs.apify.com/api/client/js/docs
+2. When the scraping run completes, fetch the dataset from Apify
+3. For each post in the dataset:
+  1. check post presence in redis-based bloom filter (and add to bloom filter set)
+    - add only the post url to the bloom filter, not the entire post data
+    - skip further processing of the post if its url is already in bloom filter 
+  2. insert post into sql database table with UUIDv7 id primary key and status "pending"
+  3. append payload { id: UUIDv7; platform: "reddit" } to redis-based queue.
+
+The gtm-workers service will be responsible for
 1. reading from the queue of posts
   - get the next post payload from the redis queue
   - retrieve the post from the sql database
@@ -72,3 +64,4 @@ Tech stack:
 - bun redis client
 - bun sql client
 - mastra client
+- apify client (apify-client package)

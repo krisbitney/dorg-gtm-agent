@@ -17,10 +17,9 @@ Platform: ${post.platform}
 Topic: ${post.topic}
 URL: ${post.url}
 Username: ${post.username ?? "unknown"}
-Age: ${post.ageText ?? "unknown"}
 Likes: ${post.likes ?? 0}
 Comments: ${post.nComments ?? 0}
-Captured At: ${post.capturedAt}
+Posted At: ${post.postedAt}
 
 Content:
 ${content}

@@ -1,0 +1,39 @@
+import { z } from "zod";
+
+const envSchema = z.object({
+  WORKERS_API_HOST: z.string().default("0.0.0.0"),
+  WORKERS_API_PORT: z.coerce.number().default(3000),
+  WORKERS_PUBLIC_BASE_URL: z.string().url(),
+  
+  TRIGGER_API_TOKEN: z.string().min(1),
+  APIFY_WEBHOOK_SECRET: z.string().min(1),
+  
+  DATABASE_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1),
+  
+  DORG_API_TOKEN: z.string().min(1),
+  DORG_API_BASE_URL: z.string().url().default("https://agentsofdorg.tech/api"),
+  
+  APIFY_TOKEN: z.string().min(1),
+  APIFY_ACTOR_ID: z.string().min(1),
+  APIFY_RUN_TIMEOUT_SECONDS: z.coerce.number().default(3600),
+  
+  GTM_AI_BASE_URL: z.string().url(),
+  GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000),
+  LEAD_SCORE_THRESHOLD: z.coerce.number().default(0.7),
+  
+  QUEUE_NAME: z.string().default("gtm:posts:queue"),
+  QUEUE_PROCESSING_NAME: z.string().default("gtm:posts:processing"),
+  QUEUE_DLQ_NAME: z.string().default("gtm:posts:dlq"),
+  PROCESSED_URLS_KEY: z.string().default("gtm:processed_urls"),
+  
+  WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(20),
+  WORKER_REQUEUE_STALE_ON_STARTUP: z.preprocess((val) => val === "true" || val === true, z.boolean()).default(true),
+});
+
+export type AppEnv = z.infer<typeof envSchema>;
+
+/**
+ * Validated environment variables for the GTM Workers service.
+ */
+export const appEnv = envSchema.parse(process.env);

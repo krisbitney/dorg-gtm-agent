@@ -10,10 +10,9 @@ export const CrawlerPostInputSchema = z.object({
   url: z.url(),
   username: z.string().nullable(),
   content: z.string(),
-  ageText: z.string().nullable(),
   likes: z.number().int().nullable(),
   nComments: z.number().int().nullable(),
-  capturedAt: z.iso.datetime(),
+  postedAt: z.iso.datetime(),
 });
 
 export type CrawlerPostInput = z.infer<typeof CrawlerPostInputSchema>;

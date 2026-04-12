@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
-import type { ExtractedRedditPost } from "../domain/reddit.js";
 import { normalizeWhitespace, parseCompactNumber } from "../lib/parse-utils.js";
+import {ExtractedRedditPost} from "../domain/post.js";
 
 /**
  * Extracts the author's username from a Reddit post.

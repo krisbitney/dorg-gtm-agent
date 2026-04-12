@@ -4,45 +4,17 @@ import { PlaywrightCrawler, log } from 'crawlee';
 import { createRouter } from './routes.js';
 import { redditStartUrls } from "./constants/start-urls.js";
 import { appConfig } from "./config/appConfig.js";
-import { PostProcessor } from "./services/post-processor.js";
 import { extractSubredditName } from "./lib/reddit-url.js";
 import { ROUTE_LABELS } from "./constants/route-labels.js";
-import { DrizzlePostRepository } from "./storage/drizzle-post-repository.js";
-import { RedisQueuePublisher } from "./storage/redis-queue-publisher.js";
-import { RedisProcessedUrlStore } from "./storage/redis-processed-url-store.js";
-import { RealIdGen, RealClock } from "./services/simple.js";
 import { createSubredditUserData, getSubredditUniqueKey } from "./lib/request-metadata.js";
 import { Actor } from 'apify';
 import {firefox} from "playwright";
 import {launchOptions} from "camoufox-js";
 
-// 1. Initialize services (Checkpoint 7: SQL/Redis)
-const urlStore = new RedisProcessedUrlStore();
-const postRepo = new DrizzlePostRepository();
-const queuePublisher = new RedisQueuePublisher();
-const idGen = new RealIdGen();
-const clock = new RealClock();
-
-// 2. Create the orchestrator
-const postProcessor = new PostProcessor(
-    urlStore,
-    postRepo,
-    queuePublisher,
-    idGen,
-    clock
-);
-
 // 3. Create the router
-const router = createRouter(postProcessor);
+const router = createRouter();
 
 // 4. Configure the crawler
-// let proxyConfiguration: ProxyConfiguration | undefined;
-// if (appConfig.CRAWLER_PROXY_URLS && appConfig.CRAWLER_PROXY_URLS.length > 0) {
-//     proxyConfiguration = new ProxyConfiguration({
-//         proxyUrls: appConfig.CRAWLER_PROXY_URLS,
-//     });
-//
-// }
 await Actor.init();
 const proxyConfiguration = await Actor.createProxyConfiguration({
     checkAccess: true,

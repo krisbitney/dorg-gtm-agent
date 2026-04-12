@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { PostRepository } from "../services/interfaces.js";
-import type { PendingPostRecord, CrawlStatus } from "../domain/post.js";
+import type { RedditPost, CrawlStatus } from "../domain/post.js";
 import {drizzle} from "drizzle-orm/bun-sql";
 import {appConfig} from "../config/appConfig.js";
 import * as schema from "./posts-db-schema.js";
@@ -17,7 +17,7 @@ export class DrizzlePostRepository implements PostRepository {
      * Inserts a pending post record into the database.
      * @param record The post record to insert.
      */
-    async insert(record: PendingPostRecord): Promise<void> {
+    async insert(record: RedditPost): Promise<void> {
         const post: NewPost = {
             id: record.id,
             url: record.url,

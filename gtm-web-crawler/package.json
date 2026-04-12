@@ -27,7 +27,7 @@
         "test": "bun run docker:up && wait-on tcp:5342 && wait-on tcp:4111 && bun test && bun run docker:down",
         "docker:up": "docker compose -f docker-compose.test.yml up --detach",
         "docker:down": "docker compose -f docker-compose.test.yml down",
-        "get-binaries": "bunx camoufox-js fetch",
+        "get-binaries": "bun x camoufox-js fetch",
         "postinstall": "bun run get-binaries"
     },
     "license": "ISC"

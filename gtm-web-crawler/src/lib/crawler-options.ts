@@ -23,6 +23,7 @@ export async function buildCrawlerOptions(
         proxyConfiguration = new ProxyConfiguration({
             proxyUrls: config.CRAWLER_PROXY_URLS,
         });
+
     }
 
     return {
@@ -36,11 +37,6 @@ export async function buildCrawlerOptions(
         maxSessionRotations: 10,
         requestHandlerTimeoutSecs: Math.floor(config.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
         navigationTimeoutSecs: Math.floor(config.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
-        ignoreIframes: true,
-        ignoreShadowRoots: true,
-        useSessionPool: true,
-        persistCookiesPerSession: true,
-        proxyConfiguration,
         browserPoolOptions: {
             // Disable the default fingerprint spoofing to avoid conflicts with Camoufox.
             useFingerprints: false,
@@ -48,7 +44,8 @@ export async function buildCrawlerOptions(
         launchContext: {
             launcher: firefox,
             launchOptions: await launchOptions({
-                headless: config.CRAWLER_HEADLESS,
+                headless: true,
+                proxy: proxyConfiguration?.newUrl(),
                 humanize: 1.5,
                 geoip: true,
                 locale: "en-US",

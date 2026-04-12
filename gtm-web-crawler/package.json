@@ -4,6 +4,8 @@
     "type": "module",
     "description": "GTM Web Crawler for finding leads in Reddit subreddits.",
     "dependencies": {
+        "apify": "^3.7.0",
+        "apify-cli": "^1.4.1",
         "camoufox-js": "^0.9.3",
         "cheerio": "^1.2.0",
         "crawlee": "^3.16.0",

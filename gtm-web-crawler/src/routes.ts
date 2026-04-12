@@ -34,17 +34,6 @@ export function createRouter(postProcessor: PostProcessor) {
 
         // 1. Get all post links on the current page
         // TODO: why am i being served a "blocked" page
-        await page.waitForLoadState('domcontentloaded');
-        await page.waitForSelector('body');
-        await page.waitForFunction(() => document.querySelectorAll('a').length > 1);
-
-        fs.writeFileSync("test.html", await page.content());
-
-        // debug logs
-        const allLinks = await page.locator('a').count();
-        const commentLinks = await page.locator('a[href*="/comments/"]').count();
-        log.info("issue", { allLinks, commentLinks, url: page.url() });
-
         const postLinks = await page.locator('a[href*="/comments/"]').evaluateAll((links) => {
             return [...new Set(
               links.map((a) => (a as HTMLAnchorElement).href)

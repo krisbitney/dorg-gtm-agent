@@ -6,13 +6,6 @@ import { z } from "zod";
 export const configSchema = z.object({
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
   REDIS_URL: z.string().url("REDIS_URL must be a valid URL"),
-  CRAWLER_HEADLESS: z.preprocess((val) => {
-    if (typeof val === "string") {
-      if (val.toLowerCase() === "true") return true;
-      if (val.toLowerCase() === "false") return false;
-    }
-    return val;
-  }, z.boolean().default(true)),
   CRAWLER_MAX_CRAWL_DEPTH: z.coerce.number().int().positive().default(5),
   CRAWLER_MAX_REQUESTS_PER_CRAWL: z.coerce.number().int().positive().optional(),
   CRAWLER_MAX_REQUESTS_PER_MINUTE: z.coerce.number().int().positive().default(20),

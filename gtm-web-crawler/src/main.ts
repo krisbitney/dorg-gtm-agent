@@ -12,7 +12,9 @@ import { RedisQueuePublisher } from "./storage/redis-queue-publisher.js";
 import { RedisProcessedUrlStore } from "./storage/redis-processed-url-store.js";
 import { RealIdGen, RealClock } from "./services/simple.js";
 import { createSubredditUserData, getSubredditUniqueKey } from "./lib/request-metadata.js";
-import { buildCrawlerOptions } from "./lib/crawler-options.js";
+import { Actor } from 'apify';
+import {firefox} from "playwright";
+import {launchOptions} from "camoufox-js";
 
 // 1. Initialize services (Checkpoint 7: SQL/Redis)
 const urlStore = new RedisProcessedUrlStore();
@@ -34,8 +36,52 @@ const postProcessor = new PostProcessor(
 const router = createRouter(postProcessor);
 
 // 4. Configure the crawler
-const crawlerOptions = await buildCrawlerOptions(appConfig, router);
-const crawler = new PlaywrightCrawler(crawlerOptions);
+// let proxyConfiguration: ProxyConfiguration | undefined;
+// if (appConfig.CRAWLER_PROXY_URLS && appConfig.CRAWLER_PROXY_URLS.length > 0) {
+//     proxyConfiguration = new ProxyConfiguration({
+//         proxyUrls: appConfig.CRAWLER_PROXY_URLS,
+//     });
+//
+// }
+await Actor.init();
+const proxyConfiguration = await Actor.createProxyConfiguration({
+    checkAccess: true,
+    groups: ['RESIDENTIAL'],
+    countryCode: 'US',
+});
+const crawler = new PlaywrightCrawler({
+    requestHandler: router,
+    maxRequestsPerCrawl: appConfig.CRAWLER_MAX_REQUESTS_PER_CRAWL ?? undefined,
+    maxCrawlDepth: appConfig.CRAWLER_MAX_CRAWL_DEPTH,
+    maxConcurrency: appConfig.CRAWLER_MAX_CONCURRENCY,
+    maxRequestsPerMinute: appConfig.CRAWLER_MAX_REQUESTS_PER_MINUTE,
+    sameDomainDelaySecs: appConfig.CRAWLER_SAME_DOMAIN_DELAY_SECS,
+    maxRequestRetries: 1,
+    maxSessionRotations: 10,
+    requestHandlerTimeoutSecs: Math.floor(appConfig.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
+    navigationTimeoutSecs: Math.floor(appConfig.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
+    proxyConfiguration,
+    browserPoolOptions: {
+        // Disable the default fingerprint spoofing to avoid conflicts with Camoufox.
+        useFingerprints: false,
+    },
+    launchContext: {
+        launcher: firefox,
+        launchOptions: await launchOptions({
+            headless: true,
+            proxy: await proxyConfiguration?.newUrl(),
+            humanize: 1.5,
+            geoip: true,
+            locale: "en-US",
+            block_webrtc: true,
+        }),
+    },
+    postNavigationHooks: [
+        async ({ handleCloudflareChallenge }) => {
+            await handleCloudflareChallenge();
+        },
+    ],
+});
 
 // 5. Run the crawler with seed requests
 const startRequests = redditStartUrls.map(url => {
@@ -51,3 +97,5 @@ const startRequests = redditStartUrls.map(url => {
 log.info(`Starting crawl with ${startRequests.length} seed URLs.`, { seedCount: startRequests.length });
 await crawler.run(startRequests);
 log.info('Crawl finished.');
+
+await Actor.exit();

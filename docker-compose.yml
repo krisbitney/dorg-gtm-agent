@@ -37,19 +37,6 @@ services:
       - valkey
     restart: always
 
-  gtm-web-crawler:
-    build:
-      context: ./gtm-web-crawler
-      dockerfile: Dockerfile
-    container_name: gtm-web-crawler
-    environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
-      - REDIS_URL=redis://valkey:6379
-    depends_on:
-      - postgres
-      - valkey
-    restart: always
-
 volumes:
   postgres_data:
   valkey_data:

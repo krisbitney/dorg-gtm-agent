@@ -1,0 +1,10 @@
+process.env.WORKERS_PUBLIC_BASE_URL = "http://localhost:3000";
+process.env.TRIGGER_API_TOKEN = "test-token";
+process.env.APIFY_WEBHOOK_SECRET = "test-secret";
+process.env.DATABASE_URL = "postgresql://user:password@localhost:5432/gtm";
+process.env.REDIS_URL = "redis://localhost:6379";
+process.env.APIFY_TOKEN = "test-apify-token";
+process.env.APIFY_ACTOR_ID = "test-actor-id";
+process.env.GTM_AI_BASE_URL = "http://localhost:4111";
+process.env.DORG_API_TOKEN = "test-dorg-token";
+process.env.DORG_API_BASE_URL = "https://agentsofdorg.tech/api";

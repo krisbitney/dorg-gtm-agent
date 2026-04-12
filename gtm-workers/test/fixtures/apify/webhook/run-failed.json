@@ -1,0 +1,8 @@
+{
+  "eventType": "ACTOR.RUN.FAILED",
+  "actorId": "some-actor-id",
+  "apifyRunId": "some-run-id",
+  "status": "FAILED",
+  "defaultDatasetId": "some-dataset-id",
+  "finishedAt": "2024-03-21T12:00:00.000Z"
+}

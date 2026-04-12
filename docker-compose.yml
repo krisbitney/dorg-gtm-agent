@@ -37,6 +37,48 @@ services:
       - valkey
     restart: always
 
+  gtm-workers-api:
+    build:
+      context: ./gtm-workers
+      dockerfile: Dockerfile
+    container_name: gtm-workers-api
+    ports:
+      - "3000:3000"
+    environment:
+      - WORKERS_API_PORT=3000
+      - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
+      - REDIS_URL=redis://valkey:6379
+      - GTM_AI_BASE_URL=http://gtm-ai:4111
+      - WORKERS_PUBLIC_BASE_URL=${WORKERS_PUBLIC_BASE_URL}
+      - TRIGGER_API_TOKEN=${TRIGGER_API_TOKEN}
+      - APIFY_WEBHOOK_SECRET=${APIFY_WEBHOOK_SECRET}
+      - APIFY_TOKEN=${APIFY_TOKEN}
+      - APIFY_ACTOR_ID=${APIFY_ACTOR_ID}
+      - DORG_API_TOKEN=${DORG_API_TOKEN}
+    depends_on:
+      - postgres
+      - valkey
+    restart: always
+    command: api
+
+  gtm-workers-worker:
+    build:
+      context: ./gtm-workers
+      dockerfile: Dockerfile
+    container_name: gtm-workers-worker
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
+      - REDIS_URL=redis://valkey:6379
+      - GTM_AI_BASE_URL=http://gtm-ai:4111
+      - APIFY_TOKEN=${APIFY_TOKEN}
+      - DORG_API_TOKEN=${DORG_API_TOKEN}
+      - WORKER_CONCURRENCY=2
+    depends_on:
+      - postgres
+      - valkey
+    restart: always
+    command: worker
+
 volumes:
   postgres_data:
   valkey_data:

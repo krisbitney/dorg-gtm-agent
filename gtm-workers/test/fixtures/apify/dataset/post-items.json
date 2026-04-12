@@ -1,0 +1,20 @@
+[
+  {
+    "url": "https://www.reddit.com/r/web3/comments/12345/help_needed_with_smart_contracts/",
+    "username": "user123",
+    "content": "I'm looking for a developer to help me build a decentralized application.",
+    "postedAt": 1711022400000,
+    "nLikes": 10,
+    "nComments": 5,
+    "topic": "web3"
+  },
+  {
+    "url": "https://www.reddit.com/r/ethereum/comments/67890/new_layer_2_solution_announced/",
+    "username": "eth_fan",
+    "content": "A new Layer 2 solution was just announced today.",
+    "postedAt": 1711026000000,
+    "nLikes": 50,
+    "nComments": 15,
+    "topic": "ethereum"
+  }
+]

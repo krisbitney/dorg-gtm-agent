@@ -19,7 +19,27 @@ The service consists of two main runtimes:
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and fill in the required values.
+Required variables:
+
+- `WORKERS_API_PORT`: Port for the HTTP API (default: 3000)
+- `WORKERS_PUBLIC_BASE_URL`: Publicly accessible URL for Apify webhooks
+- `TRIGGER_API_TOKEN`: Secret token for authenticating trigger requests
+- `APIFY_WEBHOOK_SECRET`: Secret for authenticating Apify webhooks
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string
+- `APIFY_TOKEN`: Apify API token
+- `APIFY_ACTOR_ID`: ID of the crawler actor
+- `GTM_AI_BASE_URL`: Base URL for the GTM AI service
+- `DORG_API_TOKEN`: Token for dOrg API
+- `DORG_API_BASE_URL`: Base URL for dOrg API
+
+### Local Infrastructure
+
+Start the required services using Docker Compose from the root directory:
+
+```bash
+docker-compose up -d postgres valkey
+```
 
 ### Database Migrations
 

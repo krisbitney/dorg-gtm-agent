@@ -2,7 +2,6 @@ import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import { ProcessPostJob } from "./process-post-job.js";
 import { queuePayloadSchema } from "../schemas/queue-payload-schema.js";
 import { PostRepository } from "../storage/repositories/post-repository.js";
-import { appEnv } from "../config/app-env.js";
 
 /**
  * Use case to process leads from the Redis queue in a continuous loop.
@@ -21,13 +20,7 @@ export class ProcessQueueLoop {
   async execute() {
     console.log(`Worker starting with run ID: ${this.workerRunId}`);
 
-    // 1. Startup recovery: move stranded items back to main queue
-    if (appEnv.WORKER_REQUEUE_STALE_ON_STARTUP) {
-      console.log("Requeueing stale processing items...");
-      await this.leadQueue.requeueProcessing();
-    }
-
-    // 2. Main loop
+    // Main loop
     while (true) {
       let rawPayload = null;
       try {

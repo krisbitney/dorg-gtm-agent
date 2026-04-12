@@ -27,6 +27,7 @@ const envSchema = z.object({
   QUEUE_DLQ_NAME: z.string().default("gtm:posts:dlq"),
   PROCESSED_URLS_KEY: z.string().default("gtm:processed_urls"),
   
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(20),
   WORKER_REQUEUE_STALE_ON_STARTUP: z.preprocess((val) => val === "true" || val === true, z.boolean()).default(true),
 });

@@ -67,14 +67,16 @@ describe("Schemas", () => {
   describe("triggerCrawlRequestSchema", () => {
     test("should validate a valid trigger request", () => {
       const validRequest = {
+        platform: "reddit",
         source: "scheduler",
       };
       const result = triggerCrawlRequestSchema.safeParse(validRequest);
       expect(result.success).toBe(true);
     });
 
-    test("should use default value for missing source", () => {
+    test("should use default value for missing fields", () => {
       const result = triggerCrawlRequestSchema.parse({});
+      expect(result?.platform).toBe("reddit");
       expect(result?.source).toBe("manual");
     });
   });

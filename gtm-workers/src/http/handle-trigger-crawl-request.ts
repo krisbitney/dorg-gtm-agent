@@ -36,7 +36,10 @@ export async function handleTriggerCrawlRequest(request: Request) {
   const startCrawlRun = new StartApifyCrawlRun(apifyClient, crawlRunRepository);
 
   try {
-    const responseBody = await startCrawlRun.execute({ source: result.data?.source });
+    const responseBody = await startCrawlRun.execute({ 
+      platform: result.data.platform,
+      source: result.data.source 
+    });
     return Response.json(responseBody, { status: 202 });
   } catch (error) {
     console.error("Failed to start crawl run:", error);

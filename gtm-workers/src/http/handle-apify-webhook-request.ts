@@ -21,6 +21,12 @@ export async function handleApifyWebhookRequest(request: Request) {
   }
 
   // 2. Parse and validate the webhook body
+  const platform = url.searchParams.get("platform");
+  // TODO: handle unknown platform by figuring out which platform it is using known parsers
+  if (!platform) {
+    return new Response("Missing platform parameter", { status: 400 });
+  }
+
   let body;
   try {
     body = await request.json();
@@ -49,7 +55,7 @@ export async function handleApifyWebhookRequest(request: Request) {
   );
 
   try {
-    await importDataset.execute(result.data);
+    await importDataset.execute(result.data, platform);
     return new Response("OK", { status: 200 });
   } catch (error: any) {
     console.error("Failed to import dataset:", error);

@@ -4,7 +4,7 @@ import { PostRepository } from "../storage/repositories/post-repository.js";
 import type { ProcessedUrlStoreInterface } from "../storage/processed-url-store.js";
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import type { ApifyRunWebhook } from "../schemas/apify-run-webhook-schema.js";
-import { apifyRedditPostSchema } from "../schemas/apify-reddit-post-schema.js";
+import { getPlatformSchema } from "../schemas";
 import { CrawlRunStatus } from "../constants/crawl-run-status.js";
 
 /**
@@ -22,8 +22,10 @@ export class ImportApifyRunDataset {
   /**
    * Orchestrates fetching and importing dataset items into the database and queue.
    */
-  async execute(notification: ApifyRunWebhook) {
+  async execute(notification: ApifyRunWebhook, platform: string) {
     const { apifyRunId, actorId, status, defaultDatasetId } = notification;
+
+    const platformSchema = getPlatformSchema(platform);
 
     // 1. Upsert or find the run record
     let run = await this.crawlRunRepository.findByApifyRunId(apifyRunId);
@@ -85,9 +87,9 @@ export class ImportApifyRunDataset {
         counters.itemsRead++;
 
         // a. Validate item
-        const validationResult = apifyRedditPostSchema.safeParse(rawItem);
+        const validationResult = platformSchema.safeParse(rawItem);
         if (!validationResult.success) {
-          console.warn(`Invalid item in dataset ${datasetId}:`, validationResult.error.format());
+          console.warn(`Invalid item in dataset ${datasetId} for platform ${platform}:`, validationResult.error.format());
           counters.invalidItems++;
           continue;
         }
@@ -114,14 +116,14 @@ export class ImportApifyRunDataset {
           await this.postRepository.insert({
             id: postId,
             url: postData.url,
-            platform: "reddit",
+            platform,
             post: postData,
             apifyRunId,
             apifyDatasetId: datasetId,
           });
 
           // e. Publish to Redis queue
-          await this.leadQueue.enqueue(JSON.stringify({ id: postId, platform: "reddit" }));
+          await this.leadQueue.enqueue(JSON.stringify({ id: postId, platform }));
 
           // f. Permanently mark as processed
           await this.processedUrlStore.mark(postData.url);

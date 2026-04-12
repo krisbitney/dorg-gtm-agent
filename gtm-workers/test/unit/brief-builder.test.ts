@@ -17,8 +17,6 @@ describe("buildSurfaceBrief", () => {
     const brief = buildSurfaceBrief(post as any);
     
     expect(brief).toContain("Source: reddit (https://reddit.com/r/web3/123)");
-    expect(brief).toContain("Topic: web3");
-    expect(brief).toContain("User: user1");
     expect(brief).toContain("Why it's a fit:\nThey need smart contract help.");
     expect(brief).toContain("Needs:\nSmart contract developer.");
     expect(brief).toContain("Timing: Immediately");

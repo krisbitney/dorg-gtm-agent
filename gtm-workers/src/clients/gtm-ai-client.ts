@@ -7,13 +7,8 @@ import type { Post } from "../storage/schema/posts-table.js";
 export interface GtmAiInput {
   id: string;
   platform: string;
-  topic: string;
   url: string;
-  username: string | null;
-  content: string;
-  likes: number | null;
-  nComments: number | null;
-  postedAt: string; // ISO datetime
+  post: any;
 }
 
 /**
@@ -95,12 +90,7 @@ export function mapPostToAiInput(post: Post): GtmAiInput {
   return {
     id: post.id,
     platform: post.platform,
-    topic: post.topic,
     url: post.url,
-    username: post.username,
-    content: post.content,
-    postedAt: post.postedAt.toISOString(),
-    likes: post.likes,
-    nComments: post.nComments,
+    post: post.post,
   };
 }

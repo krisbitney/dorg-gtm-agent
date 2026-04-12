@@ -6,6 +6,7 @@ import { transformPostRequest, transformSubredditRequest } from './lib/route-hel
 import { detectBlock } from './lib/block-detection.js';
 import type { PostProcessor } from './services/post-processor.js';
 import {buildCrawlerLogContext} from "./lib/logging.js";
+import * as fs from "fs";
 
 /**
  * Creates the Playwright router for Reddit.
@@ -32,19 +33,29 @@ export function createRouter(postProcessor: PostProcessor) {
         }
 
         // 1. Get all post links on the current page
-        const postLinks = await page.$$eval('a', (links) => {
-            return links
-                .map(a => a.href)
-                .filter(href => href.includes('/comments/'));
-        });
+        // TODO: why am i being served a "blocked" page
+        await page.waitForLoadState('domcontentloaded');
+        await page.waitForSelector('body');
+        await page.waitForFunction(() => document.querySelectorAll('a').length > 1);
 
-        // Use a Set to get unique URLs on the page (e.g. title and comments links)
-        const uniquePostUrls = [...new Set(postLinks)];
+        fs.writeFileSync("test.html", await page.content());
+
+        // debug logs
+        const allLinks = await page.locator('a').count();
+        const commentLinks = await page.locator('a[href*="/comments/"]').count();
+        log.info("issue", { allLinks, commentLinks, url: page.url() });
+
+        const postLinks = await page.locator('a[href*="/comments/"]').evaluateAll((links) => {
+            return [...new Set(
+              links.map((a) => (a as HTMLAnchorElement).href)
+            )];
+        });
+        log.info(`Found ${postLinks.length} post links on page ${pageNumber}`)
 
         const linksToEnqueue = [];
         let duplicateFound = false;
 
-        for (const url of uniquePostUrls) {
+        for (const url of postLinks) {
             if (await postProcessor.isDuplicate(url)) {
                 log.info(`Duplicate post encountered`, buildCrawlerLogContext(topic, url, { isDuplicate: true }));
                 duplicateFound = true;
@@ -54,6 +65,9 @@ export function createRouter(postProcessor: PostProcessor) {
             } else {
                 linksToEnqueue.push(url);
             }
+        }
+        if (duplicateFound && appConfig.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
+            log.info(`Stopping pagination because a duplicate post was encountered`, buildCrawlerLogContext(topic, request.url, { stopOnDuplicate: true }));
         }
 
         // 2. Enqueue the discovered posts
@@ -75,9 +89,7 @@ export function createRouter(postProcessor: PostProcessor) {
         }
 
         // 3. Handle pagination
-        if (duplicateFound && appConfig.CRAWLER_SUBREDDIT_STOP_ON_DUPLICATE) {
-            log.info(`Stopping pagination because a duplicate post was encountered`, buildCrawlerLogContext(topic, request.url, { stopOnDuplicate: true }));
-        }
+        // TODO: NEED TO NAVIGATE TO NEXT PAGE
     });
 
     /**

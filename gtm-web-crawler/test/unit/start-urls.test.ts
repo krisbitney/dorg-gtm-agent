@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { redditStartUrls } from "../../src/start-urls";
+import { redditStartUrls } from "../../src/constants/start-urls.ts";
 
 describe("redditStartUrls", () => {
   test("every seed URL is a valid Reddit subreddit URL", () => {

@@ -2,7 +2,7 @@
 import { PlaywrightCrawler, log } from 'crawlee';
 
 import { createRouter } from './routes.js';
-import { redditStartUrls } from "./start-urls.js";
+import { redditStartUrls } from "./constants/start-urls.js";
 import { appConfig } from "./config/appConfig.js";
 import { PostProcessor } from "./services/post-processor.js";
 import { extractSubredditName } from "./lib/reddit-url.js";

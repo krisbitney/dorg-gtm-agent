@@ -49,7 +49,10 @@ export async function buildCrawlerOptions(
             launcher: firefox,
             launchOptions: await launchOptions({
                 headless: config.CRAWLER_HEADLESS,
+                humanize: 1.5,
                 geoip: true,
+                locale: "en-US",
+                block_webrtc: true,
             }),
         },
         postNavigationHooks: [

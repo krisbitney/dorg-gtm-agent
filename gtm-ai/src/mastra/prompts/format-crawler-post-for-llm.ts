@@ -1,27 +1,14 @@
 import { CrawlerPostInput } from "../schemas/crawler-post-input-schema";
-
-export const MAX_CONTENT_LENGTH = 50_000;
+import { formatRedditPost } from "./platform-formatters/reddit";
 
 /**
  * Formats a crawler post into a deterministic text block for LLM prompts.
  */
-export const formatCrawlerPostForLLM = (post: CrawlerPostInput): string => {
-  const content =
-    post.content.length > MAX_CONTENT_LENGTH
-      ? `${post.content.slice(0, MAX_CONTENT_LENGTH)} [TRUNCATED]`
-      : post.content;
-
-  return `
-Post ID: ${post.id}
-Platform: ${post.platform}
-Topic: ${post.topic}
-URL: ${post.url}
-Username: ${post.username ?? "unknown"}
-Likes: ${post.likes ?? 0}
-Comments: ${post.nComments ?? 0}
-Posted At: ${post.postedAt}
-
-Content:
-${content}
-`.trim();
+export const formatCrawlerPostForLLM = (input: CrawlerPostInput): string => {
+  switch (input.platform) {
+    case "reddit":
+      return formatRedditPost(input.id, input.url, input.post);
+    default:
+      throw new Error(`Unsupported platform for prompt formatting: ${input.platform}`);
+  }
 };

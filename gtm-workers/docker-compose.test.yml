@@ -21,6 +21,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: always
 
+  gtm-ai:
+    build:
+      context: ../gtm-ai
+      dockerfile: Dockerfile
+    container_name: gtm-ai
+    ports:
+      - "4111:4111"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
+      - REDIS_URL=redis://valkey:6379
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+    depends_on:
+      - postgres
+      - valkey
+    restart: always
+
 volumes:
   postgres_data:
   valkey_data:

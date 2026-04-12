@@ -16,7 +16,7 @@ export function createRouter() {
      * Handler for subreddit listing pages.
      * Discovers post links and enqueues them.
      */
-    router.addHandler(ROUTE_LABELS.SUBREDDIT, async ({ enqueueLinks, request, log }) => {
+    router.addHandler(ROUTE_LABELS.SUBREDDIT, async ({ page, enqueueLinks, request, log }) => {
         const topic = request.userData.topic || extractSubredditName(request.url);
         const pageNumber = request.userData.pageNumber || 1;
         log.info(`Processing subreddit`, buildCrawlerLogContext(topic, request.url, { pageNumber }));
@@ -24,7 +24,7 @@ export function createRouter() {
         // 1. Enqueue posts
             log.info(`Enqueuing new posts`, buildCrawlerLogContext(topic, request.url));
             await enqueueLinks({
-                urls: "a[href*=\"/comments/\"",
+                selector: 'a[href*="/comments/"]',
                 label: ROUTE_LABELS.POST,
                 transformRequestFunction: (req) => {
                     const transformed = transformPostRequest(req.url, topic);
@@ -38,7 +38,25 @@ export function createRouter() {
             });
 
         // 3. Handle pagination
-        // TODO: NEED TO NAVIGATE TO NEXT PAGE
+        const nextPageUrl = await page.locator('span.next-button > a').first().getAttribute('href');
+        if (nextPageUrl) {
+            log.info(`Enqueuing next subreddit page`, buildCrawlerLogContext(topic, nextPageUrl, { pageNumber: pageNumber + 1 }));
+            await enqueueLinks({
+                urls: [nextPageUrl],
+                label: ROUTE_LABELS.SUBREDDIT,
+                transformRequestFunction: (req) => {
+                    const transformed = transformSubredditRequest(req.url, pageNumber + 1);
+                    if (transformed) {
+                        req.userData = transformed.userData;
+                        req.uniqueKey = transformed.uniqueKey;
+                        return req;
+                    }
+                    return false;
+                },
+            });
+        } else {
+            log.info(`No next page found`, buildCrawlerLogContext(topic, request.url, { pageNumber }));
+        }
     });
 
     /**

@@ -3,6 +3,13 @@
 # You can also use any other image from Docker Hub.
 FROM apify/actor-node-playwright-camoufox:24-1.58.2 AS builder
 
+# Install prerequisites for Bun
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
+USER myuser
+
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
 ENV BUN_INSTALL="/home/myuser/.bun"

@@ -1,44 +1,38 @@
 
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
-import { LibSQLStore } from '@mastra/libsql';
-import { DuckDBStore } from "@mastra/duckdb";
-import { MastraCompositeStore } from '@mastra/core/storage';
-import { Observability, DefaultExporter, CloudExporter, SensitiveDataFilter } from '@mastra/observability';
-import { weatherWorkflow } from './workflows/weather-workflow';
-import { weatherAgent } from './agents/weather-agent';
-import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } from './scorers/weather-scorer';
 
+import { leadScoreWorkflow } from './workflows/lead-score-workflow';
+import { leadAnalysisWorkflow } from './workflows/lead-analysis-workflow';
+import { leadScoreAgent } from './agents/lead-score-agent';
+import { leadAnalysisAgent } from './agents/lead-analysis-agent';
+import { leadScoreAccuracyScorer } from './scorers/lead-score-accuracy-scorer';
+import { leadAnalysisCompletenessScorer } from './scorers/lead-analysis-completeness-scorer';
+import { createStorage } from './storage/create-storage';
+import { createObservability } from './observability/create-observability';
+import { appEnv } from './config/app-env';
+
+/**
+ * Main Mastra instance for the GTM AI service.
+ * Composes all workflows, agents, storage, and observability.
+ */
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
-  agents: { weatherAgent },
-  scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
-  storage: new MastraCompositeStore({
-    id: 'composite-storage',
-    default: new LibSQLStore({
-      id: "mastra-storage",
-      url: "file:./mastra.db",
-    }),
-    domains: {
-      observability: await new DuckDBStore().getStore('observability'),
-    }
-  }),
+  workflows: { 
+    leadScoreWorkflow,
+    leadAnalysisWorkflow,
+  },
+  agents: { 
+    leadScoreAgent,
+    leadAnalysisAgent,
+  },
+  scorers: {
+    leadScoreAccuracyScorer,
+    leadAnalysisCompletenessScorer,
+  },
+  storage: await createStorage(),
   logger: new PinoLogger({
     name: 'Mastra',
-    level: 'info',
+    level: appEnv.MASTRA_LOG_LEVEL,
   }),
-  observability: new Observability({
-    configs: {
-      default: {
-        serviceName: 'mastra',
-        exporters: [
-          new DefaultExporter(), // Persists traces to storage for Mastra Studio
-          new CloudExporter(), // Sends traces to Mastra Cloud (if MASTRA_CLOUD_ACCESS_TOKEN is set)
-        ],
-        spanOutputProcessors: [
-          new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
-        ],
-      },
-    },
-  }),
+  observability: createObservability(),
 });

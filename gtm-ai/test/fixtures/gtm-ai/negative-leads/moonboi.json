@@ -1,0 +1,16 @@
+{
+  "id": "n1",
+  "platform": "reddit",
+  "topic": "web3",
+  "url": "https://reddit.com/r/web3/2",
+  "username": "moonboi",
+  "content": "wen moon? $GIGA is going to 100x soon! LFG 🚀🚀🚀",
+  "ageText": "5 minutes ago",
+  "likes": 1,
+  "nComments": 0,
+  "capturedAt": "2024-04-12T13:00:00Z",
+  "expected": {
+    "isLead": false,
+    "leadProbability": 0.0
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "p1",
+  "platform": "reddit",
+  "topic": "web3",
+  "url": "https://reddit.com/r/web3/1",
+  "username": "builder123",
+  "content": "I'm looking for a dev shop to build a DAO governance protocol. We have budget and want to start next month.",
+  "ageText": "1 day ago",
+  "likes": 50,
+  "nComments": 20,
+  "capturedAt": "2024-04-12T10:00:00Z",
+  "expected": {
+    "isLead": true,
+    "needs": "DAO governance protocol",
+    "timing": "next month"
+  }
+}

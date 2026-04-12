@@ -17,17 +17,17 @@ export function createRouter() {
      * Discovers post links and enqueues them.
      */
     router.addHandler(ROUTE_LABELS.SUBREDDIT, async ({ page, enqueueLinks, request, log }) => {
-        const topic = request.userData.topic || extractSubredditName(request.url);
+        const subreddit = request.userData.subreddit || extractSubredditName(request.url);
         const pageNumber = request.userData.pageNumber || 1;
-        log.info(`Processing subreddit`, buildCrawlerLogContext(topic, request.url, { pageNumber }));
+        log.info(`Processing subreddit`, buildCrawlerLogContext(subreddit, request.url, { pageNumber }));
 
         // 1. Enqueue posts
-            log.info(`Enqueuing new posts`, buildCrawlerLogContext(topic, request.url));
+            log.info(`Enqueuing new posts`, buildCrawlerLogContext(subreddit, request.url));
             await enqueueLinks({
                 selector: 'a[href*="/comments/"]',
                 label: ROUTE_LABELS.POST,
                 transformRequestFunction: (req) => {
-                    const transformed = transformPostRequest(req.url, topic);
+                    const transformed = transformPostRequest(req.url, subreddit);
                     if (transformed) {
                         req.userData = transformed.userData;
                         req.uniqueKey = transformed.uniqueKey;
@@ -40,7 +40,7 @@ export function createRouter() {
         // 3. Handle pagination
         const nextPageUrl = await page.locator('span.next-button > a').first().getAttribute('href');
         if (nextPageUrl) {
-            log.info(`Enqueuing next subreddit page`, buildCrawlerLogContext(topic, nextPageUrl, { pageNumber: pageNumber + 1 }));
+            log.info(`Enqueuing next subreddit page`, buildCrawlerLogContext(subreddit, nextPageUrl, { pageNumber: pageNumber + 1 }));
             await enqueueLinks({
                 urls: [nextPageUrl],
                 label: ROUTE_LABELS.SUBREDDIT,
@@ -55,7 +55,7 @@ export function createRouter() {
                 },
             });
         } else {
-            log.info(`No next page found`, buildCrawlerLogContext(topic, request.url, { pageNumber }));
+            log.info(`No next page found`, buildCrawlerLogContext(subreddit, request.url, { pageNumber }));
         }
     });
 
@@ -65,14 +65,14 @@ export function createRouter() {
      */
     router.addHandler(ROUTE_LABELS.POST, async ({ page, request, log }) => {
         const url = page.url();
-        const topic = request.userData.topic;
-        log.info(`Processing post`, buildCrawlerLogContext(topic, url));
+        const subreddit = request.userData.subreddit;
+        log.info(`Processing post`, buildCrawlerLogContext(subreddit, url));
 
         const html = await page.content();
         const canonicalUrl = canonicalizePostUrl(url);
-        const extracted = parsePostPage(html, topic);
+        const extracted = parsePostPage(html, subreddit);
         if (!extracted) {
-            log.error(`Failed to parse post content. The page shape might have changed.`, buildCrawlerLogContext(topic, canonicalUrl));
+            log.error(`Failed to parse post content. The page shape might have changed.`, buildCrawlerLogContext(subreddit, canonicalUrl));
             return;
         }
         const record: RedditPost = {
@@ -80,7 +80,7 @@ export function createRouter() {
             url: canonicalUrl,
         };
         await Dataset.pushData(record);
-        log.info(`Post processing result`, buildCrawlerLogContext(topic, url, { record }));
+        log.info(`Post processing result`, buildCrawlerLogContext(subreddit, url, { record }));
     });
 
     /**

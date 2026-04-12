@@ -5,7 +5,7 @@ import { z } from "zod";
  */
 export const queuePayloadSchema = z.object({
   id: z.string().uuid(),
-  platform: z.literal("reddit"),
+  platform: z.string(),
 });
 
 export type QueuePayload = z.infer<typeof queuePayloadSchema>;

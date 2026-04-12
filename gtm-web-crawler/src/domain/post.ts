@@ -7,7 +7,7 @@ export interface ExtractedRedditPost {
   postedAt: number; // unix timestamp
   nLikes: number; // number of upvotes
   nComments: number; // number of comments
-  topic: string; // subreddit
+  subreddit: string;
 }
 
 /**
@@ -20,5 +20,5 @@ export interface RedditPost {
   postedAt: number; // unix timestamp
   nLikes: number; // number of upvotes
   nComments: number; // number of comments
-  topic: string; // subreddit
+  subreddit: string;
 }

@@ -57,11 +57,11 @@ const crawler = new PlaywrightCrawler({
 
 // 5. Run the crawler with seed requests
 const startRequests = redditStartUrls.map(url => {
-    const topic = extractSubredditName(url) || 'unknown';
+    const subreddit = extractSubredditName(url) || 'unknown';
     return {
         url,
         label: ROUTE_LABELS.SUBREDDIT,
-        userData: createSubredditUserData(topic),
+        userData: createSubredditUserData(subreddit),
         uniqueKey: getSubredditUniqueKey(url),
     };
 });

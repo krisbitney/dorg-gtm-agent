@@ -82,10 +82,10 @@ export function extractCommentCount($: cheerio.CheerioAPI): number | null {
 }
 
 /**
- * Extracts the topic (subreddit name) from the page.
+ * Extracts the subreddit from the page.
  * @param $ Cheerio API instance.
  */
-export function extractTopicFromPage($: cheerio.CheerioAPI): string | null {
+export function extractSubredditFromPage($: cheerio.CheerioAPI): string | null {
   const subredditLink = $(".thing.link .tagline a.subreddit").first().text();
   if (subredditLink) {
     // Expected format: r/CryptoCurrency
@@ -98,9 +98,9 @@ export function extractTopicFromPage($: cheerio.CheerioAPI): string | null {
 /**
  * Parses a complete Reddit post detail page.
  * @param html The HTML content of the page.
- * @param fallbackTopic Optional topic to use if extraction fails.
+ * @param fallbackSubreddit Optional subreddit to use if extraction fails.
  */
-export function parsePostPage(html: string, fallbackTopic?: string): ExtractedRedditPost | null {
+export function parsePostPage(html: string, fallbackSubreddit?: string): ExtractedRedditPost | null {
   const $ = cheerio.load(html);
   
   const username = extractAuthor($);
@@ -108,9 +108,9 @@ export function parsePostPage(html: string, fallbackTopic?: string): ExtractedRe
   const postedAt = extractPostTimestamp($);
   const nLikes = extractScore($) ?? 0;
   const nComments = extractCommentCount($) ?? 0;
-  const topic = extractTopicFromPage($) || fallbackTopic;
+  const subreddit = extractSubredditFromPage($) || fallbackSubreddit;
   
-  if (!username || !content || !postedAt || !topic) {
+  if (!username || !content || !postedAt || !subreddit) {
     return null;
   }
   
@@ -120,6 +120,6 @@ export function parsePostPage(html: string, fallbackTopic?: string): ExtractedRe
     postedAt,
     nLikes,
     nComments,
-    topic,
+    subreddit,
   };
 }

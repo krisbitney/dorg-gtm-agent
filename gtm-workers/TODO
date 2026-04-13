@@ -10,3 +10,4 @@ hash the entire object because properties like "number of likes" can change inde
 - [ ] We should attempt to parse posts using the expected schema when importing the dataset in order to obtain the url
 and post origination date. We should also filter posts by origination date to avoid importing old posts.
 - [ ] Support graceful shutdown for workers
+- [ ] Add separate package.json scripts for unit and integration test suites so that unit tests can run without infrastructure dependencies

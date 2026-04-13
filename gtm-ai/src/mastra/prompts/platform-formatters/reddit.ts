@@ -1,6 +1,6 @@
-import { RedditPostSchema } from "../../schemas/platform-schemas";
+// import { RedditPostSchema } from "../../schemas/platform-schemas";
 
-const MAX_CONTENT_LENGTH = 50_000;
+// const MAX_CONTENT_LENGTH = 50_000;
 
 /**
  * Formats a Reddit post into a text block for LLM prompts.

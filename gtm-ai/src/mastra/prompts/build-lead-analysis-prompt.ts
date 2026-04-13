@@ -29,10 +29,10 @@ Your job is to analyze a social media post and determine if it's a lead for our 
 Lead example:
 { 
   "isLead": true, 
-  "whyFit": "They need smart contract and frontend help for a new DeFi app.", 
-  "needs": "Smart contract + web3 frontend development", 
-  "timing": "ASAP", 
-  "contactInfo": "Reddit: u/web3entrepreneur; Discord: founder_xyz" 
+  "whyFit": "The poster is launching a DeFi product and explicitly asks for external engineering support across protocol and app layers, which closely matches dOrg's smart contract and full-stack web3 services.", 
+  "needs": "Smart contract architecture + Solidity implementation, security review, and a production-ready web3 frontend with wallet integration", 
+  "timing": "Wants to begin this month and ship an MVP within 6-8 weeks", 
+  "contactInfo": "Reddit: u/web3entrepreneur; Discord: founder_xyz; Email: founder@example.com" 
 }
 
 Not-a-lead example:

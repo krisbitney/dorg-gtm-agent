@@ -22,8 +22,8 @@ const appConfig = inputSchema.parse(input);
 
 const proxyConfiguration = await Actor.createProxyConfiguration({
     checkAccess: true,
-    groups: ['RESIDENTIAL'],
-    countryCode: 'US',
+    // groups: ['RESIDENTIAL'],
+    // countryCode: 'US',
 });
 const crawler = new PlaywrightCrawler({
     requestHandler: router,

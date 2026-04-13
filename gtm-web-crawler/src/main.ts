@@ -3,7 +3,7 @@ import { PlaywrightCrawler, log } from 'crawlee';
 
 import { createRouter } from './routes.js';
 import { redditStartUrls } from "./constants/start-urls.js";
-import { appConfig } from "./config/appConfig.js";
+import { inputSchema } from "./config/appConfig.js";
 import { extractSubredditName } from "./lib/reddit-url.js";
 import { ROUTE_LABELS } from "./constants/route-labels.js";
 import { createSubredditUserData, getSubredditUniqueKey } from "./lib/request-metadata.js";
@@ -16,6 +16,10 @@ const router = createRouter();
 
 // 4. Configure the crawler
 await Actor.init();
+
+const input = await Actor.getInput() || {};
+const appConfig = inputSchema.parse(input);
+
 const proxyConfiguration = await Actor.createProxyConfiguration({
     checkAccess: true,
     groups: ['RESIDENTIAL'],
@@ -23,15 +27,15 @@ const proxyConfiguration = await Actor.createProxyConfiguration({
 });
 const crawler = new PlaywrightCrawler({
     requestHandler: router,
-    maxRequestsPerCrawl: appConfig.CRAWLER_MAX_REQUESTS_PER_CRAWL ?? undefined,
-    maxCrawlDepth: appConfig.CRAWLER_MAX_CRAWL_DEPTH,
-    maxConcurrency: appConfig.CRAWLER_MAX_CONCURRENCY,
-    maxRequestsPerMinute: appConfig.CRAWLER_MAX_REQUESTS_PER_MINUTE,
-    sameDomainDelaySecs: appConfig.CRAWLER_SAME_DOMAIN_DELAY_SECONDS,
-    maxRequestRetries: 1,
-    maxSessionRotations: 10,
-    requestHandlerTimeoutSecs: Math.floor(appConfig.CRAWLER_REQUEST_TIMEOUT_MS / 1000),
-    navigationTimeoutSecs: Math.floor(appConfig.CRAWLER_NAVIGATION_TIMEOUT_MS / 1000),
+    maxRequestsPerCrawl: appConfig.maxRequestsPerCrawl,
+    maxCrawlDepth: appConfig.maxCrawlDepth,
+    maxConcurrency: appConfig.maxConcurrency,
+    maxRequestsPerMinute: appConfig.maxRequestsPerMinute,
+    sameDomainDelaySecs: appConfig.sameDomainDelaySecs,
+    maxRequestRetries: appConfig.maxRequestRetries,
+    maxSessionRotations: appConfig.maxSessionRotations,
+    requestHandlerTimeoutSecs: Math.floor(appConfig.requestTimeoutMs / 1000),
+    navigationTimeoutSecs: Math.floor(appConfig.navigationTimeoutMs / 1000),
     proxyConfiguration,
     browserPoolOptions: {
         // Disable the default fingerprint spoofing to avoid conflicts with Camoufox.
@@ -56,7 +60,7 @@ const crawler = new PlaywrightCrawler({
 });
 
 // 5. Run the crawler with seed requests
-const startRequests = redditStartUrls.map(url => {
+const startRequests = (appConfig.startUrls || redditStartUrls).map(url => {
     const subreddit = extractSubredditName(url) || 'unknown';
     return {
         url,

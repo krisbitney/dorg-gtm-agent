@@ -1,23 +1,19 @@
 import { z } from "zod";
 
 /**
- * Zod schema for the crawler configuration.
+ * Zod schema for the crawler configuration as Apify Actor input.
  */
-export const configSchema = z.object({
-  CRAWLER_MAX_CRAWL_DEPTH: z.coerce.number().int().positive().default(5),
-  CRAWLER_MAX_REQUESTS_PER_CRAWL: z.coerce.number().int().positive().optional(),
-  CRAWLER_MAX_REQUESTS_PER_MINUTE: z.coerce.number().int().positive().default(20),
-  CRAWLER_SAME_DOMAIN_DELAY_SECONDS: z.coerce.number().int().positive().default(3),
-  CRAWLER_MAX_CONCURRENCY: z.coerce.number().int().positive().default(1),
-  CRAWLER_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
-  CRAWLER_NAVIGATION_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+export const inputSchema = z.object({
+  startUrls: z.array(z.url()),
+  maxCrawlDepth: z.number().int().positive().default(10),
+  maxRequestsPerCrawl: z.number().int().positive().optional(),
+  maxRequestsPerMinute: z.number().int().positive().optional(),
+  sameDomainDelaySecs: z.number().int().positive().optional(),
+  maxConcurrency: z.number().int().positive().optional(),
+  maxRequestRetries: z.number().int().nonnegative().optional(),
+  maxSessionRotations: z.number().int().nonnegative().optional(),
+  requestTimeoutMs: z.number().int().positive().default(60_000),
+  navigationTimeoutMs: z.number().int().positive().default(60_000),
 });
 
-export type AppConfig = z.infer<typeof configSchema>;
-
-/**
- * Validated configuration object loaded from environment variables.
- */
-export const appConfig = process.env.NODE_ENV === "test"
-  ? {} as AppConfig
-  : configSchema.parse(process.env);
+export type ActorInput = z.infer<typeof inputSchema>;

@@ -19,7 +19,11 @@ await Actor.init();
 const input = await Actor.getInput() || {};
 const appConfig = inputSchema.parse(input);
 
-const proxyConfiguration = await Actor.createProxyConfiguration();
+const proxyConfiguration = await Actor.createProxyConfiguration({
+    checkAccess: true,
+    useApifyProxy: true,
+    apifyProxyGroups: ["BUYPROXIES94952"]
+});
 const crawler = new PlaywrightCrawler({
     requestHandler: router,
     maxRequestsPerCrawl: appConfig.maxRequestsPerCrawl,

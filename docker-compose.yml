@@ -44,6 +44,8 @@ services:
       - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
       - REDIS_URL=redis://valkey:6379
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+      - GTM_SMALL_MODEL=ollama-cloud/gemma4:31b
+      - GTM_ANALYSIS_MODEL=ollama-cloud/gemma4:31b
     depends_on:
       postgres:
         condition: service_healthy

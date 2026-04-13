@@ -49,11 +49,10 @@ services:
       - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
       - REDIS_URL=redis://valkey:6379
       - GTM_AI_BASE_URL=http://gtm-ai:4111
-      - WORKERS_PUBLIC_BASE_URL=${WORKERS_PUBLIC_BASE_URL}
-      - TRIGGER_API_TOKEN=${TRIGGER_API_TOKEN}
-      - APIFY_WEBHOOK_SECRET=${APIFY_WEBHOOK_SECRET}
+      - WORKERS_PUBLIC_BASE_URL=http://localhost:3000
+      - TRIGGER_API_TOKEN=1234567890
+      - APIFY_WEBHOOK_SECRET=1234567890
       - APIFY_TOKEN=${APIFY_TOKEN}
-      - APIFY_ACTOR_ID=${APIFY_ACTOR_ID}
       - DORG_API_TOKEN=${DORG_API_TOKEN}
     depends_on:
       - postgres
@@ -72,7 +71,6 @@ services:
       - GTM_AI_BASE_URL=http://gtm-ai:4111
       - APIFY_TOKEN=${APIFY_TOKEN}
       - DORG_API_TOKEN=${DORG_API_TOKEN}
-      - WORKER_CONCURRENCY=2
     depends_on:
       - postgres
       - valkey

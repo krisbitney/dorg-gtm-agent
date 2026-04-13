@@ -3,7 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   WORKERS_API_HOST: z.string().default("0.0.0.0"),
   WORKERS_API_PORT: z.coerce.number().default(3000),
-  WORKERS_PUBLIC_BASE_URL: z.string().url(),
+  WORKERS_PUBLIC_BASE_URL: z.url(),
   
   TRIGGER_API_TOKEN: z.string().min(1),
   APIFY_WEBHOOK_SECRET: z.string().min(1),
@@ -12,13 +12,12 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1),
   
   DORG_API_TOKEN: z.string().min(1),
-  DORG_API_BASE_URL: z.string().url().default("https://agentsofdorg.tech/api"),
+  DORG_API_BASE_URL: z.url().default("https://agentsofdorg.tech/api"),
   
   APIFY_TOKEN: z.string().min(1),
-  APIFY_ACTOR_ID: z.string().min(1),
   APIFY_RUN_TIMEOUT_SECONDS: z.coerce.number().default(3600),
   
-  GTM_AI_BASE_URL: z.string().url(),
+  GTM_AI_BASE_URL: z.url(),
   GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000),
   LEAD_SCORE_THRESHOLD: z.coerce.number().default(0.7),
   

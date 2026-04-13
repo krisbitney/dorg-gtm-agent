@@ -15,9 +15,9 @@ export class StartApifyCrawlRun {
   /**
    * Orchestrates starting the actor and recording the run in the database.
    */
-  async execute(options: { platform: string, actorId?: string, source?: string, input?: Record<string, any> }) {
+  async execute(options: { platform: string, actorId: string, source?: string, input?: Record<string, any> }) {
     const webhookUrl = `${appEnv.WORKERS_PUBLIC_BASE_URL}${RoutePaths.APIFY_WEBHOOK}?platform=${options.platform}`;
-    const actorId = options.actorId || appEnv.APIFY_ACTOR_ID;
+    const actorId = options.actorId;
 
     // 1. Start the actor asynchronously
     const run = await this.apifyClient.startActor({

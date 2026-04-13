@@ -28,7 +28,6 @@ Required variables:
 - `DATABASE_URL`: PostgreSQL connection string
 - `REDIS_URL`: Redis connection string
 - `APIFY_TOKEN`: Apify API token
-- `APIFY_ACTOR_ID`: ID of the crawler actor
 - `GTM_AI_BASE_URL`: Base URL for the GTM AI service
 - `DORG_API_TOKEN`: Token for dOrg API
 - `DORG_API_BASE_URL`: Base URL for dOrg API

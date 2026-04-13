@@ -4,7 +4,7 @@ import { PlaywrightCrawler, log } from 'crawlee';
 import { createRouter } from './routes.js';
 import { redditStartUrls } from "./constants/start-urls.js";
 import { inputSchema } from "./config/appConfig.js";
-import { extractSubredditName } from "./lib/reddit-url.js";
+import {extractSubredditName, isSubredditUrl} from "./lib/reddit-url.js";
 import { ROUTE_LABELS } from "./constants/route-labels.js";
 import { createSubredditUserData, getSubredditUniqueKey } from "./lib/request-metadata.js";
 import { Actor } from 'apify';
@@ -60,7 +60,11 @@ const crawler = new PlaywrightCrawler({
 });
 
 // 5. Run the crawler with seed requests
-const startRequests = (appConfig.startUrls || redditStartUrls).map(url => {
+const startRequests = appConfig.startUrls.filter((url) => {
+    if (isSubredditUrl(url)) return true;
+    log.warning(`startUrl ${url} is not a subreddit URL. Skipping.`)
+    return false;
+}).map(url => {
     const subreddit = extractSubredditName(url) || 'unknown';
     return {
         url,

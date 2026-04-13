@@ -28,7 +28,7 @@ describe("Trigger Flow Integration", () => {
   });
 
   test("should start a crawl run and record it", async () => {
-    const result = await startCrawlRun.execute({ source: "scheduler" });
+    const result = await startCrawlRun.execute({ platform: "reddit", source: "scheduler" });
     
     expect(result.apifyRunId).toBe("fake-run-id");
     expect(result.status).toBe("RUNNING");

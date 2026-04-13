@@ -69,7 +69,7 @@ describe("Webhook Flow Integration", () => {
       actorId: "actor-id",
       apifyRunId: "run-id",
       status: "SUCCEEDED"
-    });
+    }, "reddit");
 
     // 3. Verify results
     const run = await crawlRunRepository.findByApifyRunId("run-id");

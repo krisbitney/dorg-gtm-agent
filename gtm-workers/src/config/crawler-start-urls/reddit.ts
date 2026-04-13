@@ -1,4 +1,4 @@
-export const redditStartUrls = [
+export const oldRedditWeb3SubredditUrls = [
   "https://old.reddit.com/r/CryptoCurrency/new/",
   "https://old.reddit.com/r/Bitcoin/new/",
   "https://old.reddit.com/r/ethereum/new/",

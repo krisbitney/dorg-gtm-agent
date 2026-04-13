@@ -52,10 +52,12 @@ describe("Worker Flow Integration", () => {
       id: postId,
       url: "https://reddit.com/r/test/1",
       platform: "reddit",
-      topic: "test",
-      username: "user1",
-      content: "I need help with my DAO",
-      postedAt: new Date(),
+      post: {
+        topic: "test",
+        username: "user1",
+        content: "I need help with my DAO",
+        postedAt: new Date().toISOString(),
+      },
       status: PostStatus.PENDING
     });
 
@@ -76,10 +78,12 @@ describe("Worker Flow Integration", () => {
       id: postId,
       url: "https://reddit.com/r/test/2",
       platform: "reddit",
-      topic: "test",
-      username: "user1",
-      content: "Low probability content",
-      postedAt: new Date(),
+      post: {
+        topic: "test",
+        username: "user1",
+        content: "Low probability content",
+        postedAt: new Date().toISOString(),
+      },
       status: PostStatus.PENDING
     });
 

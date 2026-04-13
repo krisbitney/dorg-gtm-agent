@@ -9,6 +9,7 @@ export interface ApifyCrawlerClientInterface {
     actorId: string;
     webhookUrl: string;
     webhookSecret: string;
+    input?: Record<string, any>;
   }): Promise<{
     id: string;
     actorId: string;
@@ -36,10 +37,12 @@ export class ApifyCrawlerClient implements ApifyCrawlerClientInterface {
     actorId,
     webhookUrl,
     webhookSecret,
+    input,
   }: {
     actorId: string;
     webhookUrl: string;
     webhookSecret: string;
+    input?: Record<string, any>;
   }) {
     // We use a custom payload template to match our ApifyRunWebhook schema
     const payloadTemplate = JSON.stringify({
@@ -51,7 +54,7 @@ export class ApifyCrawlerClient implements ApifyCrawlerClientInterface {
       finishedAt: "{{resource.finishedAt}}",
     });
 
-    const run = await this.client.actor(actorId).start(undefined, {
+    const run = await this.client.actor(actorId).start(input, {
       webhooks: [
         {
           eventTypes: [

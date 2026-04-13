@@ -25,10 +25,12 @@ describe("Repositories", () => {
         id: postId,
         url: `https://reddit.com/r/test/${Bun.randomUUIDv7()}`,
         platform: "reddit",
-        topic: "test",
-        username: "testuser",
-        content: "test content",
-        postedAt: new Date(),
+        post: {
+          topic: "test",
+          username: "testuser",
+          content: "test content",
+          postedAt: new Date().toISOString(),
+        },
         status: PostStatus.PENDING,
       });
 
@@ -44,10 +46,12 @@ describe("Repositories", () => {
         id,
         url: `https://reddit.com/r/test/${Bun.randomUUIDv7()}`,
         platform: "reddit",
-        topic: "test",
-        username: "testuser",
-        content: "test content",
-        postedAt: new Date(),
+        post: {
+          topic: "test",
+          username: "testuser",
+          content: "test content",
+          postedAt: new Date().toISOString(),
+        },
         status: PostStatus.PENDING,
       });
 
@@ -62,10 +66,12 @@ describe("Repositories", () => {
         id,
         url: `https://reddit.com/r/test/${Bun.randomUUIDv7()}`,
         platform: "reddit",
-        topic: "test",
-        username: "testuser",
-        content: "test content",
-        postedAt: new Date(),
+        post: {
+          topic: "test",
+          username: "testuser",
+          content: "test content",
+          postedAt: new Date().toISOString(),
+        },
         status: PostStatus.PENDING,
       });
 

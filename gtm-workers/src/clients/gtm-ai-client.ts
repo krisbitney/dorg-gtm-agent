@@ -1,3 +1,4 @@
+import { MastraClient } from "@mastra/client-js";
 import { appEnv } from "../config/app-env.js";
 import type { Post } from "../storage/schema/posts-table.js";
 
@@ -40,46 +41,53 @@ export interface GtmAiClientInterface {
 }
 
 /**
- * Concrete implementation of GtmAiClient using HTTP to communicate with the mastra service.
+ * Concrete implementation of GtmAiClient using Mastra AI client SDK to communicate with the mastra service.
  */
 export class GtmAiClient implements GtmAiClientInterface {
-  private readonly baseUrl = appEnv.GTM_AI_BASE_URL;
-  private readonly timeout = appEnv.GTM_AI_REQUEST_TIMEOUT_MS;
+  private readonly client: MastraClient;
+
+  constructor() {
+    this.client = new MastraClient({
+      baseUrl: appEnv.GTM_AI_BASE_URL,
+    });
+  }
 
   /**
    * Calls the GTM AI score workflow.
    */
   async scorePost(post: GtmAiInput, context: any): Promise<GtmAiScoreResult> {
-    const response = await fetch(`${this.baseUrl}/score`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post, context }),
-      signal: AbortSignal.timeout(this.timeout),
+    const workflow = this.client.getWorkflow("leadScoreWorkflow");
+    const run = await workflow.createRun();
+    const result = await run.startAsync({
+      inputData: post,
+      requestContext: context,
     });
 
-    if (!response.ok) {
-      throw new Error(`GTM AI score request failed: ${response.statusText}`);
+    if (result.status !== "success") {
+      const errorMsg = result.status === "failed" ? `: ${result.error.message}` : "";
+      throw new Error(`GTM AI score workflow failed with status ${result.status}${errorMsg}`);
     }
 
-    return (await response.json()) as GtmAiScoreResult;
+    return result.result as GtmAiScoreResult;
   }
 
   /**
    * Calls the GTM AI analysis workflow.
    */
   async analyzePost(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
-    const response = await fetch(`${this.baseUrl}/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post, context }),
-      signal: AbortSignal.timeout(this.timeout),
+    const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
+    const run = await workflow.createRun();
+    const result = await run.startAsync({
+      inputData: post,
+      requestContext: context,
     });
 
-    if (!response.ok) {
-      throw new Error(`GTM AI analysis request failed: ${response.statusText}`);
+    if (result.status !== "success") {
+      const errorMsg = result.status === "failed" ? `: ${result.error.message}` : "";
+      throw new Error(`GTM AI analysis workflow failed with status ${result.status}${errorMsg}`);
     }
 
-    return (await response.json()) as GtmAiAnalysisResult;
+    return result.result as GtmAiAnalysisResult;
   }
 }
 

@@ -1,6 +1,6 @@
 # dorg-gtm-agent
 
-This repository contains the code for a dOrg GTM Agent hackathon submission. The dOrg GTM Agent is a system that uses LLMs to extract lead data from social media posts. My strategy is to scrape all social media posts at specified URLs and search terms, and then to check each post to see if it contains a sales lead for the dOrg software development consultancy.
+This repository contains the code for a dOrg GTM Agent hackathon submission. The dOrg GTM Agent is a system that uses AI to find leads for dOrg's Web3 software development and services consultancy.
 
 Basic strategy:
 - Scrape all social media posts at specified URLs and search terms

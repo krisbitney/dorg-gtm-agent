@@ -1,0 +1,20 @@
+{
+    "eventType": "ACTOR.RUN.SUCCEEDED",
+    "actorId": "trudax/reddit-scraper-lite",
+    "apifyRunId": "GKSzoj873GtGW2R0T",
+    "status": "SUCCEEDED",
+    "defaultDatasetId": "bSn8VWPzaerseNqvm",
+    "finishedAt": "2026-04-13 18:17:56"
+  }
+
+
+curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&platform=reddit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventType": "ACTOR.RUN.SUCCEEDED",
+    "actorId": "trudax/reddit-scraper-lite",
+    "apifyRunId": "GKSzoj873GtGW2R0T",
+    "status": "SUCCEEDED",
+    "defaultDatasetId": "bSn8VWPzaerseNqvm",
+    "finishedAt": "2026-04-13 18:17:56"
+  }'

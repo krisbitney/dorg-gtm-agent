@@ -6,6 +6,12 @@ services:
       - "6379:6379"
     volumes:
       - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 2s
     restart: always
 
   postgres:
@@ -19,6 +25,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d gtm"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 2s
     restart: always
 
   gtm-ai:
@@ -33,8 +45,10 @@ services:
       - REDIS_URL=redis://valkey:6379
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
     depends_on:
-      - postgres
-      - valkey
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
     restart: always
 
   gtm-workers-api:
@@ -55,8 +69,10 @@ services:
       - TRIGGER_API_TOKEN=token
       - APIFY_WEBHOOK_SECRET=secret
     depends_on:
-      - postgres
-      - valkey
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
     restart: always
     command: api
 
@@ -75,8 +91,10 @@ services:
       - TRIGGER_API_TOKEN=token
       - APIFY_WEBHOOK_SECRET=secret
     depends_on:
-      - postgres
-      - valkey
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
     restart: always
     command: worker
 

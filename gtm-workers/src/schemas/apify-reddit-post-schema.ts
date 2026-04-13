@@ -6,12 +6,12 @@ import { z } from "zod";
  */
 export const apifyRedditPostSchema = z.object({
   url: z.string().url(),
-  username: z.string().min(1),
-  content: z.string().min(1),
-  postedAt: z.number(), // Unix timestamp in milliseconds
-  nLikes: z.number().int().nonnegative(),
-  nComments: z.number().int().nonnegative(),
-  topic: z.string().min(1),
+  // username: z.string().min(1),
+  // content: z.string().min(1),
+  // postedAt: z.number(), // Unix timestamp in milliseconds
+  // nLikes: z.number().int().nonnegative(),
+  // nComments: z.number().int().nonnegative(),
+  // topic: z.string().min(1),
 });
 
 export type ApifyRedditPost = z.infer<typeof apifyRedditPostSchema>;

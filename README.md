@@ -1,15 +1,27 @@
 # dorg-gtm-agent
 
-To install dependencies:
+This repository contains independent Bun packages:
+
+- `gtm-ai`
+- `gtm-workers`
+- `gtm-web-crawler`
+
+Each package has its own `package.json` and `bun.lock`.
+
+## Install dependencies
+
+Install dependencies from each package directory:
 
 ```bash
-bun install
+cd gtm-ai && bun install
+cd gtm-workers && bun install
+cd gtm-web-crawler && bun install
 ```
 
-To run:
+## Run with Docker Compose
+
+From the repository root:
 
 ```bash
-bun run index.ts
+docker compose up --build
 ```
-
-This project was created using `bun init` in bun v1.3.10. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

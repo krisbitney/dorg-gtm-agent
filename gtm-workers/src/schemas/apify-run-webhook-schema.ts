@@ -6,11 +6,17 @@ import { z } from "zod";
  */
 export const apifyRunWebhookSchema = z.object({
   eventType: z.string(),
-  actorId: z.string(),
-  apifyRunId: z.string(),
-  status: z.string(),
-  defaultDatasetId: z.string().optional(),
-  finishedAt: z.string().optional(),
+  eventData: z.object({
+    actorId: z.string(),
+    actorRunId: z.string(),
+  }),
+  resource: z.object({
+    id: z.string(),
+    actId: z.string(),
+    status: z.string(),
+    defaultDatasetId: z.string().optional(),
+    finishedAt: z.string().optional(),
+  }),
 });
 
 export type ApifyRunWebhook = z.infer<typeof apifyRunWebhookSchema>;

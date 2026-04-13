@@ -18,3 +18,19 @@ curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&pl
     "defaultDatasetId": "bSn8VWPzaerseNqvm",
     "finishedAt": "2026-04-13 18:17:56"
   }'
+
+  Let's test everything again from the start.
+  • Run the docker compose with fresh volumes
+  • Submit the test webhook query:
+  curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&platform=reddit" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "eventType": "ACTOR.RUN.SUCCEEDED",
+      "actorId": "trudax/reddit-scraper-lite",
+      "apifyRunId": "GKSzoj873GtGW2R0T",
+      "status": "SUCCEEDED",
+      "defaultDatasetId": "bSn8VWPzaerseNqvm",
+      "finishedAt": "2026-04-13 18:17:56"
+    }'
+  • Make sure the gtm-workers-api container logs look good
+  • Then monitor the logs of the gtm-workers-workers and gtm-ai containers to verify that the workers are successfully processing the reddit post data

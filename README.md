@@ -3,10 +3,10 @@
 This repository contains the code for a dOrg GTM Agent hackathon submission. The dOrg GTM Agent is a system that uses AI to find leads for dOrg's Web3 software development and services consultancy.
 
 Basic strategy:
-- Scrape all social media posts at specified URLs and search terms
-- Estimate the probability that a post is a lead using a small, fast LLM
-- If a post is likely a lead, extract the lead data with a larger LLM
-- Hand off lead to human or smart LLM for outreach
+1. Scrape all social media posts at specified URLs and search terms
+2. Estimate the probability that a post is a lead using a small, fast LLM
+3. If a post is likely a lead, extract the lead data with a larger LLM
+4. Hand off the lead to a human or smart LLM for outreach
 
 ## System Design
 

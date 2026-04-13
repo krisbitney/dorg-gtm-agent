@@ -122,6 +122,17 @@ export class ProcessPostJob {
       }
 
       await this.postRepository.markCompleted(postId);
+
+      try {
+        const sendMessageResult = await this.dorgApiClient.sendMessage({ content: brief })
+        if (!sendMessageResult.success) {
+          console.error(`Failed to send message to dOrg. Status: ${sendMessageResult.status}. Message: ${sendMessageResult.message}`);
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to send message to dOrg:", e);
+        return;
+      }
     }
   }
 }

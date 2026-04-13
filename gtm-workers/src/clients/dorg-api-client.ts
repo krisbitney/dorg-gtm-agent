@@ -15,6 +15,11 @@ export interface DorgApiClientInterface {
     message?: string;
     status?: number;
   }>;
+  sendMessage(options: { content: string }): Promise<{
+    success: boolean;
+    message?: string;
+    status?: number;
+  }>
 }
 
 /**
@@ -30,7 +35,7 @@ export class DorgApiClient implements DorgApiClientInterface {
    * Claims a lead in dOrg.
    */
   async claimLead({ identifier, channel }: { identifier: string; channel: string }) {
-    const response = await fetch(`${this.baseUrl}/claim_lead`, {
+    const response = await fetch(`${this.baseUrl}/leads/claim`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -57,7 +62,7 @@ export class DorgApiClient implements DorgApiClientInterface {
    * Surfaces a lead in dOrg (notifies the system).
    */
   async surfaceLead({ leadId, brief }: { leadId: string; brief: string }) {
-    const response = await fetch(`${this.baseUrl}/surface_lead`, {
+    const response = await fetch(`${this.baseUrl}/leads/surface`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,6 +77,29 @@ export class DorgApiClient implements DorgApiClientInterface {
       return { 
         success: false, 
         message: `dOrg surface failed (${response.status}): ${errorText}`,
+        status: response.status,
+      };
+    }
+
+    return { success: true };
+  }
+
+  async sendMessage({ content }: { content: string }) {
+    const response = await fetch(`${this.baseUrl}/discord/post`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: JSON.stringify({ content: content.slice(0, 1900) }),
+      signal: AbortSignal.timeout(this.timeout),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        message: `dOrg discord message failed (${response.status}): ${errorText}`,
         status: response.status,
       };
     }

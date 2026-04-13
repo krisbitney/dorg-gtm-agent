@@ -15,6 +15,7 @@
     "db:migrate": "bun run src/storage/migrate.ts"
   },
   "dependencies": {
+    "@mastra/client-js": "^1.13.3",
     "apify-client": "^2.22.3",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9",

@@ -3,7 +3,7 @@
   - use gtm-workers/src/config/crawler-configs/reddit.ts, which already contains list of start urls for the reddit crawler
 - [ ] Ensure the Apify dataset import handles posts with property names for url other than "url"
 - [ ] Add filters to Apify dataset import to skip posts that don't contain text content
-- [ ] use Mastra AI client SDK @mastra/client-js in `gtm-workers` to call the AI service.
+- [ ] use Mastra AI client SDK @mastra/client-js in `gtm-workers` to call the mastra-based gtm-ai service.
 - [ ] posts from crawlers might not have a 'url' property. The value should always be present, but the property
 might have a different name. We should handle this by potentially renaming properties after parsing. We should not
 hash the entire object because properties like "number of likes" can change independent of the posts' contents.

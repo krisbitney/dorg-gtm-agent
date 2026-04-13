@@ -19,10 +19,12 @@ The dOrg GTM Agent is a distributed system designed to automate lead generation 
 
 ![system-design.png](system-design.png)
 
-This design would be suitable for the degree of scalability required for a production-grade system that fits dOrgs needs. Some changes that would improve scalability in exchange for increased complexity would be:
-- Use a more robust message queue like RabbitMQ or Kafka
-- Use a document database for post storage, like MongoDB
-- Use more capable LLMs
+The system is designed so that each service can be scaled independently. For example, worker instances are stateless, so multiple instances can be run simultaneously if needed.
+
+This design accommodates the degree of scalability required for a production-grade system that fits dOrgs needs. We can improve scalability further, at the cost of increased complexity, by using:
+- a more robust message queue like RabbitMQ or Kafka
+- a document database for storing social media posts, like MongoDB
+- more capable LLMs
 
 ## Packages
 

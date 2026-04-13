@@ -1,2 +1,2 @@
-Add proxy
-host in US
+- [ ] Accept list of startUrls as Apify Actor inputs
+- [ ] Accept other configuration parameters as Apify Actor inputs instead of as environment variables

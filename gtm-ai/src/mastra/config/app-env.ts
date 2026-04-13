@@ -2,7 +2,13 @@ import { z } from "zod";
 
 export const EnvSchema = z.object({
   MASTRA_HOST: z.string().default("0.0.0.0"),
-  MASTRA_PORT: z.string().default("4111").transform((v) => parseInt(v, 10)),
+  MASTRA_PORT: z.string().default("4111").transform((v) => {
+    const port = parseInt(v, 10);
+    if (isNaN(port)) {
+      throw new Error(`Invalid MASTRA_PORT: ${v}`);
+    }
+    return port;
+  }),
   MASTRA_LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   MASTRA_STORAGE_URL: z.string().default("file:./mastra.db"),
   MASTRA_OBSERVABILITY_DB_PATH: z.string().default("./mastra-observability.db"),

@@ -4,5 +4,11 @@
 # crawlee storage folder
 storage
 
+# built files
+dist
+
+# secrets
+.env
+
 # installed files
 node_modules

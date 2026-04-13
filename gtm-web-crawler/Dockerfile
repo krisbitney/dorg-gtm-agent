@@ -43,9 +43,6 @@ RUN curl -fsSL https://bun.sh/install | bash
 ENV BUN_INSTALL="/home/myuser/.bun"
 ENV PATH="$BUN_INSTALL/bin:$PATH"
 
-# Copy built output from builder image
-COPY --from=builder --chown=myuser /home/myuser/dist ./dist
-
 # Copy dependency manifests first to leverage Docker layer cache.
 COPY --chown=myuser package.json ./
 
@@ -60,6 +57,9 @@ RUN bun install --production \
 
 # Copy the source files and directories.
 COPY --chown=myuser . ./
+
+# Copy built output from builder image
+COPY --from=builder --chown=myuser /home/myuser/dist ./dist
 
 # Run the image.
 CMD ["bun", "run", "start:prod"]

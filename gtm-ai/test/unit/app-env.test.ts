@@ -22,9 +22,7 @@ describe("App Environment Configuration", () => {
   });
 
   test("invalid port value fails", () => {
-    // parseInt returns NaN for nonsense strings.
-    const result = validateEnv({ MASTRA_PORT: "not-a-number" });
-    expect(result.MASTRA_PORT).toBeNaN();
+    expect(() => validateEnv({ MASTRA_PORT: "not-a-number" })).toThrow();
   });
 
   test("invalid log level fails", () => {

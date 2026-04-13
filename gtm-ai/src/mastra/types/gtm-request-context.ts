@@ -5,7 +5,6 @@
 export interface GtmRequestContext {
   postId: string;
   platform: string;
-  topic: string;
   source: 'worker' | 'studio' | 'manual-test';
   workerRunId?: string | null;
 }

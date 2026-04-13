@@ -26,6 +26,14 @@ export class PostRepository {
   }
 
   /**
+   * Fetches a post record by its URL.
+   */
+  async findByUrl(url: string): Promise<Post | undefined> {
+    const results = await db.select().from(posts).where(eq(posts.url, url)).limit(1);
+    return results[0];
+  }
+
+  /**
    * Saves the lead score result and advances the post status.
    */
   async saveScore(id: string, leadProbability: number, status: PostStatusType): Promise<void> {

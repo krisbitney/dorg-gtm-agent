@@ -8,10 +8,12 @@ export interface DorgApiClientInterface {
     success: boolean;
     leadId?: string;
     message?: string;
+    status?: number;
   }>;
   surfaceLead(options: { leadId: string; brief: string }): Promise<{
     success: boolean;
     message?: string;
+    status?: number;
   }>;
 }
 
@@ -22,6 +24,7 @@ export interface DorgApiClientInterface {
 export class DorgApiClient implements DorgApiClientInterface {
   private readonly baseUrl = appEnv.DORG_API_BASE_URL;
   private readonly token = appEnv.DORG_API_TOKEN;
+  private readonly timeout = 30000; // 30 seconds
 
   /**
    * Claims a lead in dOrg.
@@ -34,11 +37,16 @@ export class DorgApiClient implements DorgApiClientInterface {
         Authorization: `Bearer ${this.token}`,
       },
       body: JSON.stringify({ identifier, channel }),
+      signal: AbortSignal.timeout(this.timeout),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      return { success: false, message: `dOrg claim failed (${response.status}): ${errorText}` };
+      return { 
+        success: false, 
+        message: `dOrg claim failed (${response.status}): ${errorText}`,
+        status: response.status,
+      };
     }
 
     const data = (await response.json()) as { lead_id: string };
@@ -56,11 +64,16 @@ export class DorgApiClient implements DorgApiClientInterface {
         Authorization: `Bearer ${this.token}`,
       },
       body: JSON.stringify({ lead_id: leadId, brief }),
+      signal: AbortSignal.timeout(this.timeout),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      return { success: false, message: `dOrg surface failed (${response.status}): ${errorText}` };
+      return { 
+        success: false, 
+        message: `dOrg surface failed (${response.status}): ${errorText}`,
+        status: response.status,
+      };
     }
 
     return { success: true };

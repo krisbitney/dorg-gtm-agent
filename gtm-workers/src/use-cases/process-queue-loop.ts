@@ -55,8 +55,18 @@ export class ProcessQueueLoop {
         
         if (rawPayload) {
           try {
-            const payload = JSON.parse(rawPayload);
-            await this.postRepository.markError(payload.id, error.message || "Unknown worker error");
+            // Safe parse to avoid double-throw if original payload was malformed
+            let postId: string | undefined;
+            try {
+              const payload = JSON.parse(rawPayload);
+              postId = payload.id;
+            } catch (parseError) {
+              console.warn("Could not parse malformed payload for error logging:", parseError);
+            }
+
+            if (postId) {
+              await this.postRepository.markError(postId, error.message || "Unknown worker error");
+            }
             
             await this.leadQueue.moveToDeadLetter(rawPayload, JSON.stringify({
               error: error.message || "Unknown worker error",

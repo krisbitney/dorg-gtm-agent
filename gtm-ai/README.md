@@ -7,13 +7,13 @@ Welcome to the GTM AI Mastra service! This service is responsible for AI-driven 
 This service exposes two main workflows:
 
 ### `leadScoreWorkflow`
-- **ID:** `lead-score-workflow`
+- **ID:** `leadScoreWorkflow`
 - **Input:** `CrawlerPostInput` (JSON)
 - **Output:** `{ leadProbability: number }`
 - **Description:** A small model that estimates the likelihood of a post being a lead for dOrg's tech/dev consultancy. The likelihood is a number between 0 and 1.
 
 ### `leadAnalysisWorkflow`
-- **ID:** `lead-analysis-workflow`
+- **ID:** `leadAnalysisWorkflow`
 - **Input:** `CrawlerPostInput` (JSON)
 - **Output:** `{ isLead: false } | { isLead: true, whyFit: string, needs: string, timing: string | null, contactInfo: string | null }`
 - **Description:** A smarter model that extracts relevant information from a post if it is deemed a likely lead.
@@ -28,19 +28,19 @@ const result = await workflow.execute({
   inputData: {
     id: '550e8400-e29b-41d4-a716-446655440000',
     platform: 'reddit',
-    topic: 'web3',
     url: 'https://reddit.com/r/web3/comments/123',
-    username: 'user123',
-    content: 'Need help with a smart contract audit',
-    ageText: '2 hours ago',
-    likes: 10,
-    nComments: 5,
-    capturedAt: new Date().toISOString(),
+    post: {
+      subreddit: 'web3',
+      username: 'user123',
+      content: 'Need help with a smart contract audit',
+      postedAt: '2024-03-21T12:00:00.000Z',
+      likes: 10,
+      nComments: 5,
+    },
   },
   requestContext: {
     postId: '550e8400-e29b-41d4-a716-446655440000',
     platform: 'reddit',
-    topic: 'web3',
     source: 'manual-test',
   },
 });
@@ -58,7 +58,7 @@ The `gtm-workers` service should use the following details to integrate with thi
 ```typescript
 const result = await mastra.getWorkflow('leadScoreWorkflow').execute({
   inputData: crawlerPost,
-  requestContext: { postId, platform, topic, source: 'worker' }
+  requestContext: { postId, platform, source: 'worker' }
 });
 // result.leadProbability
 ```
@@ -67,7 +67,7 @@ const result = await mastra.getWorkflow('leadScoreWorkflow').execute({
 ```typescript
 const result = await mastra.getWorkflow('leadAnalysisWorkflow').execute({
   inputData: crawlerPost,
-  requestContext: { postId, platform, topic, source: 'worker' }
+  requestContext: { postId, platform, source: 'worker' }
 });
 if (result.isLead) {
   // Use result.whyFit, result.needs, etc.

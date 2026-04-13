@@ -2,7 +2,6 @@
 import { PlaywrightCrawler, log } from 'crawlee';
 
 import { createRouter } from './routes.js';
-import { redditStartUrls } from "./constants/start-urls.js";
 import { inputSchema } from "./config/appConfig.js";
 import {extractSubredditName, isSubredditUrl} from "./lib/reddit-url.js";
 import { ROUTE_LABELS } from "./constants/route-labels.js";
@@ -21,9 +20,7 @@ const input = await Actor.getInput() || {};
 const appConfig = inputSchema.parse(input);
 
 const proxyConfiguration = await Actor.createProxyConfiguration({
-    checkAccess: true,
     groups: ['BUYPROXIES94952'],
-    countryCode: 'US',
 });
 const crawler = new PlaywrightCrawler({
     requestHandler: router,

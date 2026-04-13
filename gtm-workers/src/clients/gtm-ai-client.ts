@@ -45,11 +45,34 @@ export interface GtmAiClientInterface {
  */
 export class GtmAiClient implements GtmAiClientInterface {
   private readonly client: MastraClient;
+  private readonly timeoutMs: number;
 
   constructor() {
     this.client = new MastraClient({
       baseUrl: appEnv.GTM_AI_BASE_URL,
     });
+    this.timeoutMs = appEnv.GTM_AI_REQUEST_TIMEOUT_MS;
+  }
+
+  private async runWithTimeout<T>(
+    options: {
+      workflowName: string;
+      operation: Promise<T>;
+    }
+  ): Promise<T> {
+    const timeoutPromise: Promise<never> = new Promise((_, reject) => {
+      const timer = setTimeout(() => {
+        reject(
+          new Error(`${options.workflowName} timed out after ${this.timeoutMs}ms`)
+        );
+      }, this.timeoutMs);
+
+      options.operation.finally(() => clearTimeout(timer)).catch(() => {
+        // Swallow to avoid unhandled rejection in the timeout helper path.
+      });
+    });
+
+    return Promise.race([options.operation, timeoutPromise]);
   }
 
   /**
@@ -58,9 +81,12 @@ export class GtmAiClient implements GtmAiClientInterface {
   async scorePost(post: GtmAiInput, context: any): Promise<GtmAiScoreResult> {
     const workflow = this.client.getWorkflow("leadScoreWorkflow");
     const run = await workflow.createRun();
-    const result = await run.startAsync({
-      inputData: post,
-      requestContext: context,
+    const result = await this.runWithTimeout({
+      workflowName: "leadScoreWorkflow",
+      operation: run.startAsync({
+        inputData: post,
+        requestContext: context,
+      }),
     });
 
     if (result.status !== "success") {
@@ -77,9 +103,12 @@ export class GtmAiClient implements GtmAiClientInterface {
   async analyzePost(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
     const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
     const run = await workflow.createRun();
-    const result = await run.startAsync({
-      inputData: post,
-      requestContext: context,
+    const result = await this.runWithTimeout({
+      workflowName: "leadAnalysisWorkflow",
+      operation: run.startAsync({
+        inputData: post,
+        requestContext: context,
+      }),
     });
 
     if (result.status !== "success") {

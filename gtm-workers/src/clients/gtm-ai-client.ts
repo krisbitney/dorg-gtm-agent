@@ -63,16 +63,25 @@ export class GtmAiClient implements GtmAiClientInterface {
   private async runWithRetries<T>(
     options: {
       workflowName: string;
-      operation: () => Promise<T>;
+      operation: () => Promise<{ run: any; promise: Promise<T> }>;
     }
   ): Promise<T> {
     let attempt = 0;
 
     while (true) {
+      const { run, promise } = await options.operation();
       try {
         return await this.runWithTimeout({
           workflowName: options.workflowName,
-          operation: options.operation(),
+          operation: promise,
+          onTimeout: async () => {
+            console.warn(`GTM AI client ${options.workflowName} timed out. Cancelling run ${run.runId}...`);
+            try {
+              await run.cancel();
+            } catch (cancelError) {
+              console.error(`Failed to cancel run ${run.runId}:`, cancelError);
+            }
+          },
         });
       } catch (error: any) {
         attempt++;
@@ -100,10 +109,14 @@ export class GtmAiClient implements GtmAiClientInterface {
     options: {
       workflowName: string;
       operation: Promise<T>;
+      onTimeout?: () => Promise<void>;
     }
   ): Promise<T> {
     const timeoutPromise: Promise<never> = new Promise((_, reject) => {
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
+        if (options.onTimeout) {
+          await options.onTimeout();
+        }
         reject(
           new Error(`${options.workflowName} timed out after ${this.timeoutMs}ms`)
         );
@@ -127,10 +140,13 @@ export class GtmAiClient implements GtmAiClientInterface {
       workflowName: "leadScoreWorkflow",
       operation: async () => {
         const run = await workflow.createRun();
-        return run.startAsync({
-          inputData: post,
-          requestContext: context,
-        });
+        return {
+          run,
+          promise: run.startAsync({
+            inputData: post,
+            requestContext: context,
+          }),
+        };
       },
     });
 
@@ -152,10 +168,13 @@ export class GtmAiClient implements GtmAiClientInterface {
       workflowName: "leadAnalysisWorkflow",
       operation: async () => {
         const run = await workflow.createRun();
-        return run.startAsync({
-          inputData: post,
-          requestContext: context,
-        });
+        return {
+          run,
+          promise: run.startAsync({
+            inputData: post,
+            requestContext: context,
+          }),
+        };
       },
     });
 

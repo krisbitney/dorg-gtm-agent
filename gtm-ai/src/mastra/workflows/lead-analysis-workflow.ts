@@ -29,9 +29,18 @@ export const leadAnalysisWorkflow = createWorkflow({
     }),
   )
   .then(
-    createStep(leadAnalysisAgent, {
-      structuredOutput: {
-        schema: LeadAnalysisRawResultSchema,
+    createStep({
+      id: 'lead-analysis',
+      inputSchema: z.object({ prompt: z.string() }),
+      outputSchema: LeadAnalysisRawResultSchema,
+      execute: async ({ inputData, abortSignal }) => {
+        const result = await leadAnalysisAgent.generate(inputData.prompt, {
+          structuredOutput: {
+            schema: LeadAnalysisRawResultSchema,
+          },
+          abortSignal,
+        });
+        return result.object;
       },
     }),
   )

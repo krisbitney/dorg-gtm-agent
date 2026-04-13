@@ -28,9 +28,18 @@ export const leadScoreWorkflow = createWorkflow({
     }),
   )
   .then(
-    createStep(leadScoreAgent, {
-      structuredOutput: {
-        schema: LeadScoreResultSchema,
+    createStep({
+      id: 'lead-score',
+      inputSchema: z.object({ prompt: z.string() }),
+      outputSchema: LeadScoreResultSchema,
+      execute: async ({ inputData, abortSignal }) => {
+        const result = await leadScoreAgent.generate(inputData.prompt, {
+          structuredOutput: {
+            schema: LeadScoreResultSchema,
+          },
+          abortSignal,
+        });
+        return result.object;
       },
     }),
   )

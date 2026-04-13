@@ -1,0 +1,63 @@
+{
+    "actorSpecification": 1,
+    "name": "gtm-web-crawler",
+    "title": "GTM Web Crawler",
+    "description": "GTM Web Crawler for finding leads in Reddit subreddits.",
+    "version": "0.0.1",
+    "storages": {
+        "dataset": {
+            "actorSpecification": 1,
+            "title": "GTM Web Crawler Dataset",
+            "views": {
+                "posts": {
+                    "title": "Overview",
+                    "description": "Extracted Reddit posts including content, engagement metrics, and metadata.",
+                    "transformation": {
+                        "fields": [
+                            "subreddit",
+                            "username",
+                            "nLikes",
+                            "nComments",
+                            "url",
+                            "postedAt",
+                            "content"
+                        ]
+                    },
+                    "display": {
+                        "component": "table",
+                        "properties": {
+                            "subreddit": {
+                                "label": "Subreddit",
+                                "format": "text"
+                            },
+                            "username": {
+                                "label": "Username",
+                                "format": "text"
+                            },
+                            "nLikes": {
+                                "label": "Upvotes",
+                                "format": "number"
+                            },
+                            "nComments": {
+                                "label": "Comments",
+                                "format": "number"
+                            },
+                            "url": {
+                                "label": "Link",
+                                "format": "link"
+                            },
+                            "postedAt": {
+                                "label": "Posted At (ms)",
+                                "format": "number"
+                            },
+                            "content": {
+                                "label": "Content",
+                                "format": "text"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

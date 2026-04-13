@@ -39,7 +39,3 @@ curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&pl
   @gtm-workers/src/use-cases/process-post-job.ts
   @gtm-workers/src/use-cases/process-queue-loop.ts
   @gtm-workers/src/clients/gtm-ai-client.ts
-
-
-Add rate limiting to the gtm-ai service
-  Make sure the gtm-workers service respects the

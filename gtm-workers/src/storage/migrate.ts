@@ -3,16 +3,28 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { appEnv } from "../config/app-env.js";
 
-async function main() {
-  console.log("Running migrations...");
+/**
+ * Applies all pending SQL migrations using the configured DATABASE_URL.
+ */
+export async function runMigrations(): Promise<void> {
   const migrationClient = postgres(appEnv.DATABASE_URL, { max: 1 });
-  const db = drizzle(migrationClient);
-  await migrate(db, { migrationsFolder: "./drizzle" });
-  await migrationClient.end();
+  try {
+    const db = drizzle(migrationClient);
+    await migrate(db, { migrationsFolder: "./drizzle" });
+  } finally {
+    await migrationClient.end();
+  }
+}
+
+async function main(): Promise<void> {
+  console.log("Running migrations...");
+  await runMigrations();
   console.log("Migrations completed!");
 }
 
-main().catch((err) => {
-  console.error("Migration failed:", err);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error("Migration failed:", err);
+    process.exit(1);
+  });
+}

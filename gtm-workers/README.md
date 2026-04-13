@@ -52,6 +52,8 @@ Apply migrations:
 bun run db:migrate
 ```
 
+Note: `bun run api` and `bun run worker` also apply pending migrations on startup.
+
 ### Development
 
 Install dependencies:

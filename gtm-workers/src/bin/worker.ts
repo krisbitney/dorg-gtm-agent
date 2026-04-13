@@ -5,13 +5,16 @@ import { DorgApiClient } from "../clients/dorg-api-client.js";
 import { ProcessPostJob } from "../use-cases/process-post-job.js";
 import { ProcessQueueLoop } from "../use-cases/process-queue-loop.js";
 import { appEnv } from "../config/app-env.js";
+import { runMigrations } from "../storage/migrate.js";
 
 /**
  * Entry point for the GTM Workers queue consumer.
  */
-async function main() {
+async function main(): Promise<void> {
   const processRunId = Bun.randomUUIDv7();
   console.log(`Starting GTM Workers Queue Consumer Process (ID: ${processRunId})...`);
+  console.log("Ensuring database schema is up to date...");
+  await runMigrations();
 
   const leadQueue = new RedisLeadQueue();
   const postRepository = new PostRepository();

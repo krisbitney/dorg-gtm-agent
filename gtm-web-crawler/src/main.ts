@@ -27,7 +27,7 @@ const crawler = new PlaywrightCrawler({
     maxCrawlDepth: appConfig.CRAWLER_MAX_CRAWL_DEPTH,
     maxConcurrency: appConfig.CRAWLER_MAX_CONCURRENCY,
     maxRequestsPerMinute: appConfig.CRAWLER_MAX_REQUESTS_PER_MINUTE,
-    sameDomainDelaySecs: appConfig.CRAWLER_SAME_DOMAIN_DELAY_SECS,
+    sameDomainDelaySecs: appConfig.CRAWLER_SAME_DOMAIN_DELAY_SECONDS,
     maxRequestRetries: 1,
     maxSessionRotations: 10,
     requestHandlerTimeoutSecs: Math.floor(appConfig.CRAWLER_REQUEST_TIMEOUT_MS / 1000),

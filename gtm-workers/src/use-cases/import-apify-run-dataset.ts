@@ -94,6 +94,11 @@ export class ImportApifyRunDataset {
           continue;
         }
 
+        // TODO: posts from crawlers might not have a 'url' property.
+        //  The value should always be present, but the property might have a different name.
+        //  We should handle this by potentially renaming properties after parsing.
+        //  We should not hash the entire object because properties like "number of likes" can
+        //  change independent of the posts' contents.
         const postData = validationResult.data;
 
         // b. Deduplicate by URL

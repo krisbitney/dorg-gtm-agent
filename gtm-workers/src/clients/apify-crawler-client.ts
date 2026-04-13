@@ -58,7 +58,7 @@ export class ApifyCrawlerClient implements ApifyCrawlerClientInterface {
             "ACTOR.RUN.SUCCEEDED",
             "ACTOR.RUN.ABORTED",
             "ACTOR.RUN.TIMED_OUT",
-            "ACTOR.BUILD.FAILED"
+            "ACTOR.RUN.FAILED"
           ],
           requestUrl: `${webhookUrl}?secret=${webhookSecret}`,
           payloadTemplate,

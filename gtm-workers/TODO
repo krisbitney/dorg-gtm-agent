@@ -1,0 +1,4 @@
+- [ ] Revise crawl started endpoint to accept additional parameters like the crawler identifier, start urls, and inputs
+- [ ] Ensure the Apify dataset import handles posts with property names for url other than "url"
+- [ ] Add filters to Apify dataset import to skip posts that don't contain text content
+- [ ] use Mastra AI client SDK @mastra/client-js in `gtm-workers` to call the AI service.

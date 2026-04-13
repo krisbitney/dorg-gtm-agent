@@ -31,8 +31,8 @@ Lead example:
   "isLead": true, 
   "whyFit": "They need smart contract and frontend help for a new DeFi app.", 
   "needs": "Smart contract + web3 frontend development", 
-  "timing": "ASAP", "contactInfo": 
-  "Reddit: u/web3entrepreneur; Discord: founder_xyz" 
+  "timing": "ASAP", 
+  "contactInfo": "Reddit: u/web3entrepreneur; Discord: founder_xyz" 
 }
 
 Not-a-lead example:

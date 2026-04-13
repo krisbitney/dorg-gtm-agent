@@ -6,7 +6,7 @@ import { crawlRuns } from "../../src/storage/schema/crawl-runs-table.js";
 import { CrawlRunStatus } from "../../src/constants/crawl-run-status.js";
 
 class FakeApifyClient {
-  async startActor() {
+  async startActor(options: any) {
     return {
       id: "fake-run-id",
       actorId: "fake-actor-id",
@@ -14,8 +14,8 @@ class FakeApifyClient {
       defaultDatasetId: "fake-dataset-id",
     };
   }
-  async getRun() { return {} as any; }
-  async getDatasetItems() { return []; }
+  async getRun(runId: string) { return {} as any; }
+  async getDatasetItems(datasetId: string) { return []; }
 }
 
 describe("Trigger Flow Integration", () => {
@@ -28,14 +28,16 @@ describe("Trigger Flow Integration", () => {
   });
 
   test("should start a crawl run and record it", async () => {
-    const result = await startCrawlRun.execute({ platform: "reddit", source: "scheduler" });
+    const result = await startCrawlRun.execute({ platform: "reddit", actorId: "fake-actor-id", source: "scheduler" });
     
     expect(result.apifyRunId).toBe("fake-run-id");
     expect(result.status).toBe("RUNNING");
+    expect(result.actorId).toBe("fake-actor-id");
 
     const run = await crawlRunRepository.findByApifyRunId("fake-run-id");
     expect(run).toBeDefined();
     expect(run?.status).toBe(CrawlRunStatus.STARTED);
     expect(run?.source).toBe("scheduler");
+    expect(run?.actorId).toBe("fake-actor-id");
   });
 });

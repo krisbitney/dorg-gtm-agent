@@ -1,8 +1,21 @@
-# Crawlee + PlaywrightCrawler + Camoufox + TypeScript project
+# GTM Web Crawler
 
-This template is a production ready boilerplate for developing with `PlaywrightCrawler`. Use this to bootstrap your projects using the most up-to-date code.
+GTM Web Crawler is an Apify Actor designed to find leads in Reddit subreddits. It uses Crawlee with Playwright and Camoufox (a hardened Firefox browser) to scrape Reddit posts while avoiding anti-scraping measures.
 
-If you're looking for examples or want to learn more visit:
+### Key Parameters
+- `startUrls`: (Required) List of subreddit URLs to start crawling (e.g., `https://www.reddit.com/r/webdev/`).
+- `maxCrawlDepth`: Maximum depth for the crawl (default: `10`).
+- `maxRequestsPerCrawl`: Maximum total requests to perform.
+- `maxRequestsPerMinute`: Rate limiting for requests (default: `20`).
+- `maxConcurrency`: Maximum concurrent browser instances (default: `1`).
+- `sameDomainDelaySecs`: Delay between requests to the same domain (default: `0`).
 
-- [Documentation](https://crawlee.dev/js/api/playwright-crawler/class/PlaywrightCrawler)
-- [Examples](https://crawlee.dev/js/docs/examples/playwright-crawler)
+## Output Data
+The crawler saves results to the Apify dataset. The "Overview" table in the Apify platform displays:
+- **Subreddit**: The subreddit name.
+- **Username**: The post author.
+- **Upvotes**: Number of upvotes.
+- **Comments**: Number of comments.
+- **Link**: Canonical URL of the post.
+- **Posted At**: Timestamp of the post.
+- **Content**: The full post content (Title + Body).

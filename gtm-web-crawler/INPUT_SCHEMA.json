@@ -35,6 +35,7 @@
       "type": "integer",
       "description": "Maximum number of requests to perform per minute.",
       "editor": "number",
+      "default": 20,
       "minimum": 1
     },
     "sameDomainDelaySecs": {
@@ -42,13 +43,15 @@
       "type": "integer",
       "description": "Delay between requests to the same domain in seconds.",
       "editor": "number",
-      "minimum": 1
+      "default": 0,
+      "minimum": 0
     },
     "maxConcurrency": {
       "title": "Max concurrency",
       "type": "integer",
       "description": "Maximum number of concurrent requests.",
       "editor": "number",
+      "default": 1,
       "minimum": 1
     },
     "maxRequestRetries": {
@@ -56,6 +59,7 @@
       "type": "integer",
       "description": "Maximum number of retries per request.",
       "editor": "number",
+      "default": 3,
       "minimum": 0
     },
     "maxSessionRotations": {
@@ -63,6 +67,7 @@
       "type": "integer",
       "description": "Maximum number of session rotations.",
       "editor": "number",
+      "default": 10,
       "minimum": 0
     },
     "requestTimeoutMs": {

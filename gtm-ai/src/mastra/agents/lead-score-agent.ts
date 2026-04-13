@@ -12,4 +12,6 @@ export const leadScoreAgent = new Agent({
   description: 'Estimates the likelihood of a post being a lead for the dOrg.tech web3 software development consultancy (0 to 1).',
   instructions: buildLeadScorePrompt(),
   model: appEnv.GTM_SMALL_MODEL,
+  maxRetries: 5,
+  maxProcessorRetries: 5,
 });

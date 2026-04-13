@@ -25,6 +25,19 @@ Your job is to analyze a social media post and determine if it's a lead for our 
    - "contactInfo": if any contact information (username, email, discord, twitter, etc) is mentioned, extract all of it. If not, use null.
 3. If it is not a lead, return "isLead: false" and use null for all other fields.
 
+### Expected Output Shape (Examples)
+Lead example:
+{ 
+  "isLead": true, 
+  "whyFit": "They need smart contract and frontend help for a new DeFi app.", 
+  "needs": "Smart contract + web3 frontend development", 
+  "timing": "ASAP", "contactInfo": 
+  "Reddit: u/web3entrepreneur; Discord: founder_xyz" 
+}
+
+Not-a-lead example:
+{ "isLead": false, "whyFit": null, "needs": null, "timing": null, "contactInfo": null }
+
 ### Anti-Hallucination Rules
 - Do not invent company names, contact details, budgets, or deadlines.
 - If information is missing, use null. Do not guess.

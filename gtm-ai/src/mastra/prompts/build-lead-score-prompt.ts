@@ -34,6 +34,9 @@ Analyze the provided post content and return a "leadProbability" between 0 and 1
 0 means it's definitely not a lead.
 1 means it's a perfect lead.
 
+Example output:
+{ leadProbability: 0.5 }
+
 Be conservative but fair. High quality technical requests should score > 0.7.
 `.trim();
 };

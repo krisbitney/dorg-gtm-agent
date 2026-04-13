@@ -12,4 +12,6 @@ export const leadAnalysisAgent = new Agent({
   description: 'Analyzes a post to determine if it is a lead and extracts fit, needs, timing, and contact info.',
   instructions: buildLeadAnalysisPrompt(),
   model: appEnv.GTM_ANALYSIS_MODEL,
+  maxRetries: 3,
+  maxProcessorRetries: 3,
 });

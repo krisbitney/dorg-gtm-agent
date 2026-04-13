@@ -1,2 +1,2 @@
-- [ ] Accept list of startUrls as Apify Actor inputs
+- [ ] Accept list of startUrls as Apify Actor inputs instead of using hardcoded list
 - [ ] Accept other configuration parameters as Apify Actor inputs instead of as environment variables

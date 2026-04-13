@@ -22,7 +22,7 @@ export class ImportApifyRunDataset {
   /**
    * Orchestrates fetching and importing dataset items into the database and queue.
    */
-  async execute(notification: ApifyRunWebhook, platform: string) {
+  async execute(notification: ApifyRunWebhook, platform: string): Promise<void> {
     const { apifyRunId, actorId, status, defaultDatasetId } = notification;
 
     const platformSchema = getPlatformSchema(platform);
@@ -60,6 +60,10 @@ export class ImportApifyRunDataset {
     if (!datasetId) {
       throw new Error(`Could not resolve dataset ID for run: ${apifyRunId}`);
     }
+
+    console.log(
+      `[apify-import] Starting dataset import: runId=${apifyRunId} datasetId=${datasetId} platform=${platform}`
+    );
 
     // 5. Start importing
     await this.crawlRunRepository.markImporting(apifyRunId, datasetId);
@@ -145,5 +149,8 @@ export class ImportApifyRunDataset {
 
     // 6. Complete the run
     await this.crawlRunRepository.markCompleted(apifyRunId, counters);
+    console.log(
+      `[apify-import] Import completed: runId=${apifyRunId} datasetId=${datasetId} read=${counters.itemsRead} imported=${counters.itemsImported} duplicates=${counters.duplicatesSkipped} invalid=${counters.invalidItems} failed=${counters.failedItems}`
+    );
   }
 }

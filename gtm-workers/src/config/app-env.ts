@@ -31,7 +31,7 @@ const envSchema = z.object({
   APIFY_RUN_TIMEOUT_SECONDS: z.coerce.number().default(3600),
   
   GTM_AI_BASE_URL: z.union([z.url(), localhostUrl]),
-  GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000),
+  GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(120_000),
   LEAD_SCORE_THRESHOLD: z.coerce.number().default(0.7),
   
   QUEUE_NAME: z.string().default("gtm:posts:queue"),

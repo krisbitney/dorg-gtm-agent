@@ -21,9 +21,12 @@ export class ProcessPostJob {
    * Orchestrates the AI scoring, analysis, and dOrg claim/surface flow.
    */
   async execute(postId: string) {
+    console.log(`[Post ${postId}] Starting post processing job...`);
+
     // 1. Load the post
     const post = await this.postRepository.findById(postId);
     if (!post) {
+      console.error(`[Post ${postId}] Post not found in repository.`);
       throw new Error(`Post not found: ${postId}`);
     }
 
@@ -34,7 +37,7 @@ export class ProcessPostJob {
       PostStatus.COMPLETED,
     ];
     if (terminalStatuses.includes(post.status as any)) {
-      console.log(`Post ${postId} is already in terminal state ${post.status}, skipping.`);
+      console.log(`[Post ${postId}] Post is already in terminal state "${post.status}", skipping.`);
       return;
     }
 
@@ -48,10 +51,14 @@ export class ProcessPostJob {
 
     // 3. Scoring
     if (post.status === PostStatus.PENDING || post.status === PostStatus.SCORING) {
+      console.log(`[Post ${postId}] Step: Scoring post...`);
       await this.postRepository.updateStatus(postId, PostStatus.SCORING);
       const scoreResult = await this.gtmAiClient.scorePost(aiInput, context);
       
+      console.log(`[Post ${postId}] Scoring complete. Probability: ${scoreResult.leadProbability}`);
+
       if (scoreResult.leadProbability < appEnv.LEAD_SCORE_THRESHOLD) {
+        console.log(`[Post ${postId}] Lead probability ${scoreResult.leadProbability} is below threshold ${appEnv.LEAD_SCORE_THRESHOLD}. Marking as BELOW_THRESHOLD.`);
         await this.postRepository.saveScore(postId, scoreResult.leadProbability, PostStatus.BELOW_THRESHOLD);
         return;
       }
@@ -63,13 +70,18 @@ export class ProcessPostJob {
 
     // 4. Analysis
     if (post.status === PostStatus.ANALYZING) {
+      console.log(`[Post ${postId}] Step: Analyzing post...`);
       const analysisResult = await this.gtmAiClient.analyzePost(aiInput, context);
       
+      console.log(`[Post ${postId}] Analysis complete. isLead: ${analysisResult.isLead}`);
+
       if (!analysisResult.isLead) {
+        console.log(`[Post ${postId}] AI determined this is not a lead. Marking as NOT_A_LEAD.`);
         await this.postRepository.updateStatus(postId, PostStatus.NOT_A_LEAD);
         return;
       }
       
+      console.log(`[Post ${postId}] AI determined this IS a lead. Saving analysis.`);
       await this.postRepository.saveAnalysis(
         postId,
         {
@@ -89,9 +101,10 @@ export class ProcessPostJob {
 
     // 5. dOrg Claim
     if (post.status === PostStatus.CLAIMING) {
+      console.log(`[Post ${postId}] Step: Claiming lead in dOrg...`);
       // Idempotency check: if dorgLeadId already exists, skip claim
       if (post.dorgLeadId) {
-        console.log(`Post ${postId} already has dorgLeadId ${post.dorgLeadId}, skipping claim.`);
+        console.log(`[Post ${postId}] Already has dorgLeadId ${post.dorgLeadId}, skipping claim.`);
       } else {
         const claimResult = await this.dorgApiClient.claimLead({
           identifier: post.url,
@@ -99,10 +112,12 @@ export class ProcessPostJob {
         });
 
         if (!claimResult.success) {
+          console.error(`[Post ${postId}] dOrg claim failed: ${claimResult.message}`);
           await this.postRepository.markClaimFailed(postId, claimResult.message || "Unknown claim failure");
           return;
         }
 
+        console.log(`[Post ${postId}] dOrg claim successful. leadId: ${claimResult.leadId}`);
         await this.postRepository.saveDorgLeadId(postId, claimResult.leadId!, PostStatus.SURFACING);
         post.dorgLeadId = claimResult.leadId!;
       }
@@ -111,6 +126,7 @@ export class ProcessPostJob {
 
     // 6. dOrg Surface
     if (post.status === PostStatus.SURFACING) {
+      console.log(`[Post ${postId}] Step: Surfacing lead to dOrg...`);
       const brief = buildSurfaceBrief(post);
       const surfaceResult = await this.dorgApiClient.surfaceLead({
         leadId: post.dorgLeadId!,
@@ -118,21 +134,26 @@ export class ProcessPostJob {
       });
 
       if (!surfaceResult.success) {
+        console.error(`[Post ${postId}] dOrg surface failed: ${surfaceResult.message}`);
         throw new Error(surfaceResult.message || "Failed to surface lead");
       }
 
+      console.log(`[Post ${postId}] dOrg surface successful. Marking as COMPLETED.`);
       await this.postRepository.markCompleted(postId);
 
       try {
+        console.log(`[Post ${postId}] Step: Sending surface brief as message...`);
         const sendMessageResult = await this.dorgApiClient.sendMessage({ content: brief })
         if (!sendMessageResult.success) {
-          console.error(`Failed to send message to dOrg. Status: ${sendMessageResult.status}. Message: ${sendMessageResult.message}`);
+          console.error(`[Post ${postId}] Failed to send message to dOrg. Status: ${sendMessageResult.status}. Message: ${sendMessageResult.message}`);
           return;
         }
+        console.log(`[Post ${postId}] Message sent successfully.`);
       } catch (e) {
-        console.error("Failed to send message to dOrg:", e);
+        console.error(`[Post ${postId}] Error sending message to dOrg:`, e);
         return;
       }
     }
+    console.log(`[Post ${postId}] Post processing job completed successfully.`);
   }
 }

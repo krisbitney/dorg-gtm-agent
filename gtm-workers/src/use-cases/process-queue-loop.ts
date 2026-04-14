@@ -18,7 +18,7 @@ export class ProcessQueueLoop {
    * Starts the continuous queue processing loop.
    */
   async execute() {
-    console.log(`Worker starting with run ID: ${this.workerRunId}`);
+    console.log(`[Worker ${this.workerRunId}] Starting continuous queue processing loop...`);
 
     // Main loop
     while (true) {
@@ -30,10 +30,12 @@ export class ProcessQueueLoop {
           continue;
         }
 
+        console.log(`[Worker ${this.workerRunId}] Reserved message for processing.`);
+
         // b. Parse and validate payload
         const payloadResult = queuePayloadSchema.safeParse(JSON.parse(rawPayload));
         if (!payloadResult.success) {
-          console.error("Invalid queue payload:", payloadResult.error.format());
+          console.error(`[Worker ${this.workerRunId}] Invalid queue payload:`, payloadResult.error.format());
           await this.leadQueue.moveToDeadLetter(rawPayload, JSON.stringify({
             error: "Invalid payload schema",
             original: rawPayload,
@@ -50,8 +52,9 @@ export class ProcessQueueLoop {
 
         // d. Acknowledge message
         await this.leadQueue.ack(rawPayload);
+        console.log(`[Worker ${this.workerRunId}] Successfully processed and acknowledged post ${postId}.`);
       } catch (error: any) {
-        console.error(`Error processing job for payload ${rawPayload}:`, error);
+        console.error(`[Worker ${this.workerRunId}] Error processing job for payload ${rawPayload}:`, error);
         
         if (rawPayload) {
           try {
@@ -61,7 +64,7 @@ export class ProcessQueueLoop {
               const payload = JSON.parse(rawPayload);
               postId = payload.id;
             } catch (parseError) {
-              console.warn("Could not parse malformed payload for error logging:", parseError);
+              console.warn(`[Worker ${this.workerRunId}] Could not parse malformed payload for error logging:`, parseError);
             }
 
             if (postId) {
@@ -75,7 +78,7 @@ export class ProcessQueueLoop {
               failedAt: new Date().toISOString()
             }));
           } catch (dlqError) {
-            console.error("Failed to move item to DLQ:", dlqError);
+            console.error(`[Worker ${this.workerRunId}] Failed to move item to DLQ:`, dlqError);
           }
         }
       }

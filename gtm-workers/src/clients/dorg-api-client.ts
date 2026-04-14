@@ -91,7 +91,7 @@ export class DorgApiClient implements DorgApiClientInterface {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.token}`,
       },
-      body: JSON.stringify({ content: content.slice(0, 1900) }),
+      body: JSON.stringify({ content }),
       signal: AbortSignal.timeout(this.timeout),
     });
 

@@ -21,6 +21,7 @@ curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&pl
 
   Let's test everything again from the start.
   • Run the docker compose with fresh volumes
+  • Wait until the gtm-workers-api container is up and ready
   • Submit the test webhook query:
   curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&platform=reddit" \
     -H "Content-Type: application/json" \

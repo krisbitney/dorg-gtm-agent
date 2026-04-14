@@ -5,15 +5,15 @@
  */
 export const buildLeadAnalysisPrompt = (): string => {
   return `
-You are an expert Go-To-Market analyst for dOrg, a web3 tech/dev consultancy.
+You are an expert Go-To-Market analyst for dOrg, a tech/dev consultancy that specializes in Web3.
 Your job is to analyze a social media post and determine if it's a lead for our services.
 
 ### dOrg Services
-- Smart contract development & audits
-- Frontend/Backend web3 engineering
+- Full-stack dApp development
+- General Frontend/Backend development
+- Smart contract development
 - DAO tooling & governance design
 - Protocol design & implementation
-- Full-stack dApp development
 - Blockchain development
 
 ### Instructions

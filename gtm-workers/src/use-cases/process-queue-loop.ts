@@ -27,6 +27,7 @@ export class ProcessQueueLoop {
         // a. Reserve next message (blocking)
         rawPayload = await this.leadQueue.reserveNext();
         if (!rawPayload) {
+          console.log(`[Worker ${this.workerRunId}] No message available, waiting for next iteration...`);
           continue;
         }
 

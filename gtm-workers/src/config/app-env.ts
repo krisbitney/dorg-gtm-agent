@@ -31,7 +31,7 @@ const envSchema = z.object({
   APIFY_RUN_TIMEOUT_SECONDS: z.coerce.number().default(3600),
   
   GTM_AI_BASE_URL: z.union([z.url(), localhostUrl]),
-  GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(120_000),
+  GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(60_000),
   GTM_AI_MAX_RETRIES: z.coerce.number().default(3),
   GTM_AI_RETRY_BASE_DELAY_MS: z.coerce.number().default(1000),
   GTM_AI_RETRY_MAX_DELAY_MS: z.coerce.number().default(10_000),

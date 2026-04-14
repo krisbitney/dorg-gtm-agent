@@ -2,7 +2,7 @@ import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 
 import { leadAnalysisAgent } from '../agents/lead-analysis-agent';
-import { CrawlerPostInputSchema } from '../schemas/crawler-post-input-schema';
+import { CrawlerPostInput, CrawlerPostInputSchema } from '../schemas/crawler-post-input-schema';
 import { LeadAnalysisResultSchema } from '../schemas/lead-analysis-result-schema';
 import { LeadAnalysisRawResultSchema } from '../schemas/lead-analysis-raw-result-schema';
 import { formatCrawlerPostForLLM } from '../prompts/format-crawler-post-for-llm';
@@ -22,7 +22,9 @@ export const leadAnalysisWorkflow = createWorkflow({
       id: 'format-prompt',
       inputSchema: CrawlerPostInputSchema,
       outputSchema: z.object({ prompt: z.string() }),
-      execute: async ({ inputData }) => {
+      execute: async ({ inputData, mastra }) => {
+        const logger = mastra.getLogger();
+        logger.info(`[Post ${inputData.id}] Step: format-prompt. Formatting crawler post for LLM.`);
         const prompt = formatCrawlerPostForLLM(inputData);
         return { prompt };
       },
@@ -33,13 +35,19 @@ export const leadAnalysisWorkflow = createWorkflow({
       id: 'lead-analysis',
       inputSchema: z.object({ prompt: z.string() }),
       outputSchema: LeadAnalysisRawResultSchema,
-      execute: async ({ inputData, abortSignal }) => {
+      execute: async ({ inputData, abortSignal, mastra, getInitData }) => {
+        const logger = mastra.getLogger();
+        const initData = getInitData() as CrawlerPostInput;
+        const postId = initData.id;
+
+        logger.info(`[Post ${postId}] Step: lead-analysis. Generating lead analysis with LLM.`);
         const result = await leadAnalysisAgent.generate(inputData.prompt, {
           structuredOutput: {
             schema: LeadAnalysisRawResultSchema,
           },
           abortSignal,
         });
+        logger.info(`[Post ${postId}] LLM generated lead analysis. isLead: ${result.object.isLead}`);
         return result.object;
       },
     }),
@@ -49,8 +57,15 @@ export const leadAnalysisWorkflow = createWorkflow({
       id: 'normalize-result',
       inputSchema: LeadAnalysisRawResultSchema,
       outputSchema: LeadAnalysisResultSchema,
-      execute: async ({ inputData }) => {
-        return normalizeLeadAnalysisResult(inputData);
+      execute: async ({ inputData, mastra, getInitData }) => {
+        const logger = mastra.getLogger();
+        const initData = getInitData() as CrawlerPostInput;
+        const postId = initData.id;
+
+        logger.info(`[Post ${postId}] Step: normalize-result. Normalizing lead analysis result.`);
+        const result = normalizeLeadAnalysisResult(inputData);
+        logger.info(`[Post ${postId}] Lead analysis workflow completed.`);
+        return result;
       },
     }),
   )

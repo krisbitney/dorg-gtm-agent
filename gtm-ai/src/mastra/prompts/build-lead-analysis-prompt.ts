@@ -35,19 +35,26 @@ Your job is to analyze a social media post and determine if it's a lead for our 
    - "whyFit": explain why the post may fit dOrg's services.
    - "needs": what the poster needs help with.
    - "timing": if a timeframe is mentioned, extract it. If not, use null.
-   - "contactInfo": if any contact information (username, email, discord, twitter, etc) is mentioned, extract all of it. If not, use null.
+   - "contactInfo": Extract all contact info mentioned (username, email, discord, twitter, website, company name, etc).
 3. If it is not a lead, return "isLead: false" and use null for all other fields.
 
-We have already determined that there is a high probability that the post is a lead.
-
 ### Expected Output Shape (Examples)
-Lead example:
+Lead example (high quality):
 { 
   "isLead": true, 
   "whyFit": "The poster is launching a DeFi product and explicitly asks for external engineering support across protocol and app layers, which closely matches dOrg's smart contract and full-stack web3 services.", 
   "needs": "Smart contract architecture + Solidity implementation, security review, and a production-ready web3 frontend with wallet integration", 
   "timing": "Wants to begin this month and ship an MVP within 6-8 weeks", 
-  "contactInfo": "Reddit: u/web3entrepreneur; Discord: founder_xyz; Email: founder@example.com" 
+  "contactInfo": "Reddit: u/web3entrepreneur; Discord: founder_xyz; Email: founder@example.com; Company: Example Corp" 
+}
+
+Lead example (low quality):
+{ 
+  "isLead": true, 
+  "whyFit": "The poster is looking for a freelance developer to help build an app", 
+  "needs": "Full stack developer with experience in web3", 
+  "timing": null, 
+  "contactInfo": "Reddit: u/web3entrepreneur" 
 }
 
 Not-a-lead example:

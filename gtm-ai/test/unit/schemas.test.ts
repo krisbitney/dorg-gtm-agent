@@ -2,7 +2,6 @@ import { test, expect, describe } from "bun:test";
 import { CrawlerPostInputSchema } from "../../src/mastra/schemas/crawler-post-input-schema";
 import { LeadScoreResultSchema } from "../../src/mastra/schemas/lead-score-result-schema";
 import { LeadAnalysisResultSchema } from "../../src/mastra/schemas/lead-analysis-result-schema";
-import { LeadAnalysisRawResultSchema } from "../../src/mastra/schemas/lead-analysis-raw-result-schema";
 
 describe("Schemas", () => {
   describe("CrawlerPostInputSchema", () => {
@@ -99,30 +98,6 @@ describe("Schemas", () => {
         // missing needs
       });
       expect(result.success).toBe(false);
-    });
-  });
-
-  describe("LeadAnalysisRawResultSchema", () => {
-    test("valid raw non-lead result parses", () => {
-      const result = LeadAnalysisRawResultSchema.safeParse({
-        isLead: false,
-        whyFit: null,
-        needs: null,
-        timing: null,
-        contactInfo: null,
-      });
-      expect(result.success).toBe(true);
-    });
-
-    test("valid raw lead result parses", () => {
-      const result = LeadAnalysisRawResultSchema.safeParse({
-        isLead: true,
-        whyFit: "Fits because X",
-        needs: "Needs Y",
-        timing: "Soon",
-        contactInfo: "email@example.com",
-      });
-      expect(result.success).toBe(true);
     });
   });
 });

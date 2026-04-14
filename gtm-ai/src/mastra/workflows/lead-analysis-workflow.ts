@@ -4,10 +4,7 @@ import { z } from 'zod';
 import { leadAnalysisAgent } from '../agents/lead-analysis-agent';
 import { CrawlerPostInput, CrawlerPostInputSchema } from '../schemas/crawler-post-input-schema';
 import { LeadAnalysisResultSchema } from '../schemas/lead-analysis-result-schema';
-import { LeadAnalysisRawResultSchema } from '../schemas/lead-analysis-raw-result-schema';
 import { formatCrawlerPostForLLM } from '../prompts/format-crawler-post-for-llm';
-
-import { normalizeLeadAnalysisResult } from './normalize-lead-analysis-result';
 
 /**
  * Workflow for determining if a post is a lead and extracting its details.
@@ -34,7 +31,7 @@ export const leadAnalysisWorkflow = createWorkflow({
     createStep({
       id: 'lead-analysis',
       inputSchema: z.object({ prompt: z.string() }),
-      outputSchema: LeadAnalysisRawResultSchema,
+      outputSchema: LeadAnalysisResultSchema,
       execute: async ({ inputData, abortSignal, mastra, getInitData }) => {
         const logger = mastra.getLogger();
         const initData = getInitData() as CrawlerPostInput;
@@ -43,29 +40,12 @@ export const leadAnalysisWorkflow = createWorkflow({
         logger.info(`[Post ${postId}] Step: lead-analysis. Generating lead analysis with LLM.`);
         const result = await leadAnalysisAgent.generate(inputData.prompt, {
           structuredOutput: {
-            schema: LeadAnalysisRawResultSchema,
+            schema: LeadAnalysisResultSchema,
           },
           abortSignal,
         });
         logger.info(`[Post ${postId}] LLM generated lead analysis. isLead: ${result.object.isLead}`);
         return result.object;
-      },
-    }),
-  )
-  .then(
-    createStep({
-      id: 'normalize-result',
-      inputSchema: LeadAnalysisRawResultSchema,
-      outputSchema: LeadAnalysisResultSchema,
-      execute: async ({ inputData, mastra, getInitData }) => {
-        const logger = mastra.getLogger();
-        const initData = getInitData() as CrawlerPostInput;
-        const postId = initData.id;
-
-        logger.info(`[Post ${postId}] Step: normalize-result. Normalizing lead analysis result.`);
-        const result = normalizeLeadAnalysisResult(inputData);
-        logger.info(`[Post ${postId}] Lead analysis workflow completed.`);
-        return result;
       },
     }),
   )

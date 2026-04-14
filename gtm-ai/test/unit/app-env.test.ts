@@ -7,7 +7,6 @@ describe("App Environment Configuration", () => {
     expect(result.MASTRA_HOST).toBe("0.0.0.0");
     expect(result.MASTRA_PORT).toBe(4111);
     expect(result.MASTRA_LOG_LEVEL).toBe("info");
-    expect(result.GTM_SMALL_MODEL).toBe("ollama-cloud/gemma3:4b");
   });
 
   test("can override defaults", () => {

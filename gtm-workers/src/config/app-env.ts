@@ -35,7 +35,7 @@ const envSchema = z.object({
   GTM_AI_MAX_RETRIES: z.coerce.number().default(3),
   GTM_AI_RETRY_BASE_DELAY_MS: z.coerce.number().default(1000),
   GTM_AI_RETRY_MAX_DELAY_MS: z.coerce.number().default(10_000),
-  LEAD_SCORE_THRESHOLD: z.coerce.number().default(0.7),
+  LEAD_SCORE_THRESHOLD: z.coerce.number().default(0.5),
   
   QUEUE_NAME: z.string().default("gtm:posts:queue"),
   QUEUE_PROCESSING_NAME: z.string().default("gtm:posts:processing"),

@@ -1,4 +1,4 @@
-- [ ] Revise crawl started endpoint to insert additional parameters into crawl start
+- [ ] Revise crawl started endpoint to insert additional parameters when starting a crawl with the Apify client
   - i.e., the crawler identifier, and actor inputs (start urls list, configuration parameters)
   - use gtm-workers/src/config/crawler-configs/reddit.ts, which already contains list of start urls for the reddit crawler
 - [ ] Ensure the Apify dataset import handles posts with property names for url other than "url" --> accept the property name as a REST parameter in the webhook endpoint

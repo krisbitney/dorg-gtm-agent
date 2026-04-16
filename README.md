@@ -3,9 +3,9 @@
 This repository contains the code for a dOrg GTM Agent hackathon submission. The dOrg GTM Agent is a system that uses AI to find leads for dOrg's Web3 software development and services consultancy.
 
 Basic strategy:
-1. Scrape all social media posts at specified URLs and search terms
+1. Scrape potentially relevant social media posts (e.g., from specific communities search terms)
 2. Estimate the probability that a post is a lead using a small, fast LLM
-3. If a post is likely a lead, extract the lead data with a larger LLM
+3. If a post is likely a lead, double-check that it is a lead and extract the lead data with a larger LLM
 4. Hand off the lead to a human or smart LLM for outreach
 
 ## System Design
@@ -20,10 +20,10 @@ The dOrg GTM Agent is a distributed system designed to automate lead generation 
 ![system-design.png](system-design.png)
 
 A microservices architecture is useful for a few reasons:
-1. There could be many different web crawlers. Each web crawler will typically run in bursts. 
-2. It simplifies the implementation to host the web crawler on a cloud service like Apify, which is designed for web crawlers.
+1. There could be many different web crawlers. Each web crawler will typically run in bursts and shut down between bursts. 
+2. It simplifies the implementation to host the web crawler on a cloud service like Apify, which is designed for web crawlers and simplifies proxy management.
 3. LLM calls are relatively slow and scale differently from the orchestration workers, so hosting the AI service in a separate instance can facilitate scaling later on.
-4. The AI service's advanced observability and monitoring tools work well when using Mastra's server tooling,  which wraps server frameworks like Hono to monitor the AI request from start to finish.
+4. The AI service's advanced observability and monitoring tools work well when using Mastra's server tooling, which wraps server frameworks like Hono to monitor the AI request from start to finish.
 
 We could improve scalability further, at the cost of increased complexity, by using a more robust message queue like RabbitMQ or Kafka, or a document database for storing social media posts.
 

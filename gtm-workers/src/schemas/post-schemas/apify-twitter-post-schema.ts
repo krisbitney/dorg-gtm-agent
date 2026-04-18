@@ -90,22 +90,22 @@ const quotedTweetSchema = z.object({
 });
 
 export const apifyTwitterPostSchema = z.object({
-  type: z.string(),
+  type: z.string().optional(),
   tweet_id: z.string().min(1),
   screen_name: z.string().min(1),
   bookmarks: z.number().int().nonnegative(),
   favorites: z.number().int().nonnegative(),
   created_at: z.string().min(1),
   text: z.string(),
-  lang: z.string().min(1),
-  display_text_range: indexPairSchema,
-  source: z.string().min(1),
+  lang: z.string().min(1).optional(),
+  display_text_range: indexPairSchema.optional(),
+  source: z.string().min(1).optional(),
   quotes: z.number().int().nonnegative(),
   replies: z.number().int().nonnegative(),
-  conversation_id: z.string().min(1),
+  conversation_id: z.string().min(1).optional(),
   retweets: z.number().int().nonnegative(),
-  views: z.string().min(1),
-  entities: entitiesSchema,
+  views: z.string().min(1).optional(),
+  entities: entitiesSchema.optional(),
   user_info: userInfoSchema,
   media: z.any().optional(),
 
@@ -134,14 +134,25 @@ export function getTwitterPostUrl(postData: Record<string, any>): string | undef
 export function transformTwitterPost(postData: ApifyTwitterPost, postUrl: string): WithUrl {
   return {
     url: postUrl,
-    body: postData.text,
-    upvotes: postData.favorites,
-    numberOfComments: postData.replies,
-    bookmarks: postData.bookmarks,
-    retweets: postData.retweets,
     createdAt: postData.created_at,
     authorUsername: postData.screen_name,
-    authorDisplayName: postData.user_info.name,
-    user_info: postData.user_info,
+    body: postData.text,
+    likes: postData.favorites,
+    comments: postData.replies,
+    bookmarks: postData.bookmarks,
+    retweets: postData.retweets,
+    user_info: {
+      screen_name: postData.user_info.screen_name,
+      name: postData.user_info.name,
+      created_at: postData.user_info.created_at,
+      description: postData.user_info.description,
+      followers_count: postData.user_info.followers_count,
+      favourites_count: postData.user_info.favourites_count,
+      url: postData.user_info.url,
+      verified_type: postData.user_info.verified_type,
+      verified: postData.user_info.verified,
+      friends_count: postData.user_info.friends_count,
+      location: postData.user_info.location,
+    }
   }
 }

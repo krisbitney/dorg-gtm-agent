@@ -1,7 +1,6 @@
 - [ ] Revise crawl started endpoint to insert additional parameters when starting a crawl with the Apify client
   - i.e., the crawler identifier, and actor inputs (start urls list, configuration parameters)
   - use gtm-workers/src/config/crawler-configs/reddit.ts, which already contains list of start urls for the reddit crawler
-- [ ] Ensure the Apify dataset import handles posts with property names for url other than "url" --> accept the property name as a REST parameter in the webhook endpoint
 - [ ] Add filters to Apify dataset import to skip posts that don't contain text content
 - [x] use Mastra AI client SDK @mastra/client-js in `gtm-workers` to call the mastra-based gtm-ai service.
 - [ ] We should attempt to parse posts using the expected schema when importing the dataset in order to obtain the url
@@ -9,3 +8,4 @@ AND post origination date. We should also filter posts by origination date to av
 - [ ] Support graceful shutdown for workers
 - [ ] Add separate package.json scripts for unit and integration test suites so that unit tests can run without infrastructure dependencies
 - [ ] Add logging during retries/timeouts to @gtm-workers/src/clients/gtm-ai-client.ts
+- [ ] Structured logging

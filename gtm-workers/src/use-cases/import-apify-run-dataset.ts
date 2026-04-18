@@ -4,7 +4,7 @@ import { PostRepository } from "../storage/repositories/post-repository.js";
 import type { ProcessedUrlStoreInterface } from "../storage/processed-url-store.js";
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import type { ApifyRunWebhook } from "../schemas/apify-run-webhook-schema.js";
-import { getPlatformSchema } from "../schemas";
+import { getPlatformSchema, getPostUrlPropName } from "../schemas";
 import { CrawlRunStatus } from "../constants/crawl-run-status.js";
 
 /**
@@ -90,7 +90,7 @@ export class ImportApifyRunDataset {
       for (const rawItem of items) {
         counters.itemsRead++;
 
-        // a. Validate item
+        // a1. Validate item
         const validationResult = platformSchema.safeParse(rawItem);
         if (!validationResult.success) {
           console.warn(`Invalid item in dataset ${datasetId} for platform ${platform}:`, validationResult.error.format());
@@ -98,17 +98,26 @@ export class ImportApifyRunDataset {
           continue;
         }
 
+        // a2. Get and validate post url
         const postData = validationResult.data;
+        const urlPropName = getPostUrlPropName(platform);
+        const postUrl = postData[urlPropName];
+        if (!postUrl || typeof postUrl !== "string") {
+          // If this happens, there may be a bug in the platform schema or in getPostUrlPropName
+          console.warn(`Missing or malformed URL in item for platform ${platform}:`, postData);
+          counters.invalidItems++;
+          continue;
+        }
 
         // b. Deduplicate by URL
-        const isDuplicate = await this.processedUrlStore.has(postData.url);
+        const isDuplicate = await this.processedUrlStore.has(postUrl);
         if (isDuplicate) {
           counters.duplicatesSkipped++;
           continue;
         }
 
         // c. Optional temporary claim to prevent concurrent double-imports
-        const hasClaim = await this.processedUrlStore.claim(postData.url);
+        const hasClaim = await this.processedUrlStore.claim(postUrl);
         if (!hasClaim) {
           counters.duplicatesSkipped++;
           continue;
@@ -119,7 +128,7 @@ export class ImportApifyRunDataset {
           const postId = Bun.randomUUIDv7();
           await this.postRepository.insert({
             id: postId,
-            url: postData.url,
+            url: postUrl,
             platform,
             post: postData,
             apifyRunId,
@@ -130,14 +139,14 @@ export class ImportApifyRunDataset {
           await this.leadQueue.enqueue(JSON.stringify({ id: postId, platform }));
 
           // f. Permanently mark as processed
-          await this.processedUrlStore.mark(postData.url);
+          await this.processedUrlStore.mark(postUrl);
           counters.itemsImported++;
         } catch (error) {
-          console.error(`Failed to import post ${postData.url}:`, error);
+          console.error(`Failed to import post ${postUrl}:`, error);
           counters.failedItems++;
           // We don't mark as processed so it can be retried
         } finally {
-          await this.processedUrlStore.release(postData.url);
+          await this.processedUrlStore.release(postUrl);
         }
       }
 

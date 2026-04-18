@@ -18,3 +18,12 @@ export function getPlatformSchema(platform: string): z.ZodSchema<any> {
   }
   return schema;
 }
+
+export function getPostUrlPropName(platform: string): string {
+  switch (platform) {
+    case "reddit":
+      return "url";
+    default:
+      throw new Error(`Unsupported platform: ${platform}`);
+  }
+}

@@ -22,7 +22,6 @@ export async function handleApifyWebhookRequest(request: Request) {
 
   // 2. Parse and validate the webhook body
   const platform = url.searchParams.get("platform");
-  // TODO: handle unknown platform by figuring out which platform it is using known parsers
   if (!platform) {
     return new Response("Missing platform parameter", { status: 400 });
   }

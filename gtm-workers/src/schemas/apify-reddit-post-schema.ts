@@ -8,14 +8,14 @@ export const redditPostUrlPropName = "url";
  * Schema based on output from trudax/reddit-scraper-lite Apify Reddit scraper
  */
 export const apifyRedditPostSchema = z.object({
-  dataType: z.string().min(1).optional(),
-  username: z.string().min(1),
-  authorFlair: z.string().optional(),
-  title: z.string().min(1).optional(),
-  body: z.string().min(1),
-  upvotes: z.number().int().positive().optional(),
-  numberOfComments: z.number().int().positive().optional(),
-  communityName: z.string().min(1).optional(),
+  // dataType: z.string().min(1).optional(),
+  // username: z.string().min(1),
+  // authorFlair: z.string().optional(),
+  // title: z.string().min(1).optional(),
+  // body: z.string().min(1),
+  // upvotes: z.number().int().positive().optional(),
+  // numberOfComments: z.number().int().positive().optional(),
+  // communityName: z.string().min(1).optional(),
   url: z.url(),
 });
 

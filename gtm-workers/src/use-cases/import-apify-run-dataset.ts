@@ -97,9 +97,9 @@ export class ImportApifyRunDataset {
           counters.invalidItems++;
           continue;
         }
+        const postData = validationResult.data;
 
         // a2. Get and validate post url
-        const postData = validationResult.data;
         const urlPropName = getPostUrlPropName(platform);
         const postUrl = postData[urlPropName];
         if (!postUrl || typeof postUrl !== "string") {

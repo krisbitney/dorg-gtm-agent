@@ -4,7 +4,7 @@ import { PostRepository } from "../storage/repositories/post-repository.js";
 import type { ProcessedUrlStoreInterface } from "../storage/processed-url-store.js";
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import type { ApifyRunWebhook } from "../schemas/apify-run-webhook-schema.js";
-import { getPlatformSchema, getPostUrlPropName } from "../schemas";
+import {getPlatformSchema, getPostUrlPropName, type Platform} from "../schemas";
 import { CrawlRunStatus } from "../constants/crawl-run-status.js";
 
 /**
@@ -22,7 +22,7 @@ export class ImportApifyRunDataset {
   /**
    * Orchestrates fetching and importing dataset items into the database and queue.
    */
-  async execute(notification: ApifyRunWebhook, platform: string): Promise<void> {
+  async execute(notification: ApifyRunWebhook, platform: Platform): Promise<void> {
     const { apifyRunId, actorId, status, defaultDatasetId } = notification;
 
     const platformSchema = getPlatformSchema(platform);

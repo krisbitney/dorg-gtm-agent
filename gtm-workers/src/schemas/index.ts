@@ -1,17 +1,30 @@
 import { z } from "zod";
-import { apifyRedditPostSchema } from "./apify-reddit-post-schema.js";
+import {apifyRedditPostSchema, redditPostUrlPropName} from "./apify-reddit-post-schema.js";
+
+export type Platform = "reddit";
+
+export function isPlatform(platform: string): platform is Platform {
+  return platform === "reddit";
+}
 
 /**
  * Mapping of platform names to their respective Apify dataset item schemas.
  */
-export const platformSchemas: Record<string, z.ZodSchema<any>> = {
+export const platformSchemas: Record<Platform, z.ZodSchema<any>> = {
   reddit: apifyRedditPostSchema,
+};
+
+/**
+ * Mapping of platform names to their respective Apify dataset url prop names.
+ */
+export const postUrlPropNames: Record<Platform, string> = {
+  reddit: redditPostUrlPropName,
 };
 
 /**
  * Gets the Apify dataset item schema for a given platform.
  */
-export function getPlatformSchema(platform: string): z.ZodSchema<any> {
+export function getPlatformSchema(platform: Platform): z.ZodSchema<any> {
   const schema = platformSchemas[platform];
   if (!schema) {
     throw new Error(`Unsupported platform: ${platform}`);
@@ -19,11 +32,10 @@ export function getPlatformSchema(platform: string): z.ZodSchema<any> {
   return schema;
 }
 
-export function getPostUrlPropName(platform: string): string {
-  switch (platform) {
-    case "reddit":
-      return "url";
-    default:
-      throw new Error(`Unsupported platform: ${platform}`);
+export function getPostUrlPropName(platform: Platform): string {
+  const propName = postUrlPropNames[platform];
+  if (!propName) {
+    throw new Error(`Unsupported platform: ${platform}`);
   }
+  return propName;
 }

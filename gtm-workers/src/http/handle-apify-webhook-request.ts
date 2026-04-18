@@ -6,6 +6,7 @@ import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository
 import { PostRepository } from "../storage/repositories/post-repository.js";
 import { RedisProcessedUrlStore } from "../storage/processed-url-store.js";
 import { RedisLeadQueue } from "../storage/lead-queue.js";
+import {isPlatform} from "../schemas";
 
 /**
  * Handles the Apify run finished webhook.
@@ -24,6 +25,9 @@ export async function handleApifyWebhookRequest(request: Request) {
   const platform = url.searchParams.get("platform");
   if (!platform) {
     return new Response("Missing platform parameter", { status: 400 });
+  }
+  if (!isPlatform(platform)) {
+    return new Response("Invalid platform", { status: 400 });
   }
 
   let body;

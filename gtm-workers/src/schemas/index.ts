@@ -3,9 +3,15 @@ import {apifyRedditPostSchema, redditPostUrlPropName} from "./apify-reddit-post-
 
 export type Platform = "reddit";
 
-export function isPlatform(platform: string): platform is Platform {
-  return platform === "reddit";
+export function isPlatform(platform: unknown): platform is Platform {
+  return typeof platform === "string" && platform === "reddit";
 }
+
+export const platformSchema = z.custom<Platform>((value: unknown): value is Platform => {
+  return isPlatform(value);
+}, {
+  message: "Invalid platform",
+});
 
 /**
  * Mapping of platform names to their respective Apify dataset item schemas.

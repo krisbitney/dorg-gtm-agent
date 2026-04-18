@@ -1,26 +1,14 @@
-import {oldRedditWeb3SubredditUrls} from "./crawler-start-urls/reddit.ts";
+import {getRedditActorInputs, redditActorId} from "./crawler-start-urls/reddit.ts";
+import type {Platform} from "../schemas";
 
-export const getCrawlerConfig = (platform: string): { actorId: string; input: Record<string, any>} => {
+export const getCrawlerConfig = (platform: Platform): { actorId: string; input: Record<string, any>} => {
   switch (platform) {
     case "reddit":
       return {
         actorId: redditActorId,
-        input: redditActorInputs,
+        input: getRedditActorInputs(),
       };
     default:
       throw new Error(`Unsupported platform: ${platform}`);
   }
-};
-
-/**
- * Apify Actor ID for the Reddit crawler.
- */
-export const redditActorId = "irreplaceable_nucleus/dorg-gtm-agent";
-
-/**
- * Default actor inputs for the Reddit crawler.
- */
-export const redditActorInputs = {
-  startUrls: oldRedditWeb3SubredditUrls,
-  maxCrawlDepth: 10,
 };

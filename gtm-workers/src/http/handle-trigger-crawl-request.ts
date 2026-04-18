@@ -4,6 +4,7 @@ import { StartApifyCrawlRun } from "../use-cases/start-apify-crawl-run.js";
 import { ApifyCrawlerClient } from "../clients/apify-crawler-client.js";
 import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository.js";
 import {getCrawlerConfig} from "../config/crawler-configs.ts";
+import {isPlatform} from "../schemas";
 
 /**
  * Handles the internal trigger crawl request.
@@ -32,7 +33,8 @@ export async function handleTriggerCrawlRequest(request: Request) {
   }
 
   // Set platform-specific actor and inputs
-  const { actorId, input } = getCrawlerConfig(result.data.platform);
+  const platform = result.data.platform;
+  const { actorId, input } = getCrawlerConfig(platform);
 
   // 3. Execute the use case
   const apifyClient = new ApifyCrawlerClient();
@@ -41,7 +43,7 @@ export async function handleTriggerCrawlRequest(request: Request) {
 
   try {
     const responseBody = await startCrawlRun.execute({ 
-      platform: result.data.platform,
+      platform,
       source: result.data.source,
       actorId,
       input,

@@ -1,52 +1,102 @@
-export const oldRedditWeb3SubredditUrls = [
-  "https://www.old.reddit.com/r/CryptoJobsList/new/",
-  "https://www.old.reddit.com/r/Jobs4Bitcoins/new/",
-  "https://www.old.reddit.com/r/CryptoCurrencyJobs/new/",
-  "https://www.old.reddit.com/r/ethdevjobs/new/",
-  "https://www.old.reddit.com/r/cryptodevjobs/new/",
-  "https://www.old.reddit.com/r/forhire/new/",
-  "https://www.old.reddit.com/r/FreelanceProgramming/new/",
-  "https://www.old.reddit.com/r/DeveloperJobs/new/",
-  "https://www.old.reddit.com/r/freelance/new/",
-  "https://www.old.reddit.com/r/hiring/new/",
-  "https://www.old.reddit.com/r/ethdev/new/",
-  "https://www.old.reddit.com/r/solidity/new/",
-  "https://www.old.reddit.com/r/blockchaindeveloper/new/",
-  "https://www.old.reddit.com/r/cryptodevs/new/",
-  "https://www.old.reddit.com/r/solanadev/new/",
-  "https://www.old.reddit.com/r/nearprotocol/new/",
-  "https://www.old.reddit.com/r/web3/new/",
-  "https://www.old.reddit.com/r/CryptoTechnology/new/",
-  "https://www.old.reddit.com/r/defi/new/",
-  "https://www.old.reddit.com/r/ethstaker/new/",
-  "https://www.old.reddit.com/r/CryptoCurrency/new/",
-  "https://www.old.reddit.com/r/Bitcoin/new/",
-  "https://www.old.reddit.com/r/ethereum/new/",
-  "https://www.old.reddit.com/r/ethtrader/new/",
-  "https://www.old.reddit.com/r/CryptoMarkets/new/",
-  "https://www.old.reddit.com/r/Altcoin/new/",
-  "https://www.old.reddit.com/r/CryptoMoonShots/new/",
-  "https://www.old.reddit.com/r/Solana/new/",
-  "https://www.old.reddit.com/r/Cardano/new/",
-  "https://www.old.reddit.com/r/NFT/new/",
-  "https://www.old.reddit.com/r/NFTsMarketplace/new/",
-  "https://www.old.reddit.com/r/opensea/new/",
-  "https://www.old.reddit.com/r/CryptoArt/new/",
-  "https://www.old.reddit.com/r/tezos/new/",
-  "https://www.old.reddit.com/r/Elastos/new/",
-  "https://www.old.reddit.com/r/BlockchainStartups/new/",
-  "https://www.old.reddit.com/r/startups/new/",
-  "https://www.old.reddit.com/r/Entrepreneur/new/",
-  "https://www.old.reddit.com/r/business/new/",
-  "https://www.old.reddit.com/r/EntrepreneurRideAlong/new/",
-  "https://www.old.reddit.com/r/Crypto_General/new/",
-  "https://www.old.reddit.com/r/BitcoinBeginners/new/",
-  "https://www.old.reddit.com/r/SatoshiStreetBets/new/",
-  "https://www.old.reddit.com/r/Monero/new/",
-  "https://www.old.reddit.com/r/webdev/new/",
-  "https://www.old.reddit.com/r/decentralizeweb/new/",
-  "https://www.old.reddit.com/r/DAO/new/",
-  "https://www.old.reddit.com/r/smartcontracts/new/",
-  "https://www.old.reddit.com/r/layer2/new/",
-  "https://www.old.reddit.com/r/chainlink/new/"
-];
+/**
+ * Apify Actor ID for the Reddit crawler.
+ */
+export const redditActorId = "trudax/reddit-scraper-lite"; // "irreplaceable_nucleus/dorg-gtm-agent";
+
+export function getRedditActorInputs(): Record<string, any> {
+  return {
+    ...redditActorInputs,
+    "postDateLimit": getPostDateLimit(),
+  }
+}
+
+
+// get date of 30 days ago (UTC) formatted like ""YYYY-MM-DD"
+// example: "2026-03-12"
+function getPostDateLimit(daysAgoFromToday = 30): string {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgoFromToday);
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Default actor inputs for the Reddit crawler.
+ */
+const redditActorInputs = {
+  "maxItems": 2500,
+  "maxPostCount": 50,
+  "scrollTimeout": 300,
+  "sort": "new",
+  "postDateLimit": "2026-04-01",
+  "searchComments": false,
+  "searchCommunities": false,
+  "searchPosts": true,
+  "searchUsers": false,
+  "skipComments": true,
+  "skipCommunity": true,
+  "skipUserPosts": false,
+  "maxUserCount": 0,
+  "maxComments": 0,
+  "maxCommunitiesCount": 0,
+  "debugMode": false,
+  "ignoreStartUrls": false,
+  "includeNSFW": false,
+  "searches": [
+    "looking for web3 developer",
+    "hiring web3 developer",
+    "need web3 developer",
+    "web3 developer wanted",
+    "hire solidity developer",
+    "solidity smart contract developer needed",
+    "looking for blockchain developer",
+    "hiring blockchain developer",
+    "need smart contract developer",
+    "web3 dapp developer hire",
+    "ethereum developer needed",
+    "solana developer hiring",
+    "rust solana developer wanted",
+    "looking for web3 consultancy",
+    "web3 development agency recommendation",
+    "need smart contract audit",
+    "blockchain security audit required",
+    "defi developer needed",
+    "nft marketplace developer hire",
+    "dao smart contract developer",
+    "full stack web3 developer wanted",
+    "react web3 developer needed",
+    "ethers.js hardhat developer",
+    "foundry developer hiring",
+    "polygon developer needed",
+    "layer2 scaling developer wanted",
+    "zk rollup developer",
+    "cross chain bridge developer hire",
+    "web3 gaming developer needed",
+    "metaverse dapp development",
+    "decentralized app help wanted",
+    "web3 wallet integration developer",
+    "chainlink oracle integration needed",
+    "nft minting dapp developer",
+    "erc721 smart contract help",
+    "looking to hire web3 team OR agency",
+    "blockchain development company needed",
+    "web3 consulting services",
+    "rfp web3 OR blockchain development",
+    "who can build dapp OR smart contract",
+    "smart contract optimization needed",
+    "gas optimization solidity developer",
+    "web3 project needs dev team",
+    "startup looking for web3 developer",
+    "crypto project developer hire",
+    "decentralized finance development help",
+    "migrate to web3 developer needed",
+    "web2 to web3 migration help",
+    "recommend web3 development company",
+    "best web3 consultancy OR agency"
+  ],
+  "proxy": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": [
+      "RESIDENTIAL"
+    ]
+  },
+};

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type {WithUrl} from "../types.ts";
 
 const indexPairSchema = z.tuple([z.number().int(), z.number().int()]);
 
@@ -89,7 +90,7 @@ const quotedTweetSchema = z.object({
 });
 
 export const apifyTwitterPostSchema = z.object({
-  type: z.literal("tweet"),
+  type: z.string(),
   tweet_id: z.string().min(1),
   screen_name: z.string().min(1),
   bookmarks: z.number().int().nonnegative(),
@@ -128,4 +129,19 @@ export function getTwitterPostUrl(postData: Record<string, any>): string | undef
     return undefined;
   }
   return `https://x.com/${postData.screen_name}/status/${postData.tweet_id}`;
+}
+
+export function transformTwitterPost(postData: ApifyTwitterPost, postUrl: string): WithUrl {
+  return {
+    url: postUrl,
+    body: postData.text,
+    upvotes: postData.favorites,
+    numberOfComments: postData.replies,
+    bookmarks: postData.bookmarks,
+    retweets: postData.retweets,
+    createdAt: postData.created_at,
+    authorUsername: postData.screen_name,
+    authorDisplayName: postData.user_info.name,
+    user_info: postData.user_info,
+  }
 }

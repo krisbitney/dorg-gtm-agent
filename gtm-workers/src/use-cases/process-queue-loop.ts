@@ -1,6 +1,6 @@
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import { ProcessPostJob } from "./process-post-job.js";
-import { queuePayloadSchema } from "../types/queue-payload-schema.js";
+import { queuePayloadSchema } from "../schemas/queue-payload-schema.js";
 import { PostRepository } from "../storage/repositories/post-repository.js";
 
 /**

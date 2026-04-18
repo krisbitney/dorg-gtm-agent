@@ -1,5 +1,5 @@
 import { appEnv } from "../config/app-env.js";
-import { apifyRunWebhookSchema } from "../types/apify-run-webhook-schema.js";
+import { apifyRunWebhookSchema } from "../schemas/apify-run-webhook-schema.js";
 import { ImportApifyRunDataset } from "../use-cases/import-apify-run-dataset.js";
 import { ApifyCrawlerClient } from "../clients/apify-crawler-client.js";
 import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository.js";
@@ -7,7 +7,7 @@ import { PostRepository } from "../storage/repositories/post-repository.js";
 import { RedisProcessedUrlStore } from "../storage/processed-url-store.js";
 import { RedisLeadQueue } from "../storage/lead-queue.js";
 
-import {isPlatform} from "../types/platform.ts";
+import {isPlatform} from "../schemas/platform.ts";
 
 /**
  * Handles the Apify run finished webhook.

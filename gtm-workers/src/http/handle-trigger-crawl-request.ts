@@ -1,5 +1,5 @@
 import { appEnv } from "../config/app-env.js";
-import { triggerCrawlRequestSchema } from "../types/trigger-crawl-request-schema.js";
+import { triggerCrawlRequestSchema } from "../schemas/trigger-crawl-request-schema.js";
 import { StartApifyCrawlRun } from "../use-cases/start-apify-crawl-run.js";
 import { ApifyCrawlerClient } from "../clients/apify-crawler-client.js";
 import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository.js";

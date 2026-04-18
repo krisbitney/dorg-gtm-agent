@@ -3,10 +3,9 @@ import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository
 import { PostRepository } from "../storage/repositories/post-repository.js";
 import type { ProcessedUrlStoreInterface } from "../storage/processed-url-store.js";
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
-import type { ApifyRunWebhook } from "../types/apify-run-webhook-schema.js";
+import type { ApifyRunWebhook } from "../schemas/apify-run-webhook-schema.js";
 import { CrawlRunStatus } from "../constants/crawl-run-status.js";
-import { type Platform, platformSchemas} from "../types/platform.ts";
-import {postUrlGetters} from "../types/post-url-getter.ts";
+import {type Platform, platformSchemas, postTransforms, postUrlGetters} from "../schemas/platform.ts";
 
 /**
  * Use case to import the dataset from a completed Apify run.
@@ -28,7 +27,8 @@ export class ImportApifyRunDataset {
 
     const platformSchema = platformSchemas[platform];
     const postUrlGetter = postUrlGetters[platform];
-    if (!platformSchema || !postUrlGetter) {
+    const postTransform = postTransforms[platform];
+    if (!platformSchema || !postUrlGetter || !postTransform) {
       throw new Error(`Unsupported platform: ${platform}`);
     }
 
@@ -95,23 +95,25 @@ export class ImportApifyRunDataset {
       for (const rawItem of items) {
         counters.itemsRead++;
 
-        // a1. Validate item
+        // a1. Validate raw post data
         const validationResult = platformSchema.safeParse(rawItem);
         if (!validationResult.success) {
           console.warn(`Invalid item in dataset ${datasetId} for platform ${platform}:`, validationResult.error.format());
           counters.invalidItems++;
           continue;
         }
-        const postData = validationResult.data;
+        const validatedPost = validationResult.data;
 
         // a2. Get and validate post url
-        const postUrl = postUrlGetter(postData);
+        const postUrl = postUrlGetter(validatedPost);
         if (!postUrl) {
-          // If this happens, there may be a bug in the platform schema or in getPostUrlPropName
-          console.warn(`Missing URL in item for platform ${platform}:`, postData);
+          console.warn(`Missing URL in item for platform ${platform}:`, validatedPost);
           counters.invalidItems++;
           continue;
         }
+
+        // a3. Transform post data
+        const transformedPost = postTransform(validatedPost, postUrl);
 
         // b. Deduplicate by URL
         const isDuplicate = await this.processedUrlStore.has(postUrl);
@@ -134,7 +136,7 @@ export class ImportApifyRunDataset {
             id: postId,
             url: postUrl,
             platform,
-            post: postData,
+            post: transformedPost,
             apifyRunId,
             apifyDatasetId: datasetId,
           });

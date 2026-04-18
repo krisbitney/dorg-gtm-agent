@@ -1,6 +1,3 @@
-- [ ] Revise crawl started endpoint to insert additional parameters when starting a crawl with the Apify client
-  - i.e., the crawler identifier, and actor inputs (start urls list, configuration parameters)
-  - use gtm-workers/src/config/crawler-configs/reddit.ts, which already contains list of start urls for the reddit crawler
 - [ ] Support graceful shutdown for workers
 - [ ] Add separate package.json scripts for unit and integration test suites so that unit tests can run without infrastructure dependencies
 - [ ] Add logging during retries/timeouts to @gtm-workers/src/clients/gtm-ai-client.ts

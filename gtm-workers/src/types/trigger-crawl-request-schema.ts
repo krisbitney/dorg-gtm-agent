@@ -1,5 +1,6 @@
 import { z } from "zod";
-import {platformSchema} from "./index.ts";
+
+import {platformSchema} from "./platform.ts";
 
 /**
  * Schema for the internal trigger crawl request.

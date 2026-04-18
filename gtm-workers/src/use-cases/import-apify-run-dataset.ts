@@ -3,9 +3,10 @@ import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository
 import { PostRepository } from "../storage/repositories/post-repository.js";
 import type { ProcessedUrlStoreInterface } from "../storage/processed-url-store.js";
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
-import type { ApifyRunWebhook } from "../schemas/apify-run-webhook-schema.js";
-import {getPlatformSchema, getPostUrlPropName, type Platform} from "../schemas";
+import type { ApifyRunWebhook } from "../types/apify-run-webhook-schema.js";
 import { CrawlRunStatus } from "../constants/crawl-run-status.js";
+import { type Platform, platformSchemas} from "../types/platform.ts";
+import {postUrlGetters} from "../types/post-url-getter.ts";
 
 /**
  * Use case to import the dataset from a completed Apify run.
@@ -25,7 +26,11 @@ export class ImportApifyRunDataset {
   async execute(notification: ApifyRunWebhook, platform: Platform): Promise<void> {
     const { apifyRunId, actorId, status, defaultDatasetId } = notification;
 
-    const platformSchema = getPlatformSchema(platform);
+    const platformSchema = platformSchemas[platform];
+    const postUrlGetter = postUrlGetters[platform];
+    if (!platformSchema || !postUrlGetter) {
+      throw new Error(`Unsupported platform: ${platform}`);
+    }
 
     // 1. Upsert or find the run record
     let run = await this.crawlRunRepository.findByApifyRunId(apifyRunId);
@@ -100,11 +105,10 @@ export class ImportApifyRunDataset {
         const postData = validationResult.data;
 
         // a2. Get and validate post url
-        const urlPropName = getPostUrlPropName(platform);
-        const postUrl = postData[urlPropName];
-        if (!postUrl || typeof postUrl !== "string") {
+        const postUrl = postUrlGetter(postData);
+        if (!postUrl) {
           // If this happens, there may be a bug in the platform schema or in getPostUrlPropName
-          console.warn(`Missing or malformed URL in item for platform ${platform}:`, postData);
+          console.warn(`Missing URL in item for platform ${platform}:`, postData);
           counters.invalidItems++;
           continue;
         }

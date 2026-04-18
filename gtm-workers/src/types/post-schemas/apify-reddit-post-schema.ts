@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const redditPostUrlPropName = "url";
-
 /**
  * Schema for a single post item in the Apify crawler dataset.
  * Matches the output of the gtm-web-crawler service.
@@ -20,3 +18,7 @@ export const apifyRedditPostSchema = z.object({
 });
 
 export type ApifyRedditPost = z.infer<typeof apifyRedditPostSchema>;
+
+export function getRedditPostUrl(postData: Record<string, any>): string | undefined {
+  return postData["url"];
+}

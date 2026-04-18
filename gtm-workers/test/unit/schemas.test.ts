@@ -1,8 +1,8 @@
 import { test, expect, describe } from "bun:test";
-import { apifyRedditPostSchema } from "../../src/schemas/apify-reddit-post-schema.js";
-import { apifyRunWebhookSchema } from "../../src/schemas/apify-run-webhook-schema.js";
-import { queuePayloadSchema } from "../../src/schemas/queue-payload-schema.js";
-import { triggerCrawlRequestSchema } from "../../src/schemas/trigger-crawl-request-schema.js";
+import { apifyRedditPostSchema } from "../../src/types/post-schemas/apify-reddit-post-schema.js";
+import { apifyRunWebhookSchema } from "../../src/types/apify-run-webhook-schema.js";
+import { queuePayloadSchema } from "../../src/types/queue-payload-schema.js";
+import { triggerCrawlRequestSchema } from "../../src/types/trigger-crawl-request-schema.js";
 import { triggerCrawlResponseSchema } from "../test-utils/trigger-crawl-response-schema.js";
 import { deadLetterPayloadSchema } from "../test-utils/dead-letter-payload-schema.js";
 import { dorgClaimResponseSchema } from "../test-utils/dorg-claim-response-schema.js";

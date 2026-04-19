@@ -36,7 +36,19 @@ curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&pl
   • Make sure the gtm-workers-api container logs look good
   • Then monitor the logs of the gtm-workers-workers and gtm-ai containers to verify that the workers are successfully processing the reddit post data
 
-  @gtm-workers/src/bin/worker.ts
-  @gtm-workers/src/use-cases/process-post-job.ts
-  @gtm-workers/src/use-cases/process-queue-loop.ts
-  @gtm-workers/src/clients/gtm-ai-client.ts
+  Let's test everything again from the start.
+  • Run the docker compose with fresh volumes
+  • Wait until the gtm-workers-api container is up and ready
+  • Submit the test webhook query:
+  curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&platform=twitter" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "eventType": "ACTOR.RUN.SUCCEEDED",
+      "actorId": "danek/twitter-scraper-ppr",
+      "apifyRunId": "S8H0C1Ae0VtAumf9e",
+      "status": "SUCCEEDED",
+      "finishedAt": "2026-04-18 16:40:52"
+    }'
+  • Make sure the gtm-workers-api container logs look good
+  • Then monitor the logs of the gtm-workers-workers and gtm-ai containers to verify that the workers are successfully processing the twitter post data
+

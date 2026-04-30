@@ -17,6 +17,18 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 - [ ] A future web or mobile app can monitor runs, update runtime configuration, view leads, filter by state, and trigger lead actions.
 - [ ] Existing Apify crawl trigger and dataset import behavior remains supported and covered by tests.
 
+## V1 Review Findings To Resolve Or Preserve
+
+- [ ] Resolve current V1 schema and test drift before starting v2 migrations:
+  - [ ] `apifyRedditPostSchema` expects the current Apify Reddit actor shape (`body`, `title`, `numberOfComments`, etc.), while unit tests and fixtures still use an older shape (`content`, `postedAt`, `nLikes`, `topic`);
+  - [ ] `triggerCrawlRequestSchema` requires `platform`, while a unit test expects `{}` to default to Reddit;
+  - [ ] committed migrations add `crawl_runs.platform` and `crawl_runs.input`, but the Drizzle schema and repository do not expose or persist those fields.
+- [ ] Preserve the useful V1 import safety pattern: check URL dedupe, acquire a temporary Redis claim, insert into Postgres, enqueue, then permanently mark the URL only after the insert and enqueue succeed.
+- [ ] Replace the V1 Redis list contract deliberately, not accidentally. The current flow uses a main queue, processing queue, `BRPOPLPUSH`, `LREM` ack, startup requeue, and a single DLQ.
+- [ ] Fix the V1 worker resume/status rules while designing v2 statuses. `claim_failed` and `error` are not terminal in `ProcessPostJob`, and a requeued payload in those states can be acknowledged without doing useful work.
+- [ ] Separate dOrg handoff states from message-generation states. V1 claims, surfaces, marks completed, and then best-effort posts a Discord message; v2 outreach message generation must remain a persisted draft unless an explicit send action exists.
+- [ ] Keep the V1 Apify compatibility surface intact: `POST /internal/crawl-runs`, `POST /webhooks/apify/run-finished`, platform-specific dataset validation/transforms, and queue payloads for imported records.
+
 ## Phase 1: Confirm Boundaries And Contracts
 
 - [ ] Review the current v1 flow in `src/bin/api.ts`, `src/bin/worker.ts`, `src/http/create-server.ts`, `src/use-cases/process-post-job.ts`, `src/use-cases/import-apify-run-dataset.ts`, `src/storage/repositories/post-repository.ts`, and `src/clients/gtm-ai-client.ts`.
@@ -40,6 +52,8 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] outreach message generation.
 - [ ] Decide the first v2-compatible status model before changing code. Prefer adding new statuses to the existing lifecycle instead of replacing all v1 statuses at once.
 - [ ] Keep the current post-processing path compatible with Apify-imported records while adding new web-search source records.
+- [ ] Define the canonical v2 lead candidate input envelope before changing AI clients. It must support both normalized Apify records and context.dev scraped pages without passing raw provider JSON directly to workflows.
+- [ ] Run `bun run typecheck` and `bun test test/unit` as a baseline, then either fix or explicitly document any V1 failures before layering v2 behavior on top.
 
 ## Phase 2: Add Configuration Model
 
@@ -73,9 +87,11 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] run stop limits.
 - [ ] Add repository methods to read the active configuration at the start of a run and refresh runtime-editable fields during long-running loops.
 - [ ] Add validation schemas for API request overrides. Reject invalid date windows, unknown sites, negative limits, and thresholds outside valid ranges.
+- [ ] Keep environment parsing testable by exporting the env schema or a parse helper, instead of only exporting the already-parsed singleton.
 
 ## Phase 3: Extend Database Schema
 
+- [ ] Reconcile existing Drizzle schema drift before adding v2 tables. The schema, committed migrations, repository methods, and tests should agree on `crawl_runs.platform`, `crawl_runs.input`, and existing Apify counters.
 - [ ] Add a `lead_runs` table for loop and manual run tracking:
   - [ ] UUIDv7 primary key;
   - [ ] run type: `search`, `deep_research`, `message_generation`, `apify_crawl`, `apify_import`;
@@ -123,6 +139,9 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] processing status;
   - [ ] error message;
   - [ ] created and updated timestamps.
+- [ ] Store both original and canonical URLs. Dedupe and uniqueness should use the canonical URL, while original provider URLs remain available for audit/debugging.
+- [ ] Add explicit handoff fields for dOrg claim status, dOrg surface status, external notification status, and last handoff error so retries can resume without duplicate side effects.
+- [ ] Add a non-destructive migration/backfill path for existing `posts` rows if the canonical lead table changes. Do not rename or drop V1 columns until Apify regression tests pass against migrated data.
 - [ ] Add indexes for run status, lead status, quality score, source URL, dOrg lead id, and created timestamp.
 - [ ] Generate and commit Drizzle migrations after schemas are updated.
 - [ ] Add repository tests for every new table and important state transition.
@@ -140,6 +159,8 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] if the range is historical, expire after a configured historical dedupe TTL;
   - [ ] enforce minimum and maximum TTLs.
 - [ ] Add URL dedupe checks for search result URLs before scraping.
+- [ ] Canonicalize URLs before any Redis or Postgres dedupe check. Preserve provider/original URLs separately from canonical URLs.
+- [ ] Keep temporary claim or lock semantics for dedupe keys so concurrent imports/search runs cannot double-insert the same URL or search term.
 - [ ] Add separate Redis queues for:
   - [ ] search term execution;
   - [ ] search result prefiltering if done asynchronously;
@@ -149,6 +170,8 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] message generation;
   - [ ] dead letters.
 - [ ] Keep the existing v1 lead queue behavior working for Apify-imported posts.
+- [ ] Define a versioned queue payload schema for every queue, including job id, run id, entity id, attempt count, and payload type.
+- [ ] Define per-queue processing queues, ack behavior, stale in-flight recovery, retry limits, and DLQ payload shape before replacing the V1 `BRPOPLPUSH` flow.
 - [ ] Add idempotency tests for duplicate search terms, duplicate URLs, retries, worker restarts, and queue reprocessing.
 
 ## Phase 5: Add Replaceable Provider Interfaces
@@ -176,6 +199,8 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 ## Phase 6: Extend GTM AI Client
 
 - [ ] Replace `any` in `src/clients/gtm-ai-client.ts` with explicit request and response types.
+- [ ] Validate every GTM AI workflow response with zod or equivalent schemas before returning it to use cases. Avoid blind casts from Mastra workflow results.
+- [ ] Define a typed request context shared by all workflow calls, including run id, lead id or post id, source, platform/site, and worker id.
 - [ ] Add methods for the new workflows:
   - [ ] `generateSearchTerms`;
   - [ ] `prefilterSearchResult`;
@@ -217,10 +242,23 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 - [ ] Insert scraped pages as lead candidates in Postgres.
 - [ ] Add scraped URLs to the URL dedupe set only after successful insert, so failed DB writes can retry safely.
 - [ ] Queue lead candidates for verification and extraction.
+- [ ] Store prefilter rejections and skipped duplicates with enough run/search-result metadata for monitoring and auditability.
 
 ## Phase 8: Improve Existing Lead Processing Flow
 
 - [ ] Update `ProcessPostJob` or introduce a v2 `ProcessLeadCandidateJob` that works for both Apify posts and context.dev scraped pages.
+- [ ] Define resume behavior for every V1 and V2 lead status before implementing the shared processor:
+  - [ ] `pending`;
+  - [ ] `scoring` or v2 verification equivalents;
+  - [ ] `below_threshold`;
+  - [ ] `analyzing`;
+  - [ ] `not_a_lead`;
+  - [ ] `claiming`;
+  - [ ] `claim_failed`;
+  - [ ] `surfacing`;
+  - [ ] `completed`;
+  - [ ] `error`;
+  - [ ] deep research and message-generation statuses.
 - [ ] For each scraped page or imported Apify item, call GTM AI to verify whether it is a lead and assign a quality score from 0 to 100.
 - [ ] Make the verification prompt configurable with injected terms such as budget requirements.
 - [ ] Persist the quality score, verification decision, and rationale.
@@ -238,6 +276,8 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 - [ ] Claim the lead with the dOrg API only after structured extraction succeeds.
 - [ ] Surface the lead with the dOrg API after claim succeeds.
 - [ ] Keep claim and surface calls idempotent by checking existing `dorgLeadId` and terminal statuses.
+- [ ] Persist a separate surface/notification status before and after dOrg surface calls so a crash after a successful external call does not create repeated notifications.
+- [ ] Treat `claim_failed` and `error` as explicit retry/manual-review states, not silent no-op states.
 - [ ] Continue to move unexpected failures to the dead letter queue and update database status to `error`.
 
 ## Phase 9: Implement Deep Research Flow
@@ -297,6 +337,7 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] `GET /internal/config`;
   - [ ] `PUT /internal/config`;
   - [ ] existing Apify crawl trigger and webhook endpoints.
+- [ ] Add a manual Apify dataset import endpoint if one does not already exist. It should accept platform and either an Apify run id or dataset id, then reuse the same importer as the webhook path.
 - [ ] Add filters for lead list endpoints:
   - [ ] status;
   - [ ] source type;
@@ -329,6 +370,7 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 - [ ] On pause, stop claiming new work but finish or safely requeue the current unit.
 - [ ] On stop, finish or safely requeue the current unit and mark the run stopped with a reason.
 - [ ] On process shutdown, update the run state and avoid losing in-flight work.
+- [ ] Replace fire-and-forget worker startup with supervised loops that can receive cancellation, stop polling, finish or requeue in-flight work, and settle before process exit.
 - [ ] On startup, recover runs stuck in `running`, `pausing`, or `stopping` based on heartbeat age.
 - [ ] Add tests that simulate SIGTERM, stale heartbeat recovery, pause, resume, stop, and stop limits.
 
@@ -339,6 +381,8 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 - [ ] Keep support for importing existing Apify datasets manually if it already exists or add a manual endpoint if missing.
 - [ ] Normalize Apify-imported records into the same lead candidate processing path used by context.dev scraped pages.
 - [ ] Keep URL dedupe behavior for Apify posts.
+- [ ] Keep or replace platform-specific Apify dataset adapters deliberately. Update Reddit fixtures/tests to match the actual actor schema or support both old and new shapes through explicit versioned adapters.
+- [ ] Ensure Apify webhook handling records webhook receipt and platform/input metadata, not just started/importing/completed states.
 - [ ] Add regression tests proving Apify trigger, webhook import, duplicate URL handling, and v2 lead processing still work.
 
 ## Phase 14: Observability And Operations
@@ -365,6 +409,7 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 
 - [ ] Run `bun run typecheck`.
 - [ ] Run `bun test` for unit and integration tests.
+- [ ] Confirm `bun test test/unit` passes before running infrastructure-backed integration tests.
 - [ ] Run database migrations against local test Postgres.
 - [ ] Manually trigger a short search run with one search term and one result.
 - [ ] Verify duplicate search terms are skipped.

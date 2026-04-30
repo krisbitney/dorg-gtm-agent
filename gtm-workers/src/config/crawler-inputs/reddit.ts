@@ -10,7 +10,7 @@ export function getRedditActorInputs(): Record<string, any> {
   return {
     "maxItems": 2500,
     "maxPostCount": 50,
-    "scrollTimeout": 300,
+    "scrollTimeout": 1800, // 30 minutes
     "sort": "new",
     "postDateLimit": postDateLimit,
     "searchComments": false,

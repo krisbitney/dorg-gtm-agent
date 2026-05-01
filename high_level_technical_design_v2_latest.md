@@ -573,7 +573,7 @@ async function runLeadWorkerLoop(workerRunId: string) {
 The `handleWorkflowOutcome` function is a pure mapping of workflow results to DB updates — no decision-making, just persistence:
 
 ```typescript
-function handleWorkflowOutcome(postId: string, result: ProcessLeadResult, rawPayload: string) {
+async function handleWorkflowOutcome(postId: string, result: ProcessLeadResult, rawPayload: string) {
   switch (result.outcome) {
     case 'below_threshold':
       await postRepository.saveScore(postId, result.qualityScore, PostStatus.BELOW_THRESHOLD);
@@ -905,8 +905,7 @@ gtm-ai/src/mastra/
 │   ├── process-lead-workflow.ts                # New: replaces ProcessPostJob
 │   ├── search-for-leads-workflow.ts            # New: replaces SearchForLeads
 │   ├── deep-research-workflow.ts               # New
-│   ├── generate-message-workflow.ts            # New
-│   └── normalize-lead-score-result.ts          # Modified: 0–100 scale
+│   └── generate-message-workflow.ts            # New
 ├── prompts/
 │   ├── build-lead-score-prompt.ts              # Modified: accepts ConsultancyConfig
 │   ├── build-lead-analysis-prompt.ts           # Modified: accepts ConsultancyConfig

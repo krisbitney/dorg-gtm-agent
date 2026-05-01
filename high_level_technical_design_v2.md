@@ -98,8 +98,16 @@ Workers contain **no business logic** — no thresholds, no if/else about what-h
 │  └──────────────┘ └──────────────┘ └──────────────────────┘ │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
 │  │searchFilter  │ │deepResearch  │ │messageGenAgent       │ │
-│  │Agent         │ │Agent         │ │                      │ │
+│  │Agent         │ │Agent *       │ │                      │ │
 │  └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│  │webSummary    │ │evaluation    │ │learningExtraction    │ │
+│  │Agent         │ │Agent         │ │Agent                 │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│  ┌──────────────┐                                            │
+│  │reportAgent   │                                            │
+│  └──────────────┘                                            │
+│  * tool-equipped agent (drives research autonomously)         │
 │                                                             │
 │  Workflows (own all orchestration logic):                    │
 │  ┌──────────────────────────────────────────────────────┐   │
@@ -123,17 +131,17 @@ Workers contain **no business logic** — no thresholds, no if/else about what-h
 │  │(0–100 scale) │ │                                    │   │
 │  └──────────────┘ └────────────────────────────────────┘   │
 │                                                             │
-│  Tools (external API access):                               │
+│  Tools (external API access + agent utilities):             │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
 │  │searchWeb │ │scrapePage│ │claimLead │ │surfaceLead   │   │
 │  │(Serper)  │ │(Context  │ │(dOrg API)│ │(dOrg API)    │   │
-│  │          │ │ Dev)     │ │          │ │              │   │
+│  │          │ │ Dev+summ)│ │          │ │              │   │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
-│  ┌──────────┐                                               │
-│  │sendDiscord│                                              │
-│  │Message   │                                               │
-│  │(dOrg API)│                                               │
-│  └──────────┘                                               │
+│  ┌──────────┐ ┌──────────────┐ ┌────────────────────────┐   │
+│  │sendDiscord│ │evaluateResult│ │extractLearnings        │   │
+│  │Message   │ │(entity check)│ │(learnings + follow-ups) │   │
+│  │(dOrg API)│ │              │ │                        │   │
+│  └──────────┘ └──────────────┘ └────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -175,17 +183,19 @@ export const searchWebTool = createTool({
 // src/mastra/tools/scrape-page.tool.ts
 export const scrapePageTool = createTool({
   id: 'scrape-page',
-  description: 'Fetches and extracts clean text content from a web page URL.',
+  description: 'Fetches and extracts clean text content from a web page URL. Content is auto-summarized via webSummarizationAgent to prevent token blowup.',
   inputSchema: z.object({
     url: z.string().url(),
   }),
   outputSchema: z.object({
     url: z.string(),
     title: z.string(),
-    content: z.string(),
+    content: z.string(),        // Summarized content (not raw — reduced by 80–95%)
   }),
   execute: async ({ context }) => {
-    // Calls context.dev API
+    // 1. Calls context.dev API to fetch raw page content
+    // 2. Passes raw content through webSummarizationAgent to produce summary
+    // 3. Returns summary as 'content' (raw text is discarded)
   },
 });
 ```
@@ -247,6 +257,57 @@ export const sendDiscordMessageTool = createTool({
 });
 ```
 
+```typescript
+// src/mastra/tools/evaluate-result.tool.ts
+export const evaluateResultTool = createTool({
+  id: 'evaluate-result',
+  description: 'Evaluates whether a search result is relevant to the lead research query and confirms it refers to the correct entity (not a namesake).',
+  inputSchema: z.object({
+    query: z.string(),
+    result: z.object({
+      title: z.string(),
+      url: z.string(),
+      content: z.string(),
+    }),
+    leadContext: z.string(),
+    existingUrls: z.array(z.string()).optional(),
+  }),
+  outputSchema: z.object({
+    isRelevant: z.boolean(),
+    reason: z.string(),
+    isCorrectEntity: z.boolean(),
+  }),
+  execute: async (inputData, { mastra }) => {
+    // Uses evaluationAgent to assess relevance and entity match
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/extract-learnings.tool.ts
+export const extractLearningsTool = createTool({
+  id: 'extract-learnings',
+  description: 'Extracts key learnings from a search result and generates follow-up questions for deeper research.',
+  inputSchema: z.object({
+    query: z.string(),
+    result: z.object({
+      title: z.string(),
+      url: z.string(),
+      content: z.string(),
+    }),
+    leadContext: z.string(),
+  }),
+  outputSchema: z.object({
+    learning: z.string(),
+    followUpQuestions: z.array(z.string()).max(3),
+  }),
+  execute: async (inputData, { mastra }) => {
+    // Uses learningExtractionAgent to extract insights and follow-up questions
+    // Follow-up questions are capped at 3 to limit research breadth
+  },
+});
+```
+
 ### 4.2 Agents (Modified & New)
 
 #### Modified: `leadScoreAgent`
@@ -266,11 +327,49 @@ export const sendDiscordMessageTool = createTool({
 - Cheap model that filters raw SERP results, returning only those that resemble leads.
 - Model: `GTM_SEARCH_FILTER_MODEL` (defaults to a small/cheap model like `gemma3:4b`).
 
+#### New: `webSummarizationAgent`
+- Summarizes scraped web page content to prevent token limit issues when passing content to other agents.
+- Reduces page content by 80–95% while preserving key facts, statistics, and contact information.
+- Used by `scrapePageTool` internally — when a page is scraped, the content is summarized before being returned to the calling agent. The original full text is not retained (only the summary is passed forward).
+- Model: `GTM_SMALL_MODEL` (cheap model since summarization is high-volume, low-complexity).
+
+#### New: `evaluationAgent`
+- Evaluates whether search results are relevant to a lead research query.
+- Confirms the result refers to the correct entity — e.g., a startup named "Apex" should not be confused with the Apex programming language.
+- Criteria: direct relevance to the query topic, source credibility, information usefulness, and entity match.
+- Model: `GTM_SEARCH_FILTER_MODEL` (cheap model — binary decisions with brief reasoning).
+
+#### New: `learningExtractionAgent`
+- Extracts the most valuable piece of information from a search result's content.
+- Generates 1–3 focused follow-up questions that would deepen the research.
+- Focuses on actionable, specific insights rather than general observations.
+- Model: `GTM_DEEP_RESEARCH_MODEL`.
+
 #### New: `deepResearchAgent`
-- Generates targeted search queries to find detailed information about a lead (LinkedIn profiles, company pages, ZoomInfo-like sites, user profiles).
-- Uses `searchWebTool` (again, returns terms for worker to execute in batch, or calls directly if rate limits allow).
-- Verifies entity match: confirms search results relate to the correct entity, not a namesake.
-- Synthesizes all findings into a structured markdown report.
+- **Agent-driven research**: equipped with `searchWebTool`, `scrapePageTool`, `evaluateResultTool`, and `extractLearningsTool`. The agent drives the research process itself, deciding what to search next based on what it finds — no separate orchestration by the worker.
+- Uses a **two-phase approach** (inspired by the Mastra deep research template):
+
+  **Phase 1 — Initial Research:**
+  1. Breaks down the lead into 2–3 specific, focused search queries (e.g., LinkedIn profile, company funding, contact information).
+  2. For each query, calls `searchWebTool` to search the web.
+  3. For promising results, calls `scrapePageTool` to fetch full page content (which is auto-summarized by the tool).
+  4. Uses `evaluateResultTool` to confirm relevance and entity match.
+  5. For relevant, verified results, uses `extractLearningsTool` to extract key findings and follow-up questions.
+
+  **Phase 2 — Follow-up Research:**
+  1. Collects ALL follow-up questions from Phase 1 learnings.
+  2. Searches each follow-up question using `searchWebTool`.
+  3. Scrapes, evaluates, and extracts learnings from follow-up results.
+  4. **Stops after Phase 2** — does not search follow-up questions from Phase 2 results (prevents infinite loops).
+
+- Always includes the user's social profile as a search target if the lead source is a social post.
+- `maxSteps: 12` on `agent.generate()` provides a hard stop to control token spend.
+- Model: `GTM_DEEP_RESEARCH_MODEL`.
+
+#### New: `reportAgent`
+- Synthesizes all extracted learnings, evaluations, and source URLs from the deep research phases into a structured, comprehensive markdown report.
+- The report includes: executive summary, key findings (contact info, company size, budget, business strategy), source references with URLs, and confidence assessment.
+- Receives the deepResearchAgent's structured output (queries, learnings, follow-up questions, source URLs) and transforms it into a polished report.
 - Model: `GTM_DEEP_RESEARCH_MODEL`.
 
 #### New: `messageGenerationAgent`
@@ -400,30 +499,49 @@ This keeps the search loop alive while the workflow owns the decision logic. The
 
 #### New: `deepResearchWorkflow`
 
+Unlike `searchForLeadsWorkflow` (which uses the suspense pattern for batch I/O efficiency), deep research uses an **agent-driven pattern** (inspired by the Mastra deep research template). The `deepResearchAgent` is equipped with tools that call external APIs directly — no worker coordination needed. This is appropriate because deep research intentionally limits its scope (2–3 initial queries + follow-ups = ~6–10 total searches), so sequential tool calls are fast enough and the adaptive two-phase approach produces better results.
+
 ```
 ID: deep-research-workflow
-Input: { lead: LeadInput, runConfig: RunConfig }
+Input: { lead: LeadWithContext, runConfig: RunConfig }
 
 Steps:
 
-1. generate-research-searches
-   - Calls deepResearchAgent with instruction to generate targeted queries
-   - Always includes the user's social profile if the lead source is a social post
-   - Output: { searches: Array<{ query, rationale, priority }> }
+1. execute-deep-research
+   - Calls deepResearchAgent.generate() with maxSteps: 12
+   - The agent uses its tools (searchWebTool, scrapePageTool,
+     evaluateResultTool, extractLearningsTool) to drive the two-phase
+     research process autonomously.
+   - The agent is given a prompt that includes:
+       * Lead context (URL, platform, post content, analysis results)
+       * Instructions to find contact info, company size, budget,
+         business strategy, products, and key decision-makers
+       * Instruction to always include the user's social profile
+         if the lead source is a social post
+       * Instruction to stop after Phase 2 (no infinite loops)
+   - structuredOutput enforces the research result schema
+   - Output: { queries: string[], learnings: Learning[],
+     sourceUrls: string[], followUpQuestions: string[] }
 
-2. wait-for-research-results (suspense step)
-   - Returns { outcome: "awaiting_search", searches }
-   - Worker executes searches via SerperAPI, scrapes results via ContextDev
-   - Worker feeds { searchResults: Array<{ query, results }> } back to workflow
-
-3. verify-and-synthesize
-   - deepResearchAgent verifies entity match for each result
-   - Filter out results that refer to wrong entity (e.g., "Apex" the startup vs "Apex" the language)
-   - Synthesize all verified findings into a structured markdown report
+2. synthesize-report
+   - Calls reportAgent.generate() with the structured research output
+   - Produces a polished, structured markdown report with sections:
+       * Executive Summary
+       * Key Findings (contact info, company details, budget,
+         business strategy)
+       * Source References (with URLs)
+       * Confidence Assessment
    - Output: { researchReportMarkdown: string }
 ```
 
-The **worker** handles step 2 (search + scrape) and stores the final markdown report in Postgres.
+The **worker** calls this workflow synchronously — it invokes `deepResearchWorkflow`, receives the completed markdown report, and persists it to Postgres. No suspense steps, no batch I/O coordination. The deepResearchAgent handles all external API calls itself through its tools.
+
+**Design rationale for agent-driven vs. suspense pattern:**
+- Deep research has intentionally limited scope (max 6–10 searches). Sequential tool calls are acceptable.
+- The two-phase approach (initial → extract learnings → follow-up → stop) requires the agent to adapt based on what it finds — it cannot know all follow-up questions upfront.
+- `maxSteps: 12` provides a hard token/time budget, preventing runaway costs.
+- The `webSummarizationAgent` keeps context size manageable by summarizing scraped content before it reaches the agent.
+- This keeps the architecture simple: the worker just calls one workflow and gets back a finished report. No coordination loop.
 
 #### New: `generateMessageWorkflow`
 
@@ -895,7 +1013,7 @@ Stored in `run_configuration` table + Redis `gtm:run-config` hash. Workers read 
 The `SearchProvider` and `PageScraper` interfaces live in **both** services:
 
 - **gtm-ai**: Used by `searchWebTool` and `scrapePageTool` for synchronous tool calls within workflows.
-- **gtm-workers**: Used by the search worker loop for batch search/scrape execution (the suspense pattern in `searchForLeadsWorkflow` and `deepResearchWorkflow`).
+- **gtm-workers**: Used by the search worker loop for batch search/scrape execution (the suspense pattern in `searchForLeadsWorkflow`). `deepResearchWorkflow` uses the agent-driven pattern — search/scrape happens inside gtm-ai tools, so workers do not need these clients for deep research.
 
 The concrete implementations (`SerperApiClient`, `ContextDevClient`) can be shared via a small internal package or duplicated (they're thin wrappers — ~30 lines each). Given the Karpathy guidelines (no premature abstraction), they should be duplicated in each service until sharing becomes a clear win.
 
@@ -915,11 +1033,17 @@ gtm-ai/src/mastra/
 │   ├── lead-analysis-agent.ts                  # Modified: parameterized prompt
 │   ├── search-term-agent.ts                    # New
 │   ├── search-filter-agent.ts                  # New
-│   ├── deep-research-agent.ts                  # New
+│   ├── web-summarization-agent.ts              # New: summarizes scraped content (cheap model)
+│   ├── evaluation-agent.ts                     # New: relevance + entity match checks
+│   ├── learning-extraction-agent.ts            # New: extracts learnings + follow-up questions
+│   ├── deep-research-agent.ts                  # New: tool-equipped, two-phase research
+│   ├── report-agent.ts                         # New: synthesizes learnings into markdown report
 │   └── message-generation-agent.ts             # New
 ├── tools/
 │   ├── search-web.tool.ts                      # New: Serper API wrapper
-│   ├── scrape-page.tool.ts                     # New: ContextDev wrapper
+│   ├── scrape-page.tool.ts                     # New: ContextDev wrapper + auto-summarization
+│   ├── evaluate-result.tool.ts                 # New: relevance + entity match evaluation
+│   ├── extract-learnings.tool.ts               # New: learning extraction + follow-up questions
 │   ├── claim-lead.tool.ts                      # New: dOrg /leads/claim
 │   ├── surface-lead.tool.ts                    # New: dOrg /leads/surface
 │   └── send-discord-message.tool.ts            # New: dOrg /discord/post
@@ -1012,7 +1136,8 @@ gtm-workers/src/
 |---|---|
 | **All orchestration logic moves to Mastra workflows** | Workers become a dumb pipe. Business rules (thresholds, auto-triggers, state transitions) live in one place — the workflows. This makes the system easier to test (workflows can be tested without Redis/Postgres), easier to change, and easier to understand. |
 | **dOrg API calls become Mastra tools** | These are natural tool calls — "claim this lead", "surface this lead". Moving them to tools means the `processLeadWorkflow` can call them inline rather than having the worker make a separate HTTP call after the workflow completes. |
-| **Search/Scrape use a suspense pattern in workflows** | The workflow declares what it needs (`awaiting_search`, `awaiting_scrape`), and the worker does the heavy I/O in batch. This avoids the workflow making hundreds of sequential tool calls (slow + token-expensive) while keeping decision logic out of the worker. |
+| **Search/Scrape use a suspense pattern in `searchForLeadsWorkflow`** | The workflow declares what it needs (`awaiting_search`, `awaiting_scrape`), and the worker does the heavy I/O in batch. This avoids the workflow making hundreds of sequential tool calls (slow + token-expensive) while keeping decision logic out of the worker. |
+| **Deep research uses an agent-driven pattern (not suspense)** | Deep research has intentionally limited scope (~6–10 searches). The `deepResearchAgent` is equipped with tools and drives a two-phase research process autonomously — the worker just calls the workflow and gets back a finished report. The two-phase approach (initial searches → learnings → follow-up → stop) requires the agent to adapt based on findings, which the suspense pattern's upfront search generation cannot do. `maxSteps: 12` and content summarization via `webSummarizationAgent` keep token spend bounded. |
 | **Workers retain Serper/ContextDev clients for batch execution** | Workflows use tools for synchronous single calls; workers need batch execution for the search loop. The thin clients are duplicated across services for now (30 lines each) — not worth a shared package yet. |
 | **Workers remain the sole owner of Postgres** | Mastra uses LibSQL internally. Keeping Postgres in workers avoids schema conflicts and keeps a single source of truth for lead data. The CRM/management app will query the workers' API, not Mastra's. |
 | **Runtime config flows as `runConfig` in every workflow call** | Agents rebuild their system prompts per execution using the config from `requestContext`. This makes config changes take effect instantly — no need to restart agents. |

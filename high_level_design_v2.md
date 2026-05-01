@@ -40,19 +40,21 @@ We will keep the original worker and AI workflows, and rework them so that all o
 
 ## Deep Research
 
-There should be a new ai workflow to do deep research on a lead:
-1. it should generate searches based on base lead information in order to find more detailed lead information.
-    - e.g., we want to find and scrape the user's reddit profile, company contact information, etc.
-    - the goal is to find as much information about the lead as possible, especially contact information, size of the company, the company's funding/budget, the company's business strategy and products, and so on
-    - the number of search terms and search results should be limited to make sure the agent doesn't spend too many tokens
-    - the agent will basically generate a set of search terms using anchors: search linkedin, publicly accessible sites that are similar to zoominfo, and other relevant options
-        - the agent should always include the user profile if the main content is a social media post
-2. scrape relevant search results with verification etc.
-    - verification must involve confirming that the result is related to the right entity (e.g., a startup company named "apex" should not be confused with a programming language named "apex")
-3. Synthesize into deep research report (markdown)
-4. worker will update lead in db with the markdown report
+There should be a new ai workflow to do deep research on a lead. It uses an **agent-driven pattern** (inspired by the Mastra deep research template) where the deep research agent is equipped with tools and drives the research autonomously — no worker coordination needed during the research process. The worker simply invokes the workflow and receives a finished report.
 
-The workflow uses a suspense pattern: it generates search terms, the worker executes searches and scraping, then the workflow verifies entity match and synthesizes the report.
+This is implemented as a single Mastra workflow (`deepResearchWorkflow`) with two steps:
+
+1. **Execute Deep Research** — The `deepResearchAgent` (equipped with `searchWebTool`, `scrapePageTool`, `evaluateResultTool`, and `extractLearningsTool`) uses a two-phase approach:
+    - **Phase 1 — Initial Research**: Breaks down the lead into 2–3 focused search queries based on base lead information (e.g., find LinkedIn profiles, company contact info, funding data). For each query, the agent searches, scrapes relevant pages (auto-summarized to prevent token blowup), evaluates relevance and entity match, and extracts key learnings with follow-up questions.
+    - **Phase 2 — Follow-up Research**: Collects all follow-up questions from Phase 1 and searches each one. Scrapes, evaluates, and extracts learnings from results. Stops after Phase 2 — no infinite loops.
+    - Entity verification is built into the evaluation tool (e.g., a startup named "Apex" must not be confused with the Apex programming language).
+    - `maxSteps: 12` provides a hard token/time budget.
+    - The agent always includes the user's social profile if the lead source is a social post.
+2. **Synthesize Report** — A dedicated `reportAgent` transforms all extracted learnings, evaluations, and source URLs into a polished, structured markdown report with executive summary, key findings (contact info, company size, budget, business strategy), source references, and confidence assessment.
+
+3. worker will update lead in db with the markdown report
+
+The number of search terms and search results is limited by the two-phase structure and `maxSteps` to keep token spend under control. A `webSummarizationAgent` summarizes all scraped page content (reducing by 80–95%) before it reaches the research agent's context window.
 
 ## Message Generation
 

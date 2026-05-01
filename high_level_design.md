@@ -1,4 +1,4 @@
-# High Level Design for Go-To-Market Agent
+# High Level Design for Go-To-Market Agent V1
 
 The purpose of the GTM Agent is to find leads for the dOrg web3 tech/dev consultancy.
 

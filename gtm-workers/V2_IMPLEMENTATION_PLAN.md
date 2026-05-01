@@ -70,7 +70,7 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] default processed search result limit;
   - [ ] default generated lead limit;
   - [ ] Redis key prefixes for search term, URL, run queue, and dead letter data.
-- [ ] Create a persisted agent configuration table so a human-controlled app can update runtime settings without redeploying:
+- [ ] Create a persisted agent configuration (stored in Redis) so a human-controlled app can update runtime settings without redeploying:
   - [ ] enabled target sites, starting with `reddit`;
   - [ ] default start and end datetime window;
   - [ ] generated search term count;
@@ -85,7 +85,6 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
   - [ ] run stop limits.
 - [ ] Add repository methods to read the active configuration at the start of a run and refresh runtime-editable fields during long-running loops.
 - [ ] Add validation schemas for API request overrides. Reject invalid date windows, unknown sites, negative limits, and thresholds outside valid ranges.
-- [ ] Keep environment parsing testable by exporting the env schema or a parse helper, instead of only exporting the already-parsed singleton.
 
 ## Phase 3: Extend Database Schema
 

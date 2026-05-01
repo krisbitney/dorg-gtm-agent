@@ -2,7 +2,7 @@
 
 This is the plan for v2 of my lead generation agent, which will locate leads for my software development consultancy. This document outlines changes that will be made from the V1 high level design. The core design from V1 remains; we are adding features and reworking some things.
 
-We will end support for apify.
+We will end support for apify. Also, the gtm-web-crawler package is no longer needed.
 
 We will use a combination of the serper.dev SERP API (as the search provider) and context.dev (as the page scraper) to search the web and scrape web pages.
 

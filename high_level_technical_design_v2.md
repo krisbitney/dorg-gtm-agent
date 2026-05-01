@@ -1,4 +1,4 @@
-# High-Level Technical Design: GTM Agent V2 (Latest)
+# High-Level Technical Design: GTM Agent V2
 
 ## 1. Boundary Shift
 

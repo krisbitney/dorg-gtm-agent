@@ -15,6 +15,7 @@ The new search flow should look like this:
     3. filters search results by checking URLs against bloom filter (redis set) to avoid duplication
     4. filters remaining search results based on likelihood that result might be a lead (using the basic description from the search results returned by the SERP API)
         - we should be able to configure this prompt so that it works for other kinds of consultancies as well
+        - we do not need to save unpromising search results in any persisted storage
     5. worker uses context.dev to scrape web pages from search result URLs that were identified as potential leads; adds to postgres db, redis queue, bloom filter (redis set)
 
 We will keep the original worker and AI workflows, and improve them:
@@ -34,7 +35,8 @@ There should be a new ai workflow to do deep research on a lead:
         - the agent should always include the user profile if the main content is a social media post
 2. scrape relevant search results with verification etc.
     - verification must involve confirming that the result is related to the right entity (e.g., a startup company named "apex" should not be confused with a programming language named "apex")
-3. worker will update lead in db
+3. Synthesize into deep research report (markdown)
+4. worker will update lead in db
 
 There should be a new ai workflow to construct a high-conversion message to send to a lead for initial outreach:
 1. it should use all available information, which may or may not include a deep research report

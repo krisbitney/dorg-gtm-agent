@@ -19,14 +19,13 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 
 ## V1 Review Findings To Resolve Or Preserve
 
-- [ ] Resolve current V1 schema and test drift before starting v2 migrations:
+- [ ] Resolve current V1 schema and test drift before starting v2 migrations (by changing the tests, not the src):
   - [ ] `apifyRedditPostSchema` expects the current Apify Reddit actor shape (`body`, `title`, `numberOfComments`, etc.), while unit tests and fixtures still use an older shape (`content`, `postedAt`, `nLikes`, `topic`);
   - [ ] `triggerCrawlRequestSchema` requires `platform`, while a unit test expects `{}` to default to Reddit;
   - [ ] committed migrations add `crawl_runs.platform` and `crawl_runs.input`, but the Drizzle schema and repository do not expose or persist those fields.
 - [ ] Preserve the useful V1 import safety pattern: check URL dedupe, acquire a temporary Redis claim, insert into Postgres, enqueue, then permanently mark the URL only after the insert and enqueue succeed.
 - [ ] Replace the V1 Redis list contract deliberately, not accidentally. The current flow uses a main queue, processing queue, `BRPOPLPUSH`, `LREM` ack, startup requeue, and a single DLQ.
 - [ ] Fix the V1 worker resume/status rules while designing v2 statuses. `claim_failed` and `error` are not terminal in `ProcessPostJob`, and a requeued payload in those states can be acknowledged without doing useful work.
-- [ ] Separate dOrg handoff states from message-generation states. V1 claims, surfaces, marks completed, and then best-effort posts a Discord message; v2 outreach message generation must remain a persisted draft unless an explicit send action exists.
 - [ ] Keep the V1 Apify compatibility surface intact: `POST /internal/crawl-runs`, `POST /webhooks/apify/run-finished`, platform-specific dataset validation/transforms, and queue payloads for imported records.
 
 ## Phase 1: Confirm Boundaries And Contracts
@@ -45,10 +44,9 @@ Do not add any new dependency on `gtm-web-crawler`. Keep support for triggering 
 - [ ] Document the `gtm-ai` workflow names and request/response payloads that workers need:
   - [ ] search term generation;
   - [ ] search result lead prefiltering;
-  - [ ] scraped page lead verification and scoring;
-  - [ ] structured lead extraction;
-  - [ ] deep research query planning;
-  - [ ] deep research result verification and synthesis;
+  - [ ] scraped page lead verification and scoring; // This is the same as the current scoring flow.
+  - [ ] structured lead extraction; // This is the same as the current extraction flow.
+  - [ ] deep research query planning, result verification, and synthesis;
   - [ ] outreach message generation.
 - [ ] Decide the first v2-compatible status model before changing code. Prefer adding new statuses to the existing lifecycle instead of replacing all v1 statuses at once.
 - [ ] Keep the current post-processing path compatible with Apify-imported records while adding new web-search source records.

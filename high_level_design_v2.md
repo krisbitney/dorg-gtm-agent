@@ -36,13 +36,13 @@ There should be a new ai workflow to construct a high-conversion message to send
 1. it should use all available information, which may or may not include a deep research report
 2. worker will add to lead entry in db
 
-It should be possible to make deep research and message generation automatically triger for leads with quality scores greater than or equal to a specified value, such as 90.
+It should be possible to make deep research and message generation automatically trigger for leads with quality scores greater than or equal to a specified value, such as 90.
 
 It should be possible to trigger the new search flow, the new deep research flow, and the new message generation flows manually.
 
 It should be possible for the process to essentially run in a loop, with the ability to control runs with stopping parameters (defined in the request). The parameters might include how long it should run for, how many search results to process before stopping, and how many leads to generate before stopping. As in v1, the workers must track the run state properly and handle graceful shutdown and startup.
 
-A human should be able to adjust the agent's configuration and monitor it while it is running. (e.g., adjust tbs, turn off automatic deep research, turn off automatic message generation, request shutdown/stoppage) The agent will be configurable and monitored through a web/mobile app that we will create after the agent. The app will be used to control the agent like a remote control and view its results. The app will also operate like a CRM, serving as a bridge between the AI agent and human handoff. So we need to make sure the endpoints are available to view leads, filter by their state, request deep research, etc.
+A human should be able to adjust the agent's configuration and monitor it while it is running. (e.g., adjust tbs, turn off automatic deep research, turn off automatic message generation, request shutdown/stoppage). The agent will be configurable and monitored through a web/mobile app that we will create after the agent. The app will be used to control the agent like a remote control and view its results. The app will also operate like a CRM, serving as a bridge between the AI agent and human handoff. So we need to make sure the endpoints are available to view leads, filter by their state, request deep research, etc.
 
 Use interfaces to make sure it is easy to replace serp api and context.dev with alternatives later on if we want to (and to swap back as well)
 - note that different search providers might handle site and tbs parameters differently, so the interface and implementation needs to be able to handle this

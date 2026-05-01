@@ -23,27 +23,29 @@ This design **shifts the boundary**: `gtm-ai` (Mastra) becomes the brain. It own
 
 ---
 
-## 2. What Changes from the Previous V2 Design
+## 2. Service Responsibilities
 
-| Previous V2 Design | This Design |
-|---|---|
-| `ProcessPostJob` (use-case in workers) orchestrates AI pipeline | `processLeadWorkflow` (Mastra workflow) orchestrates the pipeline; workers just invoke it |
-| `SearchForLeads` (use-case in workers) orchestrates search loop | `searchForLeadsWorkflow` (Mastra workflow) orchestrates the loop; workers just invoke it and feed results back |
-| `DeepResearchJob` (use-case in workers) calls deep research workflow | `deepResearchWorkflow` (Mastra workflow) is self-contained — it generates search terms, and workers feed search/scrape results back as intermediate steps |
-| `MessageGenerationJob` (use-case in workers) calls message workflow | `generateMessageWorkflow` (Mastra workflow) is self-contained |
-| `DorgApiClient` is a class in workers | `dOrg` tools (Mastra tools) callable from workflows |
-| `SerperApiClient` and `ContextDevClient` are classes in workers | `search` and `scrape` tools (Mastra tools) callable from workflows |
-| Workers call workflows via `MastraClient` HTTP SDK | Workers call workflows the same way (HTTP), but the workflows now do the heavy lifting |
+### gtm-ai (Mastra) — The Brain
 
-### What the Workers Still Do
+Owns all decision-making, orchestration, and external API access:
 
-The workers are **not eliminated**, they are **reduced to three responsibilities**:
+- **All LLM calls**: agents, prompts, and structured output schemas
+- **All orchestration**: workflows that decide what to do, in what order, and what the outcome means
+- **All external API calls**: dOrg API, Serper API, and ContextDev API are accessed via Mastra tools
+- **Observability**: built-in OpenTelemetry tracing with span export
+- **No infrastructure dependencies**: Mastra uses LibSQL and DuckDB internally; no Redis, no Postgres
 
-1. **Consume Redis queues** and invoke the appropriate Mastra workflow for each message.
-2. **Persist results** to Postgres after workflows complete (workers own the DB).
-3. **Manage Redis state** (bloom filter dedup, search-term TTL sets, run state tracking, URL processed sets).
+### gtm-workers (Bun) — Thin Infrastructure Layer
 
-The workers contain **no business logic** — no if/else about lead scoring thresholds, no orchestration of what-happens-next, no decisions about whether to trigger deep research. Those decisions live in Mastra workflows. The workers are a dumb pipe.
+Handles operational concerns that Mastra is not designed for:
+
+1. **Consume Redis queues** — blocking `BRPOPLPUSH` loops, concurrent worker pools — and invoke the appropriate Mastra workflow for each message.
+2. **Persist results** to Postgres after workflows complete — workers own the Drizzle schema and run migrations.
+3. **Manage Redis state** — bloom filter dedup (`gtm:processed_urls`), search-term TTL sets (`gtm:search-terms`), run state tracking (`gtm:run-state:<id>`), runtime config cache (`gtm:run-config`).
+4. **HTTP API with custom auth** — Bearer token endpoints for manual triggers, lead CRUD, configuration, and health checks.
+5. **Graceful shutdown** — drain in-flight jobs, ack queues, then exit on `SIGTERM`/`SIGINT`.
+
+Workers contain **no business logic** — no thresholds, no if/else about what-happens-next, no orchestration. They are a dumb pipe: dequeue → call workflow → persist outcome → ack.
 
 ---
 
@@ -646,9 +648,9 @@ async function runSearchWorkerLoop(workerRunId: string) {
 
 ---
 
-## 6. Database Schema (Same as Previous Design)
+## 6. Database Schema
 
-The schema is unchanged from the previous V2 design. The workers remain the sole owner of Postgres.
+The workers are the sole owner of Postgres — Mastra uses LibSQL internally and does not interact with these tables.
 
 ### Posts Table
 
@@ -680,11 +682,33 @@ The schema is unchanged from the previous V2 design. The workers remain the sole
 
 ### New Tables: `search_runs`, `run_configuration`
 
-Unchanged from previous design.
+```sql
+CREATE TABLE search_runs (
+  id          uuid PRIMARY KEY,
+  status      varchar(50) NOT NULL DEFAULT 'running',
+  config      jsonb NOT NULL,
+  counters    jsonb NOT NULL DEFAULT '{}',
+  started_at  timestamp NOT NULL DEFAULT now(),
+  stopped_at  timestamp,
+  error_message text,
+  created_at  timestamp NOT NULL DEFAULT now(),
+  updated_at  timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE run_configuration (
+  id                    integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  consultancy_config    jsonb NOT NULL DEFAULT '{}',
+  auto_deep_research    boolean NOT NULL DEFAULT true,
+  auto_message_gen      boolean NOT NULL DEFAULT true,
+  deep_research_threshold integer NOT NULL DEFAULT 90,
+  message_gen_threshold   integer NOT NULL DEFAULT 90,
+  updated_at            timestamp NOT NULL DEFAULT now()
+);
+```
 
 ---
 
-## 7. Post Status State Machine (Same as Previous Design)
+## 7. Post Status State Machine
 
 ```
 PENDING → SCORING → [below_threshold | ANALYZING]
@@ -775,13 +799,13 @@ MASTRA_OBSERVABILITY_DB_PATH=./mastra-observability.db
 
 Note: `DORG_API_*`, `SERPER_API_*`, and `CONTEXT_DEV_*` env vars now live in **both** services. gtm-ai needs them because tools call these APIs directly from workflows. gtm-workers needs `SERPER_*` and `CONTEXT_DEV_*` because the search worker loop executes searches and scrapes in batch (the `awaiting_search` / `awaiting_scrape` suspense pattern). dOrg calls happen entirely inside workflows via tools, so gtm-workers does **not** need dOrg env vars.
 
-### 8.2 Runtime Configuration (Same as Previous Design)
+### 8.2 Runtime Configuration
 
 Stored in `run_configuration` table + Redis `gtm:run-config` hash. Workers read config on each job iteration and pass it as `runConfig` to workflows. Changes take effect immediately without restart.
 
 ---
 
-## 9. API Endpoints (Unchanged from Previous Design)
+## 9. API Endpoints
 
 | Method | Path | Purpose | Auth |
 |---|---|---|---|
@@ -798,7 +822,7 @@ Stored in `run_configuration` table + Redis `gtm:run-config` hash. Workers read 
 
 ---
 
-## 10. Data Flow: End-to-End Lead Processing (post-boundary-shift)
+## 10. Data Flow: End-to-End Lead Processing
 
 ```
                               ┌─────────────────────────┐
@@ -866,9 +890,9 @@ Stored in `run_configuration` table + Redis `gtm:run-config` hash. Workers read 
 
 ---
 
-## 11. Provider Swap Interfaces (Same as Previous Design)
+## 11. Provider Swap Interfaces
 
-The `SearchProvider` and `PageScraper` interfaces now live in **both** services:
+The `SearchProvider` and `PageScraper` interfaces live in **both** services:
 
 - **gtm-ai**: Used by `searchWebTool` and `scrapePageTool` for synchronous tool calls within workflows.
 - **gtm-workers**: Used by the search worker loop for batch search/scrape execution (the suspense pattern in `searchForLeadsWorkflow` and `deepResearchWorkflow`).

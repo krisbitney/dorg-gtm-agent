@@ -6,7 +6,13 @@ We will end support for apify. Also, the gtm-web-crawler package is no longer ne
 
 We will use a combination of the serper.dev SERP API (as the search provider) and context.dev (as the page scraper) to search the web and scrape web pages.
 
-The new search flow should look like this:
+## Boundary Shift
+
+We will shift the boundary between gtm-workers and gtm-ai. gtm-ai (Mastra) becomes the brain — it owns all orchestration logic, LLM calls, prompts, and external API access (via Mastra tools). gtm-workers becomes a thin infrastructure layer — it handles persistent queue consumption, concurrency, graceful shutdown, Redis data structures, Postgres persistence, and custom HTTP auth. Workers contain no business logic; they are a dumb pipe that dequeues messages, calls Mastra workflows, and persists the results.
+
+The dOrg API will be accessed via Mastra tools (claimLead, surfaceLead, sendDiscordMessage) rather than a client class in workers.
+
+## New Search Flow
 
     1. AI workflow creates a set of search terms with the format: { searchQuery: string; site: "reddit", startDateTime: "...", endDateTime: "..." }, where the actual site and datetimes are determined by input parameters and not by the LLM. Note that the search provider manager implementation will handle converting the start/end times to a time-based search (tbs) term.
         - the number of search terms to generate should be configurable
@@ -16,15 +22,23 @@ The new search flow should look like this:
     4. filters remaining search results based on likelihood that result might be a lead (using the basic description from the search results returned by the SERP API)
         - we should be able to configure this prompt so that it works for other kinds of consultancies as well
         - we do not need to save unpromising search results in any persisted storage
-    5. worker uses context.dev to scrape web pages from search result URLs that were identified as potential leads; adds to postgres db, redis queue, bloom filter (redis set)
+    5. Use context.dev to scrape web pages from search result URLs that were identified as potential leads; adds to postgres db, redis queue, bloom filter (redis set)
 
-We will keep the original worker and AI workflows, and improve them:
-1. checks content from each scraped webpage to verify whether or not it is a lead. Scores the lead on a quality scale of 0-100, where 0 is not a lead and 100 is high-quality lead.
+The search loop is orchestrated by a Mastra workflow (searchForLeadsWorkflow) using a suspense pattern: the workflow declares what it needs (search terms to execute, URLs to scrape), and the worker performs the batch I/O and feeds results back. The workflow owns all decisions about what to search next and when to stop.
+
+## Enhanced Lead Processing
+
+We will keep the original worker and AI workflows, and rework them so that all orchestration moves into Mastra:
+
+1. A new `processLeadWorkflow` in Mastra orchestrates the full pipeline: score → normalize → threshold check → analyze → claim → surface → notify → post-completion checks. The worker just invokes this workflow and persists the outcome.
+2. checks content from each scraped webpage to verify whether or not it is a lead. Scores the lead on a quality scale of 0-100, where 0 is not a lead and 100 is high-quality lead.
 - we should be able to inject terms into the prompt that help configure how the results are filtered, like "if budget is mentioned, must have > $50k budget"
 - we should be able to configure this prompt so that it works for other kinds of consultancies as well
 - worker updates postgres db
-2. For each lead with a quality score above 50 (configurable), extract all useful information with structured output
-- worker updates postgresql database, claims and surfaces lead with dOrg API
+3. For each lead with a quality score above 50 (configurable), extract all useful information with structured output
+- worker updates postgresql database, claims and surfaces lead with dOrg API (via Mastra tools)
+
+## Deep Research
 
 There should be a new ai workflow to do deep research on a lead:
 1. it should generate searches based on base lead information in order to find more detailed lead information.
@@ -36,13 +50,19 @@ There should be a new ai workflow to do deep research on a lead:
 2. scrape relevant search results with verification etc.
     - verification must involve confirming that the result is related to the right entity (e.g., a startup company named "apex" should not be confused with a programming language named "apex")
 3. Synthesize into deep research report (markdown)
-4. worker will update lead in db
+4. worker will update lead in db with the markdown report
+
+The workflow uses a suspense pattern: it generates search terms, the worker executes searches and scraping, then the workflow verifies entity match and synthesizes the report.
+
+## Message Generation
 
 There should be a new ai workflow to construct a high-conversion message to send to a lead for initial outreach:
 1. it should use all available information, which may or may not include a deep research report
 2. worker will add to lead entry in db
 
-It should be possible to make deep research and message generation automatically trigger for leads with quality scores greater than or equal to a specified value, such as 90.
+## Automation & Manual Control
+
+It should be possible to make deep research and message generation automatically trigger for leads with quality scores greater than or equal to a specified value, such as 90. These thresholds are checked inside the processLeadWorkflow in Mastra.
 
 It should be possible to trigger the new search flow, the new deep research flow, and the new message generation flows manually.
 

@@ -363,7 +363,7 @@ export const extractLearningsTool = createTool({
   4. **Stops after Phase 2** — does not search follow-up questions from Phase 2 results (prevents infinite loops).
 
 - Always includes the user's social profile as a search target if the lead source is a social post.
-- `maxSteps: 12` on `agent.generate()` provides a hard stop to control token spend.
+- `maxSteps: 12` on `agent.generate()` provides a hard stop to control token spend. (Mastra's default is 5; 12 is explicitly chosen to accommodate the full two-phase research process.)
 - Model: `GTM_DEEP_RESEARCH_MODEL`.
 
 #### New: `reportAgent`
@@ -384,7 +384,7 @@ This is the most significant change. All orchestration logic that was in `Proces
 
 ```
 ID: process-lead-workflow
-Input: { postId: string, post: LeadInput, runConfig: RunConfig }
+Input: { post: LeadInput, runConfig: RunConfig }
 
 Steps:
 
@@ -515,11 +515,12 @@ Steps:
 The **worker** calls this workflow synchronously — it invokes `deepResearchWorkflow`, receives the completed markdown report, and persists it to Postgres. No suspense steps, no batch I/O coordination. The deepResearchAgent handles all external API calls itself through its tools.
 
 **Design rationale for agent-driven pattern (vs. step-driven in searchForLeadsWorkflow):**
-- Deep research has intentionally limited scope (max 6–10 searches). Sequential tool calls are acceptable.
+- Deep research has intentionally limited scope (max 6–10 searches). Sequential agent-tool round-trips are acceptable.
 - The two-phase approach (initial → extract learnings → follow-up → stop) requires the agent to adapt based on what it finds — it cannot know all follow-up questions upfront.
-- `maxSteps: 12` provides a hard token/time budget, preventing runaway costs.
+- `maxSteps: 12` provides a hard token/time budget, preventing runaway costs. (Mastra's default is 5; 12 is explicitly chosen to accommodate the two-phase research process.)
 - The `webSummarizationAgent` keeps context size manageable by summarizing scraped content before it reaches the agent.
 - This keeps the architecture simple: the worker just calls one workflow and gets back a finished report. No coordination loop.
+- **Token cost vs. speed**: Mastra's default `toolCallConcurrency` is 10, meaning agent tool calls within a single step execute concurrently — so the speed gap between agent-driven and step-driven patterns is narrower than it first appears. However, each agent step still costs LLM tokens (the agent must reason about *which* tools to call and process their results), whereas step-driven `tool.execute()` calls cost zero tokens. For research that requires adaptive decision-making, the token cost is worth the flexibility.
 
 #### New: `generateMessageWorkflow`
 
@@ -561,7 +562,7 @@ All files that contained business logic. These responsibilities move to Mastra w
 | `src/use-cases/import-apify-run-dataset.ts` | N/A (Apify removed) |
 | `src/clients/apify-crawler-client.ts` | N/A (Apify removed) |
 | `src/clients/dorg-api-client.ts` | `claimLeadTool`, `surfaceLeadTool`, `sendDiscordMessageTool` in gtm-ai |
-| `src/clients/gtm-ai-client.ts` | Not needed — workers call Mastra HTTP API directly |
+| `src/clients/gtm-ai-client.ts` | Revised into `mastra-client.ts` — thin `@mastra/client-js` wrapper (v1 retry/timeout logic removed) |
 | `src/config/crawler-configs.ts` | N/A (Apify removed) |
 | `src/config/crawler-inputs/` | N/A (Apify removed) |
 | `src/schemas/post-schemas/apify-reddit-post-schema.ts` | Replaced by generic scraped page handling |
@@ -584,8 +585,8 @@ gtm-workers/src/
 │   ├── api.ts                          # HTTP server entry point
 │   └── worker.ts                       # Queue consumer entry point
 ├── clients/
-│   ├── mastra-client.ts                # THIN: wraps Mastra HTTP API calls
-│   │                                    # (replaces GtmAiClient — just HTTP, no retry logic)
+│   ├── mastra-client.ts                # THIN: wraps @mastra/client-js
+│   │                                    # (createRun + startAsync for workflow execution)
 ├── config/
 │   └── app-env.ts                      # Environment variable validation
 ├── constants/
@@ -650,14 +651,21 @@ async function runLeadWorkerLoop(workerRunId: string) {
       const runConfig = await runStateStore.getConfig();
 
       // 5. Invoke Mastra workflow (all business logic is here)
-      const result = await mastraClient.executeWorkflow('processLeadWorkflow', {
-        postId,
-        post: mapPostToWorkflowInput(post),
-        runConfig,
+      const workflow = mastraClient.getWorkflow('processLeadWorkflow');
+      const run = await workflow.createRun();
+      const result = await run.startAsync({
+        inputData: {
+          post: mapPostToWorkflowInput(post),
+          runConfig,
+        },
       });
 
       // 6. Persist results based on workflow outcome
-      await handleWorkflowOutcome(postId, result, rawPayload);
+      if (result.status === 'success') {
+        await handleWorkflowOutcome(postId, result.result, rawPayload);
+      } else if (result.status === 'failed') {
+        await handleWorkflowError(postId, result.error, rawPayload);
+      }
 
     } catch (error) {
       await handleError(rawPayload, postId, error);
@@ -705,12 +713,18 @@ async function runSearchWorkerLoop(workerRunId: string) {
     const runConfig = await runStateStore.get(searchRunId);
 
     // Invoke workflow — it handles all search/scrape/filter/evaluate internally
-    const result = await mastraClient.executeWorkflow('searchForLeadsWorkflow', {
-      runConfig,
+    const workflow = mastraClient.getWorkflow('searchForLeadsWorkflow');
+    const run = await workflow.createRun();
+    const result = await run.startAsync({
+      inputData: { runConfig },
     });
 
     // Persist results based on workflow outcome
-    await searchRunRepository.markCompleted(searchRunId, result.counters);
+    if (result.status === 'success') {
+      await searchRunRepository.markCompleted(searchRunId, result.result.counters);
+    } else if (result.status === 'failed') {
+      await searchRunRepository.markFailed(searchRunId, result.error);
+    }
     await searchRunQueue.ack(rawPayload);
   }
 }
@@ -898,11 +912,12 @@ Stored in `run_configuration` table + Redis `gtm:run-config` hash. Workers read 
   2. Load post from Postgres              │
      Load runConfig from Redis             │
                                            │
-  3. POST /api/workflows/processLeadWorkflow/execute
+  3. mastraClient.getWorkflow('processLeadWorkflow')
+     → workflow.createRun() → run.startAsync({ inputData })
      ┌─────────────────────────────────────┼──────────────────────────┐
      │               gtm-ai                │                          │
      │                                     ▼                          │
-     │  processLeadWorkflow.execute():                                │
+     │  processLeadWorkflow:                                           │
      │                                                                 │
      │  Step 1: lead-score                                            │
      │    leadScoreAgent.generate(prompt, structuredOutput)            │
@@ -1029,7 +1044,7 @@ gtm-workers/src/
 │   ├── api.ts
 │   └── worker.ts
 ├── clients/
-│   └── mastra-client.ts                        # Thin HTTP wrapper (no retry logic)
+│   └── mastra-client.ts                        # Thin wrapper around @mastra/client-js
 ├── config/
 │   └── app-env.ts
 ├── constants/

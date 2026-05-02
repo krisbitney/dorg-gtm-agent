@@ -320,7 +320,7 @@ export const extractLearningsTool = createTool({
 
 #### New: `searchTermAgent`
 - Generates diverse, high-signal search queries targeting specific platforms.
-- Uses `searchWebTool` (optionally — primarily it returns search terms for the worker to execute).
+- Returns structured search terms that are executed by the workflow via direct `searchWebTool.execute()` calls.
 - Model: `GTM_SEARCH_TERM_MODEL`.
 
 #### New: `searchFilterAgent`
@@ -440,66 +440,44 @@ The **worker** calls this workflow and handles the outcome:
 
 #### New: `searchForLeadsWorkflow` (replaces `SearchForLeads` in workers)
 
-This is the other major shift. The search orchestration loop moves into a workflow.
+This is the other major shift. The search orchestration loop moves into a workflow. Tools are called **directly from workflow steps** (via `tool.execute()`), not through agents — so search and scrape I/O costs zero LLM tokens and can be parallelized within a step. Only the reasoning steps (generate terms, filter, evaluate) use the LLM.
 
 ```
 ID: search-for-leads-workflow
-Input: { 
-  runConfig: RunConfig,
-  maxSearchTerms: number,
-  maxLeads: number,
-  searchResults: SearchResult[],       // fed in by worker on iteration
-  scrapedPages: ScrapedPage[],         // fed in by worker on iteration
-  iteration: number 
-}
+Input: { runConfig: RunConfig }
 
 Steps:
 
-1. generate-search-terms (only on first iteration)
-   - Calls searchTermAgent.generate()
+1. generate-search-terms
+   - Calls searchTermAgent.generate() — LLM call, generates diverse queries
    - Output: { searchTerms: Array<{ searchQuery, site, startDateTime, endDateTime }> }
-   - If not first iteration, skip
 
-2. select-next-search-terms
-   - Returns the next batch of search terms that haven't been executed yet
-   - Output: { terms: SearchTerm[] }
-   - If no more terms → Return { outcome: "no_more_terms" }
+2. execute-searches
+   - Calls searchWebTool.execute() for each search term — parallelized, zero LLM tokens
+   - Output: { searchResults: Array<{ query, results: Array<{ url, title, snippet }> }> }
 
-3. wait-for-search-results (suspense step)
-   - The workflow returns { outcome: "awaiting_search", terms }
-   - The worker executes searches against SerperAPI, feeds results back
-   - On resume: receives { searchResults }
-   
-4. filter-results
-   - Calls searchFilterAgent.generate() to assess which results look promising
+3. filter-results
+   - Calls searchFilterAgent.generate() — cheap LLM call, filters raw SERP results
    - Output: { promising: Array<{ url, reason }>, notPromising: Array<{ url }> }
 
-5. wait-for-scraped-pages (suspense step)
-   - The workflow returns { outcome: "awaiting_scrape", urls: promising }
-   - The worker scrapes URLs via ContextDev, feeds results back
-   - On resume: receives { scrapedPages }
+4. scrape-pages
+   - Calls scrapePageTool.execute() for each promising URL — parallelized, zero LLM tokens
+   - (scrapePageTool auto-summarizes content via webSummarizationAgent internally)
+   - Output: { scrapedPages: Array<{ url, title, content }> }
 
-6. check-stopping-conditions
-   - If leadsFound >= maxLeads → Return { outcome: "max_leads_reached" }
-   - If runtimeExceeded → Return { outcome: "runtime_exceeded" }
-   - Else → Loop back to step 2
+5. evaluate-and-enqueue
+   - Evaluates scraped pages for lead quality, enqueues qualified leads
+   - Checks stopping conditions (max leads, dedup)
+   - Returns { outcome, counters }
 ```
 
-The **search worker** drives this workflow in a loop:
-1. Call `searchForLeadsWorkflow` with `iteration: 0`
-2. If outcome is `awaiting_search` → execute searches (SerperAPI), call workflow again with `searchResults`
-3. If outcome is `awaiting_scrape` → execute scrapes (ContextDev), insert into DB + Redis, call workflow again with `scrapedPages`
-4. If outcome is `no_more_terms` / `max_leads_reached` / `runtime_exceeded` → mark search run complete
+All external API access (Serper, ContextDev) lives inside the tools in gtm-ai. The worker simply calls this workflow and persists results — it has no search or scrape clients.
 
-This keeps the search loop alive while the workflow owns the decision logic. The worker is just a loop that feeds data into the workflow and acts on its instructions.
-
-**Design note — alternatives considered:**
-- Having the workflow call `searchWebTool` and `scrapePageTool` directly (via tool-equipped agents) would be cleaner, but each tool call is a single page/query. A search run involves potentially hundreds of queries and scrapes. Running them sequentially inside a single workflow execution would be slow and expensive (LLM context grows with each step). The batch/suspense pattern above lets the worker parallelize the I/O while the workflow only sees aggregated results per iteration.
-- If token cost and latency are less of a concern for small runs (e.g., `maxSearchTerms=5`, `maxLeads=3`), the workflow could use tools directly and run synchronously. Both modes could be supported via a `mode` parameter.
+Token usage is bounded: only steps 1 (generate terms) and 3 (filter) involve LLM calls. Step 4's summarization uses a cheap model per page. The bulk I/O (searching, fetching pages) consumes no tokens at all.
 
 #### New: `deepResearchWorkflow`
 
-Unlike `searchForLeadsWorkflow` (which uses the suspense pattern for batch I/O efficiency), deep research uses an **agent-driven pattern** (inspired by the Mastra deep research template). The `deepResearchAgent` is equipped with tools that call external APIs directly — no worker coordination needed. This is appropriate because deep research intentionally limits its scope (2–3 initial queries + follow-ups = ~6–10 total searches), so sequential tool calls are fast enough and the adaptive two-phase approach produces better results.
+Deep research uses an **agent-driven pattern** (inspired by the Mastra deep research template). The `deepResearchAgent` is equipped with tools that call external APIs. Unlike `searchForLeadsWorkflow` (which calls tools directly from steps for deterministic batch I/O), deep research benefits from agent-driven tool use because the agent must adapt its research direction based on what it finds — generating follow-up questions that couldn't be predicted upfront. The scope is intentionally limited (2–3 initial queries + follow-ups = ~6–10 total searches), so the sequential agent-tool round-trips are acceptable.
 
 ```
 ID: deep-research-workflow
@@ -536,7 +514,7 @@ Steps:
 
 The **worker** calls this workflow synchronously — it invokes `deepResearchWorkflow`, receives the completed markdown report, and persists it to Postgres. No suspense steps, no batch I/O coordination. The deepResearchAgent handles all external API calls itself through its tools.
 
-**Design rationale for agent-driven vs. suspense pattern:**
+**Design rationale for agent-driven pattern (vs. step-driven in searchForLeadsWorkflow):**
 - Deep research has intentionally limited scope (max 6–10 searches). Sequential tool calls are acceptable.
 - The two-phase approach (initial → extract learnings → follow-up → stop) requires the agent to adapt based on what it finds — it cannot know all follow-up questions upfront.
 - `maxSteps: 12` provides a hard token/time budget, preventing runaway costs.
@@ -608,8 +586,6 @@ gtm-workers/src/
 ├── clients/
 │   ├── mastra-client.ts                # THIN: wraps Mastra HTTP API calls
 │   │                                    # (replaces GtmAiClient — just HTTP, no retry logic)
-│   ├── serper-api-client.ts            # THIN: wraps serper.dev REST API
-│   └── context-dev-client.ts           # THIN: wraps context.dev REST API
 ├── config/
 │   └── app-env.ts                      # Environment variable validation
 ├── constants/
@@ -717,7 +693,7 @@ async function handleWorkflowOutcome(postId: string, result: ProcessLeadResult, 
 
 ### 5.4 The Search Worker Loop
 
-The search worker is similarly thin — it drives the workflow and handles I/O:
+The search worker is a thin loop — it dequeues search run requests, calls the workflow, and persists results. All search and scrape execution happens inside the workflow via direct tool calls (`searchWebTool.execute()`, `scrapePageTool.execute()`). The worker has no Serper or ContextDev clients.
 
 ```typescript
 async function runSearchWorkerLoop(workerRunId: string) {
@@ -728,38 +704,14 @@ async function runSearchWorkerLoop(workerRunId: string) {
     const { searchRunId } = parsePayload(rawPayload);
     const runConfig = await runStateStore.get(searchRunId);
 
-    let workflowState = { iteration: 0 };
+    // Invoke workflow — it handles all search/scrape/filter/evaluate internally
+    const result = await mastraClient.executeWorkflow('searchForLeadsWorkflow', {
+      runConfig,
+    });
 
-    while (true) {
-      // Invoke workflow — it tells us what to do next
-      const result = await mastraClient.executeWorkflow('searchForLeadsWorkflow', {
-        ...workflowState,
-        runConfig,
-        searchResults: workflowState.pendingSearchResults,
-        scrapedPages: workflowState.pendingScrapedPages,
-      });
-
-      switch (result.outcome) {
-        case 'awaiting_search':
-          // Workflow gave us search terms → execute them
-          const searchResults = await executeSearches(result.terms);
-          workflowState = { ...result, pendingSearchResults: searchResults };
-          break;
-
-        case 'awaiting_scrape':
-          // Workflow gave us promising URLs → scrape them
-          const pages = await scrapeAndPersist(result.urls);
-          workflowState = { ...result, pendingScrapedPages: pages };
-          break;
-
-        case 'no_more_terms':
-        case 'max_leads_reached':
-        case 'runtime_exceeded':
-          await searchRunRepository.markCompleted(searchRunId, result.counters);
-          await searchRunQueue.ack(rawPayload);
-          return;
-      }
-    }
+    // Persist results based on workflow outcome
+    await searchRunRepository.markCompleted(searchRunId, result.counters);
+    await searchRunQueue.ack(rawPayload);
   }
 }
 ```
@@ -849,7 +801,7 @@ Any state → ERROR
 
 ### 8.1 Static Configuration (env vars)
 
-**gtm-workers env vars (leaner — no Apify, no dOrg):**
+**gtm-workers env vars (leaner — no Apify, no dOrg, no Serper, no ContextDev):**
 ```
 # Server
 WORKERS_API_HOST=0.0.0.0
@@ -862,14 +814,6 @@ REDIS_URL=redis://...
 
 # Mastra
 GTM_AI_BASE_URL=http://localhost:4111
-
-# Serper
-SERPER_API_KEY=...
-SERPER_BASE_URL=https://google.serper.dev
-
-# ContextDev
-CONTEXT_DEV_API_KEY=...
-CONTEXT_DEV_BASE_URL=https://api.context.dev
 
 # Queue & Storage Keys
 QUEUE_NAME=gtm:posts:queue
@@ -915,7 +859,7 @@ MASTRA_STORAGE_URL=file:./mastra.db
 MASTRA_OBSERVABILITY_DB_PATH=./mastra-observability.db
 ```
 
-Note: `DORG_API_*`, `SERPER_API_*`, and `CONTEXT_DEV_*` env vars now live in **both** services. gtm-ai needs them because tools call these APIs directly from workflows. gtm-workers needs `SERPER_*` and `CONTEXT_DEV_*` because the search worker loop executes searches and scrapes in batch (the `awaiting_search` / `awaiting_scrape` suspense pattern). dOrg calls happen entirely inside workflows via tools, so gtm-workers does **not** need dOrg env vars.
+Note: All external API keys (`DORG_API_*`, `SERPER_API_*`, `CONTEXT_DEV_*`) live **only** in gtm-ai. Workflows call these APIs via tools (`searchWebTool`, `scrapePageTool`, `claimLeadTool`, etc.) — the worker never makes external API calls directly. gtm-workers only needs `GTM_AI_BASE_URL` to reach Mastra.
 
 ### 8.2 Runtime Configuration
 
@@ -1010,12 +954,7 @@ Stored in `run_configuration` table + Redis `gtm:run-config` hash. Workers read 
 
 ## 11. Provider Swap Interfaces
 
-The `SearchProvider` and `PageScraper` interfaces live in **both** services:
-
-- **gtm-ai**: Used by `searchWebTool` and `scrapePageTool` for synchronous tool calls within workflows.
-- **gtm-workers**: Used by the search worker loop for batch search/scrape execution (the suspense pattern in `searchForLeadsWorkflow`). `deepResearchWorkflow` uses the agent-driven pattern — search/scrape happens inside gtm-ai tools, so workers do not need these clients for deep research.
-
-The concrete implementations (`SerperApiClient`, `ContextDevClient`) can be shared via a small internal package or duplicated (they're thin wrappers — ~30 lines each). Given the Karpathy guidelines (no premature abstraction), they should be duplicated in each service until sharing becomes a clear win.
+The `SearchProvider` and `PageScraper` interfaces live **only in gtm-ai**, as the backing implementations for `searchWebTool` and `scrapePageTool`. All search and scrape calls — whether from `searchForLeadsWorkflow` (direct tool calls from steps) or `deepResearchWorkflow` (agent-driven tool calls) — go through these tools. gtm-workers never calls Serper or ContextDev directly and has no need for these interfaces or their implementations.
 
 ---
 
@@ -1090,9 +1029,7 @@ gtm-workers/src/
 │   ├── api.ts
 │   └── worker.ts
 ├── clients/
-│   ├── mastra-client.ts                        # Thin HTTP wrapper (no retry logic)
-│   ├── serper-api-client.ts                    # Thin Serper wrapper
-│   └── context-dev-client.ts                   # Thin ContextDev wrapper
+│   └── mastra-client.ts                        # Thin HTTP wrapper (no retry logic)
 ├── config/
 │   └── app-env.ts
 ├── constants/
@@ -1136,9 +1073,8 @@ gtm-workers/src/
 |---|---|
 | **All orchestration logic moves to Mastra workflows** | Workers become a dumb pipe. Business rules (thresholds, auto-triggers, state transitions) live in one place — the workflows. This makes the system easier to test (workflows can be tested without Redis/Postgres), easier to change, and easier to understand. |
 | **dOrg API calls become Mastra tools** | These are natural tool calls — "claim this lead", "surface this lead". Moving them to tools means the `processLeadWorkflow` can call them inline rather than having the worker make a separate HTTP call after the workflow completes. |
-| **Search/Scrape use a suspense pattern in `searchForLeadsWorkflow`** | The workflow declares what it needs (`awaiting_search`, `awaiting_scrape`), and the worker does the heavy I/O in batch. This avoids the workflow making hundreds of sequential tool calls (slow + token-expensive) while keeping decision logic out of the worker. |
-| **Deep research uses an agent-driven pattern (not suspense)** | Deep research has intentionally limited scope (~6–10 searches). The `deepResearchAgent` is equipped with tools and drives a two-phase research process autonomously — the worker just calls the workflow and gets back a finished report. The two-phase approach (initial searches → learnings → follow-up → stop) requires the agent to adapt based on findings, which the suspense pattern's upfront search generation cannot do. `maxSteps: 12` and content summarization via `webSummarizationAgent` keep token spend bounded. |
-| **Workers retain Serper/ContextDev clients for batch execution** | Workflows use tools for synchronous single calls; workers need batch execution for the search loop. The thin clients are duplicated across services for now (30 lines each) — not worth a shared package yet. |
+| **`searchForLeadsWorkflow` calls tools directly from steps (not via agents)** | Tools called via `tool.execute()` in workflow steps are plain TypeScript functions — zero LLM tokens, and multiple calls can be parallelized within a single step. This means the workflow can execute hundreds of searches and scrapes without paying any LLM cost for the I/O. Only the reasoning steps (generate terms, filter, evaluate) use the LLM. All external API clients (Serper, ContextDev) live only in gtm-ai, inside the tools. |
+| **Deep research uses an agent-driven pattern** | Deep research has intentionally limited scope (~6–10 searches). The `deepResearchAgent` is equipped with tools and drives a two-phase research process autonomously. The agent-driven pattern is appropriate here because the agent must adapt its research direction based on what it finds — generating follow-up questions mid-flight that can't be predicted upfront. `maxSteps: 12` and content summarization via `webSummarizationAgent` keep token spend bounded. |
 | **Workers remain the sole owner of Postgres** | Mastra uses LibSQL internally. Keeping Postgres in workers avoids schema conflicts and keeps a single source of truth for lead data. The CRM/management app will query the workers' API, not Mastra's. |
 | **Runtime config flows as `runConfig` in every workflow call** | Agents rebuild their system prompts per execution using the config from `requestContext`. This makes config changes take effect instantly — no need to restart agents. |
 | **No retry logic in workers' Mastra client** | Retry logic for transient failures belongs in Mastra's agent configuration (`maxRetries`, `maxProcessorRetries`). The worker's HTTP call to Mastra is a simple fetch — if it fails, the worker moves the message to the DLQ (the queue's BRPOPLPUSH guarantees no message loss). |

@@ -320,6 +320,7 @@ export const extractLearningsTool = createTool({
 
 #### New: `searchTermAgent`
 - Generates diverse, high-signal search queries targeting specific platforms.
+- The agent only generates the `searchQuery` string. The `site`, `startDateTime`, and `endDateTime` fields are **injected by the workflow step** from the `RunConfig` input parameters — the LLM does not set them.
 - Returns structured search terms that are executed by the workflow via direct `searchWebTool.execute()` calls.
 - Model: `GTM_SEARCH_TERM_MODEL`.
 
@@ -449,7 +450,8 @@ Input: { runConfig: RunConfig }
 Steps:
 
 1. generate-search-terms
-   - Calls searchTermAgent.generate() — LLM call, generates diverse queries
+   - Calls searchTermAgent.generate() — LLM call, generates diverse `searchQuery` strings
+   - The workflow step injects `site`, `startDateTime`, and `endDateTime` from `runConfig` input parameters — the LLM does not set these fields
    - Output: { searchTerms: Array<{ searchQuery, site, startDateTime, endDateTime }> }
 
 2. execute-searches

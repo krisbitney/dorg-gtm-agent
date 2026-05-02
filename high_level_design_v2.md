@@ -24,7 +24,7 @@ The dOrg API will be accessed via Mastra tools (claimLead, surfaceLead, sendDisc
         - we do not need to save unpromising search results in any persisted storage
     5. Use context.dev to scrape web pages from search result URLs that were identified as potential leads; adds to postgres db, redis queue, bloom filter (redis set)
 
-The search loop is orchestrated by a Mastra workflow (searchForLeadsWorkflow) using a suspense pattern: the workflow declares what it needs (search terms to execute, URLs to scrape), and the worker performs the batch I/O and feeds results back. The workflow owns all decisions about what to search next and when to stop.
+The search is orchestrated by a Mastra workflow (searchForLeadsWorkflow) that calls tools directly from workflow steps (via `tool.execute()`). The workflow generates a fixed batch of search terms and executes them in a single pass — it does not loop back to generate more terms based on results. The worker simply invokes the workflow and persists the results. Additional coverage is achieved by enqueuing new search runs, not by iterating within a single run.
 
 ## Enhanced Lead Processing
 

@@ -63,7 +63,7 @@ _Modify existing agents carefully; build new agents referencing old worker logic
 
 ### New Agents
 
-- [ ] Implement `searchTermAgent` — generates diverse search queries targeting specific platforms (model: `GTM_SEARCH_TERM_MODEL`)
+- [ ] Implement `searchTermAgent` — generates diverse `searchQuery` strings targeting specific platforms. The `site`, `startDateTime`, and `endDateTime` are injected by the workflow step from `runConfig` input parameters — the LLM does not set them (model: `GTM_SEARCH_TERM_MODEL`)
 - [ ] Implement `searchFilterAgent` — cheap model, filters raw SERP results to promising leads (model: `GTM_SEARCH_FILTER_MODEL`)
 - [ ] Implement `webSummarizationAgent` — summarizes scraped content by 80–95%, preserves key facts (model: `GTM_SMALL_MODEL`)
 - [ ] Implement `evaluationAgent` — binary relevance + entity match decisions (model: `GTM_SEARCH_FILTER_MODEL`)
@@ -82,7 +82,7 @@ _Reference existing prompt builders in gtm-ai and business logic in gtm-workers 
 
 - [ ] Update `build-lead-score-prompt.ts` — accept `ConsultancyConfig`, 0–100 scale
 - [ ] Update `build-lead-analysis-prompt.ts` — accept `ConsultancyConfig`
-- [ ] Implement `build-search-term-prompt.ts`
+- [ ] Implement `build-search-term-prompt.ts` — prompt only generates `searchQuery` strings; `site` and datetime fields are injected separately by the workflow step
 - [ ] Implement `build-search-filter-prompt.ts`
 - [ ] Implement `build-deep-research-prompt.ts` — two-phase instructions, maxSteps guidance, entity verification
 - [ ] Implement `build-message-generation-prompt.ts`
@@ -118,7 +118,7 @@ _Reference `process-post-job.ts` and `search-for-leads.ts` in gtm-workers for th
 - [ ] Implement `processLeadWorkflow` — full pipeline (reference: `process-post-job.ts`):
   - `lead-score` → `normalize-score` → `below-threshold-check` → `lead-analysis` → `not-a-lead-check` → `claim-lead` → `build-surface-brief` → `surface-lead` → `notify-discord` → `post-completion-checks`
 - [ ] Implement `searchForLeadsWorkflow` — search orchestration (reference: `search-for-leads.ts`):
-  - `generate-search-terms` → `execute-searches` (parallel tool calls) → `filter-results` → `scrape-pages` (parallel tool calls) → `evaluate-and-enqueue`
+  - `generate-search-terms` (LLM generates `searchQuery` strings; workflow step injects `site`, `startDateTime`, `endDateTime` from `runConfig`) → `execute-searches` (parallel tool calls) → `filter-results` → `scrape-pages` (parallel tool calls) → `evaluate-and-enqueue`
 - [ ] Implement `deepResearchWorkflow` — agent-driven research:
   - `execute-deep-research` (agent with tools, maxSteps 12) → `synthesize-report` (reportAgent)
 - [ ] Implement `generateMessageWorkflow` — single step: `craft-message` via `messageGenerationAgent`

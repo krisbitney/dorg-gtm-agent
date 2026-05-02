@@ -26,6 +26,8 @@ The dOrg API will be accessed via Mastra tools (claimLead, surfaceLead, sendDisc
 
 The search is orchestrated by a Mastra workflow (searchForLeadsWorkflow) that calls tools directly from workflow steps (via `tool.execute()`). The workflow generates a fixed batch of search terms and executes them in a single pass — it does not loop back to generate more terms based on results. The worker simply invokes the workflow and persists the results. Additional coverage is achieved by enqueuing new search runs, not by iterating within a single run.
 
+Redis-based dedup (search term hashes and processed URLs) is accessed via Mastra tools (`dedupSearchTermTool`, `dedupProcessedUrlTool`), keeping all dedup logic inside the workflow where it belongs.
+
 ## Enhanced Lead Processing
 
 We will keep the original worker and AI workflows, and rework them so that all orchestration moves into Mastra:

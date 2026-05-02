@@ -17,7 +17,8 @@ This design **shifts the boundary**: `gtm-ai` (Mastra) becomes the brain. It own
 | **Persistent queue consumption** (blocking `BRPOPLPUSH`, `while(true)` loops) | gtm-workers | Mastra workflows are finite request/response; they are not infinite polling loops |
 | **Concurrent worker pool** (N parallel consumers) | gtm-workers | Mastra has no built-in concurrency control for long-running consumers |
 | **Graceful shutdown** (drain in-flight jobs, ack queue, then exit) | gtm-workers | Mastra's lifecycle is request-scoped, not job-drain-scoped |
-| **Redis data structures** (bloom sets, TTL-based dedup, queue management) | gtm-workers | Redis is infrastructure; Mastra has no Redis integration |
+| **Redis queue management** (blocking ops, BRPOPLPUSH, DLQ) | gtm-workers | Mastra workflows are finite request/response; they are not infinite polling loops |
+| **Redis dedup SETs** (search-term hashes, processed URLs) | gtm-ai | Deduping drives workflow decisions (which terms/URLs to skip); these reads/writes belong in the workflow, accessed via Mastra tools |
 | **Custom HTTP auth** (Bearer tokens, webhook secrets) | gtm-workers | Mastra's auto-generated endpoints lack per-endpoint auth config |
 | **Postgres persistence** (Drizzle ORM, migrations, row-level CRUD) | gtm-workers | Existing Drizzle setup is mature; Mastra uses LibSQL internally |
 
@@ -33,7 +34,7 @@ Owns all decision-making, orchestration, and external API access:
 - **All orchestration**: workflows that decide what to do, in what order, and what the outcome means
 - **All external API calls**: dOrg API, Serper API, and ContextDev API are accessed via Mastra tools
 - **Observability**: built-in OpenTelemetry tracing with span export
-- **No infrastructure dependencies**: Mastra uses LibSQL and DuckDB internally; no Redis, no Postgres
+- **Redis dedup**: search-term hashes and processed-URL SETs are read/written via Mastra tools (`dedupSearchTermTool`, `dedupProcessedUrlTool`). Queue and run-state data structures remain in gtm-workers. No Postgres dependency
 
 ### gtm-workers (Bun) — Thin Infrastructure Layer
 
@@ -41,7 +42,7 @@ Handles operational concerns that Mastra is not designed for:
 
 1. **Consume Redis queues** — blocking `BRPOPLPUSH` loops, concurrent worker pools — and invoke the appropriate Mastra workflow for each message.
 2. **Persist results** to Postgres after workflows complete — workers own the Drizzle schema and run migrations.
-3. **Manage Redis state** — bloom filter dedup (`gtm:processed_urls`), search-term TTL sets (`gtm:search-terms`), run state tracking (`gtm:run-state:<id>`), runtime config cache (`gtm:run-config`).
+3. **Manage Redis state** — run state tracking (`gtm:run-state:<id>`), runtime config cache (`gtm:run-config`), and queue/processing/DLQ lists. (Dedup SETs — `gtm:processed_urls`, `gtm:search-terms` — are owned by gtm-ai via Mastra tools.)
 4. **HTTP API with custom auth** — Bearer token endpoints for manual triggers, lead CRUD, configuration, and health checks.
 5. **Graceful shutdown** — drain in-flight jobs, ack queues, then exit on `SIGTERM`/`SIGINT`.
 
@@ -75,8 +76,6 @@ Workers contain **no business logic** — no thresholds, no if/else about what-h
 │  │  │ Postgres │  │  Redis                            │   │  │
 │  │  │(Drizzle) │  │  - gtm:posts:queue                │   │  │
 │  │  │          │  │  - gtm:search-runs:queue          │   │  │
-│  │  │          │  │  - gtm:processed_urls (SET)       │   │  │
-│  │  │          │  │  - gtm:search-terms (SET w/ TTL)  │   │  │
 │  │  │          │  │  - gtm:run-state:<id> (HASH)      │   │  │
 │  │  │          │  │  - gtm:run-config (HASH)          │   │  │
 │  │  │          │  │  - gtm:posts:processing (list)    │   │  │
@@ -142,6 +141,17 @@ Workers contain **no business logic** — no thresholds, no if/else about what-h
 │  │Message   │ │(entity check)│ │(learnings + follow-ups) │   │
 │  │(dOrg API)│ │              │ │                        │   │
 │  └──────────┘ └──────────────┘ └────────────────────────┘   │
+│  ┌────────────────┐ ┌──────────────────────────────────┐   │
+│  │dedupSearchTerm │ │dedupProcessedUrl                  │   │
+│  │(Redis SET      │ │(Redis SET                        │   │
+│  │ SISMEMBER/SADD)│ │ SISMEMBER/SADD)                  │   │
+│  └────────────────┘ └──────────────────────────────────┘   │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Redis (dedup SETs)                                    │   │
+│  │  - gtm:processed_urls (SET)                           │   │
+│  │  - gtm:search-terms (SET w/ TTL)                      │   │
+│  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -308,6 +318,45 @@ export const extractLearningsTool = createTool({
 });
 ```
 
+```typescript
+// src/mastra/tools/dedup-search-term.tool.ts
+export const dedupSearchTermTool = createTool({
+  id: 'dedup-search-term',
+  description: 'Checks and inserts a hashed search term into the Redis dedup SET with TTL-based expiry. Returns whether the term is new (should be searched) or a duplicate (should be skipped).',
+  inputSchema: z.object({
+    termHash: z.string(),
+    ttlSeconds: z.number(),
+  }),
+  outputSchema: z.object({
+    isNew: z.boolean(),
+  }),
+  execute: async ({ context }) => {
+    // SISMEMBER gtm:search-terms <termHash>
+    // If member → { isNew: false }
+    // If not → SADD gtm:search-terms <termHash>, EXPIRE <termHash> <ttlSeconds>, { isNew: true }
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/dedup-processed-url.tool.ts
+export const dedupProcessedUrlTool = createTool({
+  id: 'dedup-processed-url',
+  description: 'Checks or inserts a URL into the Redis processed-URLs SET for bloom-filter dedup. Returns whether the URL is new or already processed.',
+  inputSchema: z.object({
+    url: z.string().url(),
+    mode: z.enum(['check', 'insert']),
+  }),
+  outputSchema: z.object({
+    isProcessed: z.boolean(),
+  }),
+  execute: async ({ context }) => {
+    // If mode=check: SISMEMBER gtm:processed_urls <url> → { isProcessed: true/false }
+    // If mode=insert: SADD gtm:processed_urls <url> → { isProcessed: true }
+  },
+});
+```
+
 ### 4.2 Agents (Modified & New)
 
 #### Modified: `leadScoreAgent`
@@ -452,6 +501,7 @@ Steps:
 1. generate-search-terms
    - Calls searchTermAgent.generate() — LLM call, generates diverse `searchQuery` strings
    - The workflow step injects `site`, `startDateTime`, and `endDateTime` from `runConfig` input parameters — the LLM does not set these fields
+   - Hashes each search term, checks/inserts into Redis via `dedupSearchTermTool` — skips duplicates
    - Output: { searchTerms: Array<{ searchQuery, site, startDateTime, endDateTime }> }
 
 2. execute-searches
@@ -459,7 +509,8 @@ Steps:
    - Output: { searchResults: Array<{ query, results: Array<{ url, title, snippet }> }> }
 
 3. filter-results
-   - Calls searchFilterAgent.generate() — cheap LLM call, filters raw SERP results
+   - For each search result URL, checks Redis via `dedupProcessedUrlTool` — skips already-processed URLs
+   - Calls searchFilterAgent.generate() on remaining results — cheap LLM call, filters to promising leads
    - Output: { promising: Array<{ url, reason }>, notPromising: Array<{ url }> }
 
 4. scrape-pages
@@ -469,7 +520,8 @@ Steps:
 
 5. evaluate-and-enqueue
    - Evaluates scraped pages for lead quality, enqueues qualified leads
-   - Checks stopping conditions (max leads, dedup)
+   - Inserts scraped URLs into Redis via `dedupProcessedUrlTool` to prevent re-processing
+   - Checks stopping conditions (max leads)
    - Returns { outcome, counters }
 ```
 
@@ -609,8 +661,6 @@ gtm-workers/src/
 │   ├── migrate.ts                      # Migration runner
 │   ├── lead-queue.ts                   # Redis lead queue (BRPOPLPUSH pattern)
 │   ├── search-run-queue.ts             # Redis search run queue
-│   ├── processed-url-store.ts          # Redis dedup set (SISMEMBER/SADD)
-│   ├── search-term-store.ts            # Redis SET with per-member TTL
 │   ├── run-state-store.ts              # Redis HASH for run state tracking
 │   ├── repositories/
 │   │   ├── post-repository.ts          # Post CRUD (lean — no orchestration)
@@ -836,8 +886,6 @@ QUEUE_NAME=gtm:posts:queue
 QUEUE_PROCESSING_NAME=gtm:posts:processing
 QUEUE_DLQ_NAME=gtm:posts:dlq
 SEARCH_QUEUE_NAME=gtm:search-runs:queue
-PROCESSED_URLS_KEY=gtm:processed_urls
-SEARCH_TERMS_SET_KEY=gtm:search-terms
 
 # Worker
 WORKER_CONCURRENCY=1
@@ -869,6 +917,9 @@ CONTEXT_DEV_API_KEY=...
 CONTEXT_DEV_BASE_URL=https://api.context.dev
 DORG_API_TOKEN=...
 DORG_API_BASE_URL=https://agentsofdorg.tech/api
+
+# Redis (for dedup SETs)
+REDIS_URL=redis://...
 
 # Storage
 MASTRA_STORAGE_URL=file:./mastra.db
@@ -1000,6 +1051,8 @@ gtm-ai/src/mastra/
 │   ├── scrape-page.tool.ts                     # New: ContextDev wrapper + auto-summarization
 │   ├── evaluate-result.tool.ts                 # New: relevance + entity match evaluation
 │   ├── extract-learnings.tool.ts               # New: learning extraction + follow-up questions
+│   ├── dedup-search-term.tool.ts               # New: Redis SISMEMBER/SADD for search-term dedup
+│   ├── dedup-processed-url.tool.ts             # New: Redis SISMEMBER/SADD for URL dedup
 │   ├── claim-lead.tool.ts                      # New: dOrg /leads/claim
 │   ├── surface-lead.tool.ts                    # New: dOrg /leads/surface
 │   └── send-discord-message.tool.ts            # New: dOrg /discord/post
@@ -1090,7 +1143,7 @@ gtm-workers/src/
 |---|---|
 | **All orchestration logic moves to Mastra workflows** | Workers become a dumb pipe. Business rules (thresholds, auto-triggers, state transitions) live in one place — the workflows. This makes the system easier to test (workflows can be tested without Redis/Postgres), easier to change, and easier to understand. |
 | **dOrg API calls become Mastra tools** | These are natural tool calls — "claim this lead", "surface this lead". Moving them to tools means the `processLeadWorkflow` can call them inline rather than having the worker make a separate HTTP call after the workflow completes. |
-| **`searchForLeadsWorkflow` calls tools directly from steps (not via agents)** | Tools called via `tool.execute()` in workflow steps are plain TypeScript functions — zero LLM tokens, and multiple calls can be parallelized within a single step. This means the workflow can execute hundreds of searches and scrapes without paying any LLM cost for the I/O. Only the reasoning steps (generate terms, filter, evaluate) use the LLM. All external API clients (Serper, ContextDev) live only in gtm-ai, inside the tools. |
+| **`searchForLeadsWorkflow` calls tools directly from steps (not via agents)** | Tools called via `tool.execute()` in workflow steps are plain TypeScript functions — zero LLM tokens, and multiple calls can be parallelized within a single step. This means the workflow can execute hundreds of searches and scrapes without paying any LLM cost for the I/O. Only the reasoning steps (generate terms, filter, evaluate) use the LLM. All external API clients (Serper, ContextDev) and Redis dedup operations live only in gtm-ai, inside the tools. |
 | **Deep research uses an agent-driven pattern** | Deep research has intentionally limited scope (~6–10 searches). The `deepResearchAgent` is equipped with tools and drives a two-phase research process autonomously. The agent-driven pattern is appropriate here because the agent must adapt its research direction based on what it finds — generating follow-up questions mid-flight that can't be predicted upfront. `maxSteps: 12` and content summarization via `webSummarizationAgent` keep token spend bounded. |
 | **Workers remain the sole owner of Postgres** | Mastra uses LibSQL internally. Keeping Postgres in workers avoids schema conflicts and keeps a single source of truth for lead data. The CRM/management app will query the workers' API, not Mastra's. |
 | **Runtime config flows as `runConfig` in every workflow call** | Agents rebuild their system prompts per execution using the config from `requestContext`. This makes config changes take effect instantly — no need to restart agents. |

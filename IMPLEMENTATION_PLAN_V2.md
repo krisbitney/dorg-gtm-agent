@@ -30,9 +30,11 @@ _Additive only. No columns dropped, no logic deleted._
   - Serper: `SERPER_API_KEY`, `SERPER_BASE_URL`
   - ContextDev: `CONTEXT_DEV_API_KEY`, `CONTEXT_DEV_BASE_URL`
   - dOrg: `DORG_API_TOKEN`, `DORG_API_BASE_URL`
+  - Redis: `REDIS_URL` (for dedup SETs: `gtm:search-terms`, `gtm:processed_urls`)
   - Models: `GTM_SEARCH_TERM_MODEL`, `GTM_SEARCH_FILTER_MODEL`, `GTM_DEEP_RESEARCH_MODEL`, `GTM_MESSAGE_GEN_MODEL`
 - [ ] Define `ConsultancyConfig` type in `types/consultancy-config.ts`
 - [ ] Define `consultancy-config-schema.ts`
+- [ ] Set up Redis connection utility for gtm-ai (used by `dedupSearchTermTool` and `dedupProcessedUrlTool`)
 
 ---
 
@@ -47,6 +49,8 @@ _Build tools using the existing gtm-workers clients (`dorg-api-client.ts`, etc.)
 - [ ] Implement `send-discord-message.tool.ts` — POST to dOrg `/discord/post` (reference: `dorg-api-client.ts`)
 - [ ] Implement `evaluate-result.tool.ts` — calls `evaluationAgent` to check relevance + entity match
 - [ ] Implement `extract-learnings.tool.ts` — calls `learningExtractionAgent` for insights + follow-up questions
+- [ ] Implement `dedup-search-term.tool.ts` — Redis `SISMEMBER`/`SADD` on `gtm:search-terms` SET with per-key TTL expiry
+- [ ] Implement `dedup-processed-url.tool.ts` — Redis `SISMEMBER`/`SADD` on `gtm:processed_urls` SET for URL bloom-filter dedup
 
 ---
 
@@ -118,7 +122,7 @@ _Reference `process-post-job.ts` and `search-for-leads.ts` in gtm-workers for th
 - [ ] Implement `processLeadWorkflow` — full pipeline (reference: `process-post-job.ts`):
   - `lead-score` → `normalize-score` → `below-threshold-check` → `lead-analysis` → `not-a-lead-check` → `claim-lead` → `build-surface-brief` → `surface-lead` → `notify-discord` → `post-completion-checks`
 - [ ] Implement `searchForLeadsWorkflow` — search orchestration (reference: `search-for-leads.ts`):
-  - `generate-search-terms` (LLM generates `searchQuery` strings; workflow step injects `site`, `startDateTime`, `endDateTime` from `runConfig`) → `execute-searches` (parallel tool calls) → `filter-results` → `scrape-pages` (parallel tool calls) → `evaluate-and-enqueue`
+  - `generate-search-terms` (LLM generates `searchQuery` strings; workflow step injects `site`, `startDateTime`, `endDateTime` from `runConfig`; hashes and dedupes via `dedupSearchTermTool`) → `execute-searches` (parallel tool calls) → `filter-results` (dedupes URLs via `dedupProcessedUrlTool`, then LLM filter) → `scrape-pages` (parallel tool calls) → `evaluate-and-enqueue` (inserts scraped URLs into `dedupProcessedUrlTool`, checks stopping conditions)
 - [ ] Implement `deepResearchWorkflow` — agent-driven research:
   - `execute-deep-research` (agent with tools, maxSteps 12) → `synthesize-report` (reportAgent)
 - [ ] Implement `generateMessageWorkflow` — single step: `craft-message` via `messageGenerationAgent`
@@ -170,8 +174,8 @@ _Now that gtm-ai has all the replacement logic, rewrite workers as a thin pipe. 
 
 ### 7.6 Redis Data Structures
 
-- [ ] Implement `processed-url-store.ts` — bloom filter dedup (`gtm:processed_urls` SET with `SISMEMBER`/`SADD`)
-- [ ] Implement `search-term-store.ts` — search term SET with per-member TTL (`gtm:search-terms`)
+_Note: Dedup SETs (`gtm:processed_urls`, `gtm:search-terms`) are now owned by gtm-ai via Mastra tools. Workers only manage the Redis structures below._
+
 - [ ] Implement `run-state-store.ts` — run state HASH (`gtm:run-state:<id>`)
 - [ ] Wire up runtime config cache (`gtm:run-config` HASH)
 - [ ] Refine `lead-queue.ts` — `BRPOPLPUSH` pattern for `gtm:posts:queue` → `gtm:posts:processing`
@@ -183,7 +187,7 @@ _Now that gtm-ai has all the replacement logic, rewrite workers as a thin pipe. 
 - [ ] Remove env vars that moved to gtm-ai (dOrg, Serper, ContextDev)
 - [ ] Remove Apify env vars
 - [ ] Add `GTM_AI_BASE_URL`
-- [ ] Add queue key env vars (`SEARCH_QUEUE_NAME`, `PROCESSED_URLS_KEY`, `SEARCH_TERMS_SET_KEY`)
+- [ ] Add queue key env vars (`SEARCH_QUEUE_NAME`)
 - [ ] Add `SEARCH_WORKER_CONCURRENCY`
 
 ### 7.8 Graceful Shutdown & Run State

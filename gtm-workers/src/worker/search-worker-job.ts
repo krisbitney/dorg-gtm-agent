@@ -7,11 +7,13 @@ import { SearchRunStatus } from "../constants/search-run-status.js";
 import { appEnv } from "../config/app-env.js";
 import { defaultTargetConsultancyDescription } from "../constants/default-target-consultancy-description.js";
 import type { Platform } from "../schemas/platform.js";
+import {type UrlDedupStoreInterface} from "../storage/url-dedup-store.ts";
 
 export class SearchWorkerJob {
   constructor(
     private readonly gtmAiClient: GtmAiClientInterface,
     private readonly searchTermStore: SearchTermDedupStoreInterface,
+    private readonly urlDedupStore: UrlDedupStoreInterface,
     private readonly leadQueue: LeadQueueInterface,
     private readonly leadRepository: LeadRepository,
     private readonly searchRunRepository: SearchRunRepository,
@@ -91,6 +93,10 @@ export class SearchWorkerJob {
     // 3. Import results into leads table and enqueue
     let resultsImported = 0;
     for (const scrapedLead of searchResult.leads) {
+      if (await this.urlDedupStore.has(scrapedLead.url)) {
+        continue;
+      }
+      await this.urlDedupStore.add(scrapedLead.url);
       try {
         const leadId = Bun.randomUUIDv7();
         await this.leadRepository.insert({

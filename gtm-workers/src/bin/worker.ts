@@ -9,6 +9,7 @@ import { ProcessQueueLoop } from "../worker/process-queue-loop.js";
 import { SearchWorkerLoop } from "../worker/search-worker-loop.js";
 import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
+import {RedisUrlDedupStore} from "../storage/url-dedup-store.ts";
 
 /**
  * Entry point for the GTM Workers queue consumer.
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
 
   const leadQueue = new RedisLeadQueue();
   const searchTermStore = new RedisSearchTermStore();
+  const urlDedupStore = new RedisUrlDedupStore();
   const postRepository = new LeadRepository();
   const searchRunRepository = new SearchRunRepository();
   const gtmAiClient = new GtmAiClient();
@@ -60,6 +62,7 @@ async function main(): Promise<void> {
   const searchLoop = new SearchWorkerLoop(
     gtmAiClient,
     searchTermStore,
+    urlDedupStore,
     leadQueue,
     postRepository,
     searchRunRepository,

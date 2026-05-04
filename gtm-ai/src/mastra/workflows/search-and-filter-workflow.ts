@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { SerperProvider } from '../providers/serper-provider';
 import { ContextDevProvider } from '../providers/context-dev-provider';
-import { RedisUrlDedupStore } from '../storage/url-dedup-store';
+import { RedisReadonlyUrlDedupStore } from '../storage/url-dedup-store';
 import { searchFilterAgent } from '../agents/search-filter-agent';
 import { buildSearchFilterPrompt } from '../prompts/build-search-filter-prompt';
 import { buildContentExtractionPrompt } from '../prompts/build-content-extraction-prompt';
@@ -18,7 +18,7 @@ import type { SearchResult } from '../interfaces/search-provider-interface';
 
 const serper = new SerperProvider({ apiKey: appEnv.SERPER_API_KEY ?? '' });
 const contextDev = new ContextDevProvider({ apiKey: appEnv.CONTEXT_DEV_API_KEY ?? '' });
-const urlDedup = new RedisUrlDedupStore();
+const urlDedup = new RedisReadonlyUrlDedupStore();
 
 /**
  * Workflow that accepts a search query in workflow state, executes the search
@@ -69,7 +69,6 @@ export const searchAndFilterWorkflow = createWorkflow({
 
           for (const result of response.results) {
             if (!(await urlDedup.has(result.url))) {
-              await urlDedup.add(result.url);
               allResults.push(result);
             }
           }

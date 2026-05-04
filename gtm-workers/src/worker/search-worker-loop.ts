@@ -6,11 +6,13 @@ import { SearchRunRepository } from "../storage/repositories/search-run-reposito
 import { SearchWorkerJob } from "./search-worker-job.js";
 import { SupportedPlatforms } from "../schemas/platform.js";
 import { appEnv } from "../config/app-env.js";
+import type {UrlDedupStoreInterface} from "../storage/url-dedup-store.ts";
 
 export class SearchWorkerLoop {
   constructor(
     private readonly gtmAiClient: GtmAiClientInterface,
     private readonly searchTermStore: SearchTermDedupStoreInterface,
+    private readonly urlDedupStore: UrlDedupStoreInterface,
     private readonly leadQueue: LeadQueueInterface,
     private readonly leadRepository: LeadRepository,
     private readonly searchRunRepository: SearchRunRepository,
@@ -23,6 +25,7 @@ export class SearchWorkerLoop {
     const job = new SearchWorkerJob(
       this.gtmAiClient,
       this.searchTermStore,
+      this.urlDedupStore,
       this.leadQueue,
       this.leadRepository,
       this.searchRunRepository,

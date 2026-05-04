@@ -37,7 +37,7 @@ export class ProcessLeadJob {
       LeadStatus.NOT_A_LEAD,
       LeadStatus.COMPLETED,
     ];
-    if (terminalStatuses.includes(lead.status as LeadStatusType)) {
+    if (terminalStatuses.includes(lead.status as any)) {
       console.log(`[Lead ${leadId}] Lead is already in terminal state "${lead.status}", skipping.`);
       return;
     }

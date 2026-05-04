@@ -7,7 +7,7 @@ import { z } from "zod";
  */
 export const SearchTermGenerationInputSchema = z.object({
   /** Number of search terms to generate */
-  numberOfSearchTerms: z.number().int().positive().default(5),
+  numberOfSearchTerms: z.number().int().positive(),
   /** Target site to search on (e.g. "https://reddit.com", "https://linkedin.com") */
   sourceUrl: z.string(),
   /**

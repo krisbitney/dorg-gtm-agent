@@ -34,12 +34,6 @@ export const EnvSchema = z.object({
   // ── Redis ────────────────────────────────────────────────
   REDIS_URL: z.string().optional(),
   URLS_DEDUP_KEY: z.string().default("gtm:urls_dedup"),
-
-  /**
-   * Threshold for deciding if a post is likely enough to be a lead for dOrg
-   * to trigger the more expensive analysis workflow and worker escalation.
-   */
-  LEAD_SCORE_THRESHOLD: z.coerce.number().default(0.7),
 });
 
 export const validateEnv = (env: Record<string, string | undefined>) => EnvSchema.parse(env);

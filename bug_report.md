@@ -5,52 +5,6 @@ Packages audited: `gtm-ai/` (excl. test/), `gtm-workers/` (excl. test/)
 
 ---
 
-## MEDIUM
-
-### BUG 13 — Documented API endpoints and their env vars are unimplemented
-
-**File:** `gtm-workers/src/http/create-server.ts:17-19`
-
-**What happens:** The server only handles `GET /healthz`. The README (and docker-compose) reference these endpoints:
-- `POST /internal/crawl-runs` (protected by `TRIGGER_API_TOKEN`)
-- `POST /webhooks/apify/run-finished` (protected by `APIFY_WEBHOOK_SECRET`)
-
-Neither endpoint exists; all other requests return 404. Five env vars are set in docker-compose but never read by any code: `TRIGGER_API_TOKEN`, `APIFY_WEBHOOK_SECRET`, `APIFY_TOKEN`, `APIFY_RUN_TIMEOUT_SECONDS`, `WORKERS_PUBLIC_BASE_URL`.
-
-**Impact:** Docker configuration is misleading. The documented API surface doesn't match reality. Any external system expecting these endpoints will get 404.
-
----
-
-### BUG 14 — Default value mismatches between packages
-
-| Config key | gtm-ai default | gtm-workers default | File (gtm-ai) | File (gtm-workers) |
-|---|---|---|---|---|
-| `LEAD_SCORE_THRESHOLD` | 0.7 | 0.5 | `config/app-env.ts:42` | `config/app-env.ts:32` |
-| `numberOfSearchTerms` | 5 | 50 | `schemas/search-term-generation-schema.ts:9` | `config/app-env.ts:45` |
-| `pages` | 1 | 3 | `schemas/search-and-filter-schema.ts:14` | `config/app-env.ts:47` |
-
-**What happens:** The gtm-workers explicitly passes these values at runtime (overriding the gtm-ai defaults), so the mismatch is masked in the current code path. However, if the workflows are ever invoked from a different context (e.g., Mastra Studio, a different client, direct API call), the gtm-ai defaults would apply — producing drastically different behavior (50 vs 5 search terms, 3 vs 1 pages).
-
-**Impact:** Latent bug. Currently masked but would surface if invocation patterns change.
-
----
-
-### BUG 15 — Docker Compose sets `DATABASE_URL` for gtm-ai, but gtm-ai uses `MASTRA_STORAGE_URL`
-
-**File:** `docker-compose.yml:43-44`
-
-```yaml
-gtm-ai:
-  environment:
-    - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
-```
-
-**What happens:** gtm-ai does not read `DATABASE_URL`. It uses `MASTRA_STORAGE_URL` (default `"file:./mastra.db"`) for its LibSQL storage. `MASTRA_STORAGE_URL` is not set in docker-compose, so it defaults to an ephemeral local SQLite file inside the container.
-
-**Impact:** Mastra workflow state (runs, observability data) is lost on container restart. The `DATABASE_URL` env var is silently ignored.
-
----
-
 ## LOW
 
 ### BUG 16 — `saveAnalysis` param type `timing: string` doesn't match nullable DB column

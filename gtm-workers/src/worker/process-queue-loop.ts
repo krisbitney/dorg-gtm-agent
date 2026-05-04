@@ -45,15 +45,15 @@ export class ProcessQueueLoop {
           continue;
         }
 
-        const { id: postId } = payloadResult.data;
+        const { id: leadId } = payloadResult.data;
 
         // c. Execute the job
         const job = this.createJob(this.workerRunId);
-        await job.execute(postId);
+        await job.execute(leadId);
 
         // d. Acknowledge message
         await this.leadQueue.ack(rawPayload);
-        console.log(`[Worker ${this.workerRunId}] Successfully processed and acknowledged post ${postId}.`);
+        console.log(`[Worker ${this.workerRunId}] Successfully processed and acknowledged post ${leadId}.`);
       } catch (error: any) {
         console.error(`[Worker ${this.workerRunId}] Error processing job for payload ${rawPayload}:`, error);
         

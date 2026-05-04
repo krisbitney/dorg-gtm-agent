@@ -21,7 +21,7 @@ export class ContextDevProvider implements PageScraperInterface {
       useMainContentOnly: "true",
     });
 
-    const response = await fetch(`https://api.context.dev/v1//web/scrape/markdown?${params}`, {
+    const response = await fetch(`https://api.context.dev/v1/web/scrape/markdown?${params}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,

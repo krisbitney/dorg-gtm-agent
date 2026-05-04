@@ -1,7 +1,7 @@
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import type { GtmAiClientInterface } from "../clients/gtm-ai-client.js";
 import type { DorgApiClientInterface } from "../clients/dorg-api-client.js";
-import { LeadStatus } from "../constants/lead-status.js";
+import {LeadStatus, type LeadStatusType} from "../constants/lead-status.js";
 import { mapLeadToAiLeadScoreAndAnalysisInput } from "../clients/gtm-ai-client.js";
 import { buildSurfaceBrief } from "./build-surface-brief.ts";
 import { appEnv } from "../config/app-env.js";
@@ -37,7 +37,7 @@ export class ProcessLeadJob {
       LeadStatus.NOT_A_LEAD,
       LeadStatus.COMPLETED,
     ];
-    if (terminalStatuses.includes(lead.status as any)) {
+    if (terminalStatuses.includes(lead.status as LeadStatusType)) {
       console.log(`[Lead ${leadId}] Lead is already in terminal state "${lead.status}", skipping.`);
       return;
     }
@@ -141,19 +141,6 @@ export class ProcessLeadJob {
 
       console.log(`[Lead ${leadId}] dOrg surface successful. Marking as COMPLETED.`);
       await this.leadRepository.markCompleted(leadId);
-
-      try {
-        console.log(`[Lead ${leadId}] Step: Sending surface brief as message...`);
-        const sendMessageResult = await this.dorgApiClient.sendMessage({ content: brief })
-        if (!sendMessageResult.success) {
-          console.error(`[Lead ${leadId}] Failed to send message to dOrg. Status: ${sendMessageResult.status}. Message: ${sendMessageResult.message}`);
-          return;
-        }
-        console.log(`[Lead ${leadId}] Message sent successfully.`);
-      } catch (e) {
-        console.error(`[Lead ${leadId}] Error sending message to dOrg:`, e);
-        return;
-      }
     }
     console.log(`[Lead ${leadId}] Lead processing job completed successfully.`);
   }

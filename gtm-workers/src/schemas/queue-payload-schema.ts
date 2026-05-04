@@ -5,7 +5,7 @@ import { z } from "zod";
  */
 export const queuePayloadSchema = z.object({
   id: z.uuid(),
-  platform: z.string(),
+  url: z.string(),
 });
 
 export type QueuePayload = z.infer<typeof queuePayloadSchema>;

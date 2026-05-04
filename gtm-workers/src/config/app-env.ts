@@ -17,19 +17,13 @@ const envSchema = z.object({
   WORKERS_API_HOST: z.string().default("0.0.0.0"),
   WORKERS_API_PORT: z.coerce.number().default(3000),
   WORKERS_PUBLIC_BASE_URL: z.union([z.url(), localhostUrl]),
-  
-  TRIGGER_API_TOKEN: z.string().min(1),
-  APIFY_WEBHOOK_SECRET: z.string().min(1),
-  
+
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
   
   DORG_API_TOKEN: z.string().min(1),
   DORG_API_BASE_URL: z.union([z.url(), localhostUrl]).default("https://agentsofdorg.tech/api"),
-  
-  APIFY_TOKEN: z.string().min(1),
-  APIFY_RUN_TIMEOUT_SECONDS: z.coerce.number().default(3600),
-  
+
   GTM_AI_BASE_URL: z.union([z.url(), localhostUrl]),
   GTM_AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(60_000),
   GTM_AI_MAX_RETRIES: z.coerce.number().default(3),

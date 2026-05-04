@@ -17,7 +17,6 @@ export const scrapePageTool = createTool({
   }),
   outputSchema: z.object({
     url: z.string(),
-    title: z.string(),
     content: z.string(),
   }),
   execute: async (inputData) => {

@@ -48,7 +48,6 @@ export class ContextDevProvider implements PageScraperInterface {
 
     return {
       url: data.url ?? url,
-      title: "",
       content: data.markdown ?? "",
     };
   }

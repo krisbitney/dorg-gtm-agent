@@ -15,10 +15,10 @@ export const EnvSchema = z.object({
   MASTRA_CLOUD_ACCESS_TOKEN: z.string().optional(),
 
   // ── Models ───────────────────────────────────────────────
-  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma3:4b"),
+  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma3:31b"),
   GTM_ANALYSIS_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   GTM_SEARCH_TERM_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
-  GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma3:4b"),
+  GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma3:31b"),
   GTM_DEEP_RESEARCH_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   GTM_MESSAGE_GEN_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
 

@@ -22,7 +22,7 @@ export class SerperProvider implements SearchProviderInterface {
     const tbs = this.buildTbs(startDateTime, endDateTime) ?? "";
     const q = `site:${sourceUrl} ${tbs} ${query}`;
 
-    const body: Record<string, unknown> = { q, page };
+    const body: Record<string, unknown> = { q, ...(page ? { page } : {}) };
 
 
     const response = await fetch("https://google.serper.dev/search", {

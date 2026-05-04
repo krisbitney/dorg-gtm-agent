@@ -15,6 +15,6 @@ Analyze the provided content and return a "leadProbability" between 0 and 1.
 Example output:
 { leadProbability: 0.54 }
 
-Be conservative but fair. High quality technical requests should score > 0.7.
+Be conservative but fair. High quality leads should score > 0.7.
 `.trim();
 };

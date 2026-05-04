@@ -6,7 +6,7 @@ import { SearchRunRepository } from "../storage/repositories/search-run-reposito
 import { SearchWorkerJob } from "./search-worker-job.js";
 import { SupportedPlatforms } from "../schemas/platform.js";
 import { appEnv } from "../config/app-env.js";
-import type {UrlDedupStoreInterface} from "../storage/url-dedup-store.ts";
+import type {UrlDedupStoreInterface} from "../storage/url-dedup-store.js";
 
 export class SearchWorkerLoop {
   constructor(

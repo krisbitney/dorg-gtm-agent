@@ -9,7 +9,7 @@ import { ProcessQueueLoop } from "../worker/process-queue-loop.js";
 import { SearchWorkerLoop } from "../worker/search-worker-loop.js";
 import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
-import {RedisUrlDedupStore} from "../storage/url-dedup-store.ts";
+import {RedisUrlDedupStore} from "../storage/url-dedup-store.js";
 
 // TODO: graceful shutdown
 //   Concern: Loops are infinite loops with no handling of `SIGTERM` or `SIGINT`. When the process receives a termination signal:

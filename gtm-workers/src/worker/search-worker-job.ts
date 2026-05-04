@@ -7,7 +7,7 @@ import { SearchRunStatus } from "../constants/search-run-status.js";
 import { appEnv } from "../config/app-env.js";
 import { defaultTargetConsultancyDescription } from "../constants/default-target-consultancy-description.js";
 import type { Platform } from "../schemas/platform.js";
-import {type UrlDedupStoreInterface} from "../storage/url-dedup-store.ts";
+import {type UrlDedupStoreInterface} from "../storage/url-dedup-store.js";
 
 export class SearchWorkerJob {
   constructor(

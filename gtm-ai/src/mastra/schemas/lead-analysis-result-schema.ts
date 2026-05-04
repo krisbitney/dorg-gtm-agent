@@ -12,7 +12,7 @@ export const LeadAnalysisResultSchema = z.discriminatedUnion("isLead", [
     isLead: z.literal(true),
     whyFit: z.string(),
     needs: z.string(),
-    timing: z.string(),
+    timing: z.string().nullable(),
     contactInfo: z.string(),
   }).strict(),
 ]);

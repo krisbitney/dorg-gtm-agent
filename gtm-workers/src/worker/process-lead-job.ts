@@ -1,11 +1,11 @@
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import type { GtmAiClientInterface } from "../clients/gtm-ai-client.js";
 import type { DorgApiClientInterface } from "../clients/dorg-api-client.js";
-import {LeadStatus, type LeadStatusType} from "../constants/lead-status.js";
+import {LeadStatus} from "../constants/lead-status.js";
 import { mapLeadToAiLeadScoreAndAnalysisInput } from "../clients/gtm-ai-client.js";
-import { buildSurfaceBrief } from "./build-surface-brief.ts";
+import { buildSurfaceBrief } from "./build-surface-brief.js";
 import { appEnv } from "../config/app-env.js";
-import {defaultTargetConsultancyDescription} from "../constants/default-target-consultancy-description.ts";
+import {defaultTargetConsultancyDescription} from "../constants/default-target-consultancy-description.js";
 
 /**
  * Use case to process a single post through the AI and dOrg pipeline.

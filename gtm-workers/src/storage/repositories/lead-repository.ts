@@ -54,7 +54,7 @@ export class LeadRepository {
     analysis: {
       whyFit: string;
       needs: string;
-      timing: string;
+      timing?: string | null;
       contactInfo: string;
     },
     status: LeadStatusType

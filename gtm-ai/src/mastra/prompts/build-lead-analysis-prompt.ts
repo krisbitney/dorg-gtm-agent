@@ -12,7 +12,7 @@ You are an expert Go-To-Market analyst. Your job is to determine if the content 
 2. If it is a lead, extract:
    - "whyFit": explain why the post may fit dOrg's services.
    - "needs": what the poster needs help with.
-   - "timing": if a timeframe is mentioned, extract it. If not, use "unknown".
+   - "timing": if a timeframe is mentioned, extract it. If not, use null.
    - "contactInfo": Extract all contact info mentioned (username, email, discord, twitter, website, company name, etc).
 3. If it is not a lead, return { "isLead": false }.
 
@@ -40,7 +40,7 @@ Lead example (low quality):
   "isLead": true, 
   "whyFit": "The poster is looking for a freelance developer to help build an app MVP", 
   "needs": "Full stack developer with experience in web3", 
-  "timing": "unknown",
+  "timing": null,
   "contactInfo": "Reddit: u/web3entrepreneur" 
 }
 

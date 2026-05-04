@@ -193,8 +193,8 @@ export class GtmAiClient implements GtmAiClientInterface {
 export function mapPostToAiInput(post: Post): GtmAiInput {
   return {
     id: post.id,
-    platform: post.platform,
+    site: post.platform,
     url: post.url,
-    post: post.post,
+    content: post.post,
   };
 }

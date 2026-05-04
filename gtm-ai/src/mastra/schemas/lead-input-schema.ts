@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 /**
- * Schema for input received from the crawler or workers.
+ * Schema for potential lead.
  */
 export const LeadInputSchema = z.object({
-  id: z.uuid(),
-  platform: z.string(),
+  leadId: z.uuid(),
+  site: z.string(),
   url: z.url(),
-  post: z.record(z.string(), z.unknown()),
+  content: z.record(z.string(), z.unknown()),
 });
 
 export type CrawlerPostInput = z.infer<typeof LeadInputSchema>;

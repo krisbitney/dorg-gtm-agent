@@ -42,7 +42,7 @@ export async function handleTriggerCrawlRequest(request: Request) {
 
   try {
     const responseBody = await startCrawlRun.execute({ 
-      platform,
+      site: platform,
       source: result.data.source,
       actorId,
       input,

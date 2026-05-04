@@ -107,8 +107,8 @@ export class GtmAiClient implements GtmAiClientInterface {
     let attempt = 0;
 
     while (true) {
-      const { run, promise } = await options.operation();
       try {
+        const { run, promise } = await options.operation();
         return await this.runWithTimeout({
           workflowName: options.workflowName,
           operation: promise,
@@ -171,7 +171,7 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI score workflow.
    */
-  async scoreLead(post: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult> {
+  async scoreLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult> {
     const workflow = this.client.getWorkflow("leadScoreWorkflow");
     
     const result = await this.runWithRetries({
@@ -181,7 +181,7 @@ export class GtmAiClient implements GtmAiClientInterface {
         return {
           run,
           promise: run.startAsync({
-            inputData: post,
+            inputData: lead,
             requestContext: context,
           }),
         };
@@ -199,7 +199,7 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI analysis workflow.
    */
-  async analyzeLead(post: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiAnalysisResult> {
+  async analyzeLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiAnalysisResult> {
     const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
 
     const result = await this.runWithRetries({
@@ -209,7 +209,7 @@ export class GtmAiClient implements GtmAiClientInterface {
         return {
           run,
           promise: run.startAsync({
-            inputData: post,
+            inputData: lead,
             requestContext: context,
           }),
         };
@@ -284,9 +284,9 @@ export class GtmAiClient implements GtmAiClientInterface {
 }
 
 /**
- * Maps a database post row to the GTM AI input shape.
+ * Maps a database lead row to the GTM AI input shape.
  */
-export function mapLeadToAiInput(lead: Lead, targetDescription: string): LeadScoreAndAnalysisInput {
+export function mapLeadToAiLeadScoreAndAnalysisInput(lead: Lead, targetDescription: string): LeadScoreAndAnalysisInput {
   return {
     id: lead.id,
     platform: lead.platform,

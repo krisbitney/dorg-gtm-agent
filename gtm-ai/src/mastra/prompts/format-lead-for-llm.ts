@@ -11,8 +11,8 @@ ${input.targetDescription}
   
 ### Potential Lead
   
-Lead ID: ${input.leadId}
-Site: ${input.site}
+Lead ID: ${input.id}
+Platform: ${input.platform}
 URL: ${input.url}
 
 Content: ${JSON.stringify(input.content)};

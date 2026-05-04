@@ -4,8 +4,8 @@ import { z } from "zod";
  * Schema for potential lead.
  */
 export const LeadInputSchema = z.object({
-  leadId: z.uuid(),
-  site: z.string(),
+  id: z.uuid(),
+  platform: z.string(),
   url: z.url(),
   content: z.record(z.string(), z.unknown()),
   targetDescription: z.string(),

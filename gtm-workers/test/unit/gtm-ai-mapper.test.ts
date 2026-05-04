@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { mapLeadToAiInput } from "../../src/clients/gtm-ai-client.js";
+import { mapLeadToAiLeadScoreAndAnalysisInput } from "../../src/clients/gtm-ai-client.js";
 
 describe("mapPostToAiInput", () => {
   test("should map a database post to AI input", () => {
@@ -19,7 +19,7 @@ describe("mapPostToAiInput", () => {
       post: postData,
     };
 
-    const input = mapLeadToAiInput(post as any);
+    const input = mapLeadToAiLeadScoreAndAnalysisInput(post as any);
     
     expect(input.id).toBe("post1");
     expect(input.platform).toBe("reddit");

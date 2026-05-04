@@ -21,7 +21,7 @@ export const leadScoreWorkflow = createWorkflow({
       execute: async ({ inputData, abortSignal, mastra }) => {
         const logger = mastra.getLogger();
 
-        logger.info(`[Lead ${inputData.leadId}] Step: lead-score. Generating lead score with LLM.`);
+        logger.info(`[Lead ${inputData.id}] Step: lead-score. Generating lead score with LLM.`);
         const prompt = formatLeadForLlm(inputData);
         const result = await leadScoreAgent.generate(prompt, {
           structuredOutput: {
@@ -33,7 +33,7 @@ export const leadScoreWorkflow = createWorkflow({
         // normalize
         const clamped = Math.max(0, Math.min(1, result.object.leadProbability));
         const rounded = Math.round(clamped * 1000) / 1000;
-        logger.info(`[Lead ${inputData.leadId}] LLM generated lead score: ${result.object.leadProbability}, normalized to ${rounded}`);
+        logger.info(`[Lead ${inputData.id}] LLM generated lead score: ${result.object.leadProbability}, normalized to ${rounded}`);
         return { leadProbability: rounded }
       },
     }),

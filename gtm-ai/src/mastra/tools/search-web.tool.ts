@@ -14,7 +14,7 @@ export const searchWebTool = createTool({
     "Searches the web using a SERP API. Returns ranked results with URLs, titles, and snippets.",
   inputSchema: z.object({
     query: z.string(),
-    site: z.string(),
+    sourceUrl: z.string(),
     startDateTime: z.string(),
     endDateTime: z.string(),
     page: z.number().default(1)
@@ -31,7 +31,7 @@ export const searchWebTool = createTool({
   execute: async (inputData) => {
     return serper.search({
       query: inputData.query,
-      platform: inputData.site,
+      sourceUrl: inputData.sourceUrl,
       startDateTime: inputData.startDateTime,
       endDateTime: inputData.endDateTime,
       page: inputData.page,

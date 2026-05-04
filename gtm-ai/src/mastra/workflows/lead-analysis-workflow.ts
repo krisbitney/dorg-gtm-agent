@@ -22,14 +22,14 @@ export const leadAnalysisWorkflow = createWorkflow({
         const logger = mastra.getLogger();
         const prompt = formatLeadForLlm(inputData);
 
-        logger.info(`[Lead ${inputData.leadId}] Step: lead-analysis. Generating lead analysis with LLM.`);
+        logger.info(`[Lead ${inputData.id}] Step: lead-analysis. Generating lead analysis with LLM.`);
         const result = await leadAnalysisAgent.generate(prompt, {
           structuredOutput: {
             schema: LeadAnalysisResultSchema,
           },
           abortSignal,
         });
-        logger.info(`[Lead ${inputData.leadId}] LLM generated lead analysis. isLead: ${result.object.isLead}`);
+        logger.info(`[Lead ${inputData.id}] LLM generated lead analysis. isLead: ${result.object.isLead}`);
         return result.object;
       },
     }),

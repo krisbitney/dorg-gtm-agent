@@ -4,8 +4,8 @@ import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import { SearchRunRepository } from "../storage/repositories/search-run-repository.js";
 import { SearchWorkerJob } from "./search-worker-job.js";
+import { SupportedPlatforms } from "../schemas/platform.js";
 import { appEnv } from "../config/app-env.js";
-import {SupportedPlatforms} from "../schemas/platform.ts";
 
 export class SearchWorkerLoop {
   constructor(
@@ -29,15 +29,25 @@ export class SearchWorkerLoop {
       this.workerRunId
     );
 
-    // TODO: handle multiple sites/platforms, rotating between them. The job.execute method should accept a platform, and the job should use it instead of SEARCH_SITE in the appEnv.
-    const supportedPlatforms = SupportedPlatforms;
+    let platformIndex = 0;
 
     while (true) {
-      // TODO: if the lead queue has more than 50 members (configurable), sleep for search loop delay
+      const queueSize = await this.leadQueue.length();
+      if (queueSize >= appEnv.SEARCH_QUEUE_MAX_SIZE) {
+        console.log(`[SearchWorker ${this.workerRunId}] Lead queue at ${queueSize} (max ${appEnv.SEARCH_QUEUE_MAX_SIZE}). Backing off for ${appEnv.SEARCH_LOOP_DELAY_MS}ms...`);
+        await Bun.sleep(appEnv.SEARCH_LOOP_DELAY_MS);
+        continue;
+      }
+
+      const platform = SupportedPlatforms[platformIndex]!;
+      platformIndex = (platformIndex + 1) % SupportedPlatforms.length;
+
+      console.log(`[SearchWorker ${this.workerRunId}] Running search for platform: ${platform.name} (${platform.url})`);
+
       try {
-        await job.execute();
+        await job.execute(platform);
       } catch (error: any) {
-        console.error(`[SearchWorker ${this.workerRunId}] Search iteration failed:`, error.message);
+        console.error(`[SearchWorker ${this.workerRunId}] Search iteration failed for ${platform.name}:`, error.message);
       }
 
       console.log(`[SearchWorker ${this.workerRunId}] Waiting ${appEnv.SEARCH_LOOP_DELAY_MS}ms before next iteration...`);

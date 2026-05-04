@@ -9,6 +9,7 @@ export interface LeadQueueInterface {
   ack(payload: string): Promise<void>;
   moveToDeadLetter(payload: string, deadLetterPayload: string): Promise<void>;
   requeueProcessing(): Promise<void>;
+  length(): Promise<number>;
 }
 
 /**
@@ -68,5 +69,12 @@ export class RedisLeadQueue implements LeadQueueInterface {
     while ((payload = await this.redis.rpop(this.processingQueue))) {
       await this.redis.lpush(this.mainQueue, payload);
     }
+  }
+
+  /**
+   * Returns the total number of items in the main queue.
+   */
+  async length(): Promise<number> {
+    return await this.redis.llen(this.mainQueue);
   }
 }

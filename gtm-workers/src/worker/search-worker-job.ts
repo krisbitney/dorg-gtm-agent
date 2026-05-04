@@ -6,6 +6,7 @@ import { SearchRunRepository } from "../storage/repositories/search-run-reposito
 import { SearchRunStatus } from "../constants/search-run-status.js";
 import { appEnv } from "../config/app-env.js";
 import { defaultTargetConsultancyDescription } from "../constants/default-target-consultancy-description.js";
+import type { Platform } from "../schemas/platform.js";
 
 export class SearchWorkerJob {
   constructor(
@@ -17,17 +18,17 @@ export class SearchWorkerJob {
     private readonly workerRunId: string
   ) {}
 
-  async execute(): Promise<void> {
+  async execute(platform: Platform): Promise<void> {
     // 1. Ensure search terms are available — generate if the set is empty
     let searchQuery = await this.searchTermStore.popRandomMember();
 
     if (!searchQuery) {
-      console.log(`[SearchWorker ${this.workerRunId}] Search term set is empty. Generating ${appEnv.SEARCH_TERMS_GENERATION_COUNT} new search terms...`);
+      console.log(`[SearchWorker ${this.workerRunId}] Search term set is empty. Generating ${appEnv.SEARCH_TERMS_GENERATION_COUNT} new search terms for ${platform.name}...`);
 
       const context = { source: "search-worker", workerRunId: this.workerRunId };
       const result = await this.gtmAiClient.generateSearchTerms({
         numberOfSearchTerms: appEnv.SEARCH_TERMS_GENERATION_COUNT,
-        sourceUrl: appEnv.SEARCH_SITE,
+        sourceUrl: platform.url,
         targetDescription: defaultTargetConsultancyDescription,
       }, context);
 
@@ -62,17 +63,17 @@ export class SearchWorkerJob {
     await this.searchRunRepository.insert({
       id: runId,
       searchQuery,
-      site: appEnv.SEARCH_SITE,
+      site: platform.name,
       status: SearchRunStatus.SEARCHING,
     });
 
-    console.log(`[SearchWorker ${this.workerRunId}] Executing search for "${searchQuery}" on ${appEnv.SEARCH_SITE}...`);
+    console.log(`[SearchWorker ${this.workerRunId}] Executing search for "${searchQuery}" on ${platform.url}...`);
 
     let searchResult: SearchAndFilterOutput;
     try {
       searchResult = await this.gtmAiClient.searchAndFilter({
         searchQuery,
-        sourceUrl: appEnv.SEARCH_SITE,
+        sourceUrl: platform.url,
         startDateTime,
         endDateTime,
         pages: appEnv.SEARCH_PAGES,
@@ -95,7 +96,7 @@ export class SearchWorkerJob {
         await this.leadRepository.insert({
           id: leadId,
           url: scrapedLead.url,
-          platform: appEnv.SEARCH_SITE,
+          platform: platform.name,
           content: { text: scrapedLead.content },
         });
 

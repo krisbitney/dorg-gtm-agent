@@ -42,11 +42,11 @@ const envSchema = z.object({
   WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(20),
   WORKER_REQUEUE_STALE_ON_STARTUP: z.preprocess((val) => val === "true" || val === true, z.boolean()).default(true),
 
-  SEARCH_SITE: z.string().min(1),
   SEARCH_TERMS_GENERATION_COUNT: z.coerce.number().int().positive().default(50),
   SEARCH_DAYS_BACK: z.coerce.number().int().positive().default(7),
   SEARCH_PAGES: z.coerce.number().int().positive().default(3),
   SEARCH_LOOP_DELAY_MS: z.coerce.number().int().positive().default(5_000),
+  SEARCH_QUEUE_MAX_SIZE: z.coerce.number().int().positive().default(50),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

@@ -36,8 +36,8 @@ export type GtmAiAnalysisResult =
  * Interface for the GTM AI client.
  */
 export interface GtmAiClientInterface {
-  scorePost(post: GtmAiInput, context: any): Promise<GtmAiScoreResult>;
-  analyzePost(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult>;
+  scoreLead(lead: GtmAiInput, context: any): Promise<GtmAiScoreResult>;
+  analyzeLead(lead: GtmAiInput, context: any): Promise<GtmAiAnalysisResult>;
 }
 
 /**
@@ -133,7 +133,7 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI score workflow.
    */
-  async scorePost(post: GtmAiInput, context: any): Promise<GtmAiScoreResult> {
+  async scoreLead(post: GtmAiInput, context: any): Promise<GtmAiScoreResult> {
     const workflow = this.client.getWorkflow("leadScoreWorkflow");
     
     const result = await this.runWithRetries({
@@ -161,7 +161,7 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI analysis workflow.
    */
-  async analyzePost(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
+  async analyzeLead(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
     const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
     
     const result = await this.runWithRetries({

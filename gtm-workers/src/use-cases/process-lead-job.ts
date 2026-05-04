@@ -53,7 +53,7 @@ export class ProcessLeadJob {
     if (lead.status === LeadStatus.PENDING || lead.status === LeadStatus.SCORING) {
       console.log(`[Lead ${leadId}] Step: Scoring post...`);
       await this.leadRepository.updateStatus(leadId, LeadStatus.SCORING);
-      const scoreResult = await this.gtmAiClient.scorePost(aiInput, context);
+      const scoreResult = await this.gtmAiClient.scoreLead(aiInput, context);
       
       console.log(`[Lead ${leadId}] Scoring complete. Probability: ${scoreResult.leadProbability}`);
 
@@ -71,7 +71,7 @@ export class ProcessLeadJob {
     // 4. Analysis
     if (lead.status === LeadStatus.ANALYZING) {
       console.log(`[Lead ${leadId}] Step: Analyzing post...`);
-      const analysisResult = await this.gtmAiClient.analyzePost(aiInput, context);
+      const analysisResult = await this.gtmAiClient.analyzeLead(aiInput, context);
       
       console.log(`[Lead ${leadId}] Analysis complete. isLead: ${analysisResult.isLead}`);
 

@@ -1,4 +1,4 @@
-import type { PageScraperInterface, ScrapedPage } from "../interfaces/page-scraper.interface.js";
+import type { PageScraperInterface, ScrapedPage } from "../interfaces/page-scraper-interface.js";
 
 /**
  * Concrete implementation of PageScraperInterface using the context.dev API.

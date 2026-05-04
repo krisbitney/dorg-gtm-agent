@@ -1,4 +1,4 @@
-import type { SearchParams, SearchResponse, SearchResult, SearchProviderInterface } from "../interfaces/search-provider.interface.js";
+import type { SearchParams, SearchResponse, SearchResult, SearchProviderInterface } from "../interfaces/search-provider-interface.js";
 
 /**
  * Concrete implementation of SearchProviderInterface using the serper.dev SERP API.

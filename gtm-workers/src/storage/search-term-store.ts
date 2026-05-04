@@ -12,8 +12,8 @@ export interface SearchTermDedupStoreInterface {
    */
   checkAndMark(term: string): Promise<boolean>;
 
-  /** Adds a search term to the persistent Redis set. */
-  addToSet(term: string): Promise<void>;
+  /** Adds a list of search terms to the persistent Redis set. */
+  addToSet(terms: string[]): Promise<number>;
 
   /** Removes and returns a random search term from the Redis set, or null if empty. */
   popRandomMember(): Promise<string | null>;
@@ -44,9 +44,9 @@ export class RedisSearchTermStore implements SearchTermDedupStoreInterface {
     return result === "OK";
   }
 
-  async addToSet(term: string): Promise<void> {
+  async addToSet(terms: string[]): Promise<number> {
     const key = `${this.prefix}terms-set`;
-    await this.redis.sadd(key, term);
+    return await this.redis.sadd(key, ...terms);
   }
 
   async popRandomMember(): Promise<string | null> {

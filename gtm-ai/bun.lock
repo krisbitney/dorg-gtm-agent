@@ -12,6 +12,7 @@
         "@mastra/loggers": "^1.1.1",
         "@mastra/memory": "^1.15.0",
         "@mastra/observability": "^1.9.0",
+        "context.dev": "^1.12.0",
         "zod": "^4",
       },
       "devDependencies": {
@@ -506,6 +507,8 @@
     "content-disposition": ["content-disposition@0.5.2", "", {}, "sha512-kRGRZw3bLlFISDBgwTSA1TMBFN6J6GWDeubmDE3AF+3+yXL8hTWv8r5rkLbqYXY4RjPk/EzHnClI3zQf1cFmHA=="],
 
     "content-type": ["content-type@1.0.5", "", {}, "sha512-nTjqfcBFEipKdXCv4YDQWCfmcLZKm81ldF0pAopTvyrFGVbcR6P/VAAd5G7N+0tTr8QqiU0tFadD6FK4NtJwOA=="],
+
+    "context.dev": ["context.dev@1.12.0", "", {}, "sha512-XOmRgdlC4G7QPWevHj1JIyblzykCYKY9cVHrYBFoPd/cPBqF6z6JS9h+zXWacDnh5h59j7826z2i4XHvbtHibA=="],
 
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 

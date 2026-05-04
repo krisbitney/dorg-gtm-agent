@@ -13,11 +13,26 @@ export const EnvSchema = z.object({
   MASTRA_STORAGE_URL: z.string().default("file:./mastra.db"),
   MASTRA_OBSERVABILITY_DB_PATH: z.string().default("./mastra-observability.db"),
   MASTRA_CLOUD_ACCESS_TOKEN: z.string().optional(),
-  
-  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
-  GTM_ANALYSIS_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
 
   OLLAMA_API_KEY: z.string().optional(),
+
+  // ── Models ───────────────────────────────────────────────
+  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma3:4b"),
+  GTM_ANALYSIS_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
+  GTM_SEARCH_TERM_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
+  GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma3:4b"),
+  GTM_DEEP_RESEARCH_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
+  GTM_MESSAGE_GEN_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
+
+  // ── External APIs ────────────────────────────────────────
+  SERPER_API_KEY: z.string().optional(),
+  CONTEXT_DEV_API_KEY: z.string().optional(),
+
+  DORG_API_TOKEN: z.string().optional(),
+  DORG_API_BASE_URL: z.string().default("https://agentsofdorg.tech/api"),
+
+  // ── Redis ────────────────────────────────────────────────
+  REDIS_URL: z.string().optional(),
 
   /**
    * Threshold for deciding if a post is likely enough to be a lead for dOrg

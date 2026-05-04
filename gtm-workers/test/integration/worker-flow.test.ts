@@ -2,7 +2,7 @@ import { test, expect, describe, beforeEach } from "bun:test";
 import { ProcessLeadJob } from "../../src/worker/process-lead-job.js";
 import { LeadRepository } from "../../src/storage/repositories/lead-repository.js";
 import { db } from "../../src/storage/database.js";
-import { leads } from "../../src/storage/schema/posts-table.js";
+import { leads } from "../../src/storage/schema/leads-table.js";
 import { LeadStatus } from "../../src/constants/lead-status.js";
 
 class FakeGtmAiClient {
@@ -52,7 +52,7 @@ describe("Worker Flow Integration", () => {
       id: postId,
       url: "https://reddit.com/r/test/1",
       platform: "reddit",
-      post: {
+      content: {
         topic: "test",
         username: "user1",
         content: "I need help with my DAO",
@@ -78,7 +78,7 @@ describe("Worker Flow Integration", () => {
       id: postId,
       url: "https://reddit.com/r/test/2",
       platform: "reddit",
-      post: {
+      content: {
         topic: "test",
         username: "user1",
         content: "Low probability content",

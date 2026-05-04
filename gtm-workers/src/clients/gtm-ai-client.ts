@@ -3,13 +3,14 @@ import { appEnv } from "../config/app-env.js";
 import type { Lead } from "../storage/schema/leads-table.js";
 
 /**
- * Input for the GTM AI workflows.
+ * Input for the scoring and analysis GTM AI workflows.
  */
-export interface GtmAiInput {
+export interface LeadScoreAndAnalysisInput {
   id: string;
   platform: string;
   url: string;
   content: any;
+  targetDescription: string;
 }
 
 /**
@@ -71,8 +72,8 @@ export interface SearchAndFilterOutput {
  * Interface for the GTM AI client.
  */
 export interface GtmAiClientInterface {
-  scoreLead(lead: GtmAiInput, context: any): Promise<GtmAiScoreResult>;
-  analyzeLead(lead: GtmAiInput, context: any): Promise<GtmAiAnalysisResult>;
+  scoreLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult>;
+  analyzeLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiAnalysisResult>;
   generateSearchTerms(input: SearchTermGenerationInput, context: any): Promise<SearchTermGenerationOutput>;
   searchAndFilter(state: SearchAndFilterState, context: any): Promise<SearchAndFilterOutput>;
 }
@@ -170,7 +171,7 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI score workflow.
    */
-  async scoreLead(post: GtmAiInput, context: any): Promise<GtmAiScoreResult> {
+  async scoreLead(post: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult> {
     const workflow = this.client.getWorkflow("leadScoreWorkflow");
     
     const result = await this.runWithRetries({
@@ -198,7 +199,7 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI analysis workflow.
    */
-  async analyzeLead(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
+  async analyzeLead(post: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiAnalysisResult> {
     const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
 
     const result = await this.runWithRetries({
@@ -285,11 +286,12 @@ export class GtmAiClient implements GtmAiClientInterface {
 /**
  * Maps a database post row to the GTM AI input shape.
  */
-export function mapLeadToAiInput(lead: Lead): GtmAiInput {
+export function mapLeadToAiInput(lead: Lead, targetDescription: string): LeadScoreAndAnalysisInput {
   return {
     id: lead.id,
     platform: lead.platform,
     url: lead.url,
     content: lead.content,
+    targetDescription,
   };
 }

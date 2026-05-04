@@ -1,8 +1,7 @@
 import { createWorkflow, createStep } from '@mastra/core/workflows';
-import { z } from 'zod';
 
 import { leadAnalysisAgent } from '../agents/lead-analysis-agent';
-import { CrawlerPostInput, LeadInputSchema } from '../schemas/lead-input-schema';
+import { LeadInputSchema } from '../schemas/lead-input-schema';
 import { LeadAnalysisResultSchema } from '../schemas/lead-analysis-result-schema';
 import { formatLeadForLlm } from '../prompts/format-lead-for-llm';
 

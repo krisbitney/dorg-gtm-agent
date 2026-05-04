@@ -8,6 +8,7 @@ export const LeadInputSchema = z.object({
   site: z.string(),
   url: z.url(),
   content: z.record(z.string(), z.unknown()),
+  targetDescription: z.string(),
 });
 
-export type CrawlerPostInput = z.infer<typeof LeadInputSchema>;
+export type LeadInput = z.infer<typeof LeadInputSchema>;

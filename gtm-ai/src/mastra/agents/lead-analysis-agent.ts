@@ -9,7 +9,7 @@ import { buildLeadAnalysisPrompt } from '../prompts/build-lead-analysis-prompt';
 export const leadAnalysisAgent = new Agent({
   name: 'Lead Analysis Agent',
   id: 'lead-analysis-agent',
-  description: 'Analyzes a post to determine if it is a lead and extracts fit, needs, timing, and contact info.',
+  description: 'Analyzes a post to determine if it is a lead and extracts relevant information.',
   instructions: buildLeadAnalysisPrompt(),
   model: appEnv.GTM_ANALYSIS_MODEL,
   maxRetries: 3,

@@ -3,8 +3,9 @@ import type { GtmAiClientInterface } from "../clients/gtm-ai-client.js";
 import type { DorgApiClientInterface } from "../clients/dorg-api-client.js";
 import { LeadStatus } from "../constants/lead-status.js";
 import { mapLeadToAiInput } from "../clients/gtm-ai-client.js";
-import { buildSurfaceBrief } from "../worker/build-surface-brief.js";
+import { buildSurfaceBrief } from "./build-surface-brief.ts";
 import { appEnv } from "../config/app-env.js";
+import {defaultTargetConsultancyDescription} from "../constants/default-target-consultancy-description.ts";
 
 /**
  * Use case to process a single post through the AI and dOrg pipeline.
@@ -41,7 +42,7 @@ export class ProcessLeadJob {
       return;
     }
 
-    const aiInput = mapLeadToAiInput(lead);
+    const aiInput = mapLeadToAiInput(lead, defaultTargetConsultancyDescription);
     const context = {
       postId: leadId,
       platform: lead.platform,

@@ -1,4 +1,4 @@
-import { CrawlerPostInput } from "../schemas/crawler-post-input-schema";
+import { CrawlerPostInput } from "../schemas/lead-input-schema";
 
 /**
  * Formats a crawler post into a deterministic text block for LLM prompts.

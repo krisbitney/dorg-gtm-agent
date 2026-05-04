@@ -2,7 +2,7 @@ import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 
 import { leadAnalysisAgent } from '../agents/lead-analysis-agent';
-import { CrawlerPostInput, CrawlerPostInputSchema } from '../schemas/crawler-post-input-schema';
+import { CrawlerPostInput, LeadInputSchema } from '../schemas/lead-input-schema';
 import { LeadAnalysisResultSchema } from '../schemas/lead-analysis-result-schema';
 import { formatCrawlerPostForLLM } from '../prompts/format-crawler-post-for-llm';
 
@@ -11,13 +11,13 @@ import { formatCrawlerPostForLLM } from '../prompts/format-crawler-post-for-llm'
  */
 export const leadAnalysisWorkflow = createWorkflow({
   id: 'lead-analysis-workflow',
-  inputSchema: CrawlerPostInputSchema,
+  inputSchema: LeadInputSchema,
   outputSchema: LeadAnalysisResultSchema,
 })
   .then(
     createStep({
       id: 'format-prompt',
-      inputSchema: CrawlerPostInputSchema,
+      inputSchema: LeadInputSchema,
       outputSchema: z.object({ prompt: z.string() }),
       execute: async ({ inputData, mastra }) => {
         const logger = mastra.getLogger();

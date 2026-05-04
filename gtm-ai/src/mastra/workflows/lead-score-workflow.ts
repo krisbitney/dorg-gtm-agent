@@ -2,24 +2,22 @@ import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 
 import { leadScoreAgent } from '../agents/lead-score-agent';
-import { CrawlerPostInput, CrawlerPostInputSchema } from '../schemas/crawler-post-input-schema';
+import { CrawlerPostInput, LeadInputSchema } from '../schemas/lead-input-schema';
 import { LeadScoreResultSchema } from '../schemas/lead-score-result-schema';
 import { formatCrawlerPostForLLM } from '../prompts/format-crawler-post-for-llm';
-
-import { normalizeLeadScoreResult } from './normalize-lead-score-result';
 
 /**
  * Workflow for estimating the likelihood of a post being a lead for dOrg.
  */
 export const leadScoreWorkflow = createWorkflow({
   id: 'lead-score-workflow',
-  inputSchema: CrawlerPostInputSchema,
+  inputSchema: LeadInputSchema,
   outputSchema: LeadScoreResultSchema,
 })
   .then(
     createStep({
       id: 'format-prompt',
-      inputSchema: CrawlerPostInputSchema,
+      inputSchema: LeadInputSchema,
       outputSchema: z.object({ prompt: z.string() }),
       execute: async ({ inputData, mastra }) => {
         const logger = mastra.getLogger();
@@ -62,9 +60,10 @@ export const leadScoreWorkflow = createWorkflow({
         const postId = initData.id;
 
         logger.info(`[Post ${postId}] Step: normalize-result. Normalizing lead score result.`);
-        const result = normalizeLeadScoreResult(inputData);
+        const clamped = Math.max(0, Math.min(1, inputData.leadProbability));
+        const rounded = Math.round(clamped * 1000) / 1000;
         logger.info(`[Post ${postId}] Lead score workflow completed.`);
-        return result;
+        return { leadProbability: rounded }
       },
     }),
   )

@@ -32,12 +32,47 @@ export type GtmAiAnalysisResult =
       contactInfo: string;
     };
 
+/** Input for the search term generation workflow. */
+export interface SearchTermGenerationInput {
+  numberOfSearchTerms?: number;
+  site: string;
+  targetDescription: string;
+}
+
+/** Output from the search term generation workflow. */
+export interface SearchTermGenerationOutput {
+  queries: string[];
+}
+
+/** State for the search-and-filter workflow (persists across steps). */
+export interface SearchAndFilterState {
+  searchQuery: string;
+  site: string;
+  startDateTime: string;
+  endDateTime: string;
+  pages?: number;
+  targetDescription: string;
+}
+
+/** A raw scraped lead from the search-and-filter workflow. */
+export interface ScrapedLead {
+  url: string;
+  content: string;
+}
+
+/** Output from the search-and-filter workflow. */
+export interface SearchAndFilterOutput {
+  leads: ScrapedLead[];
+}
+
 /**
  * Interface for the GTM AI client.
  */
 export interface GtmAiClientInterface {
   scoreLead(lead: GtmAiInput, context: any): Promise<GtmAiScoreResult>;
   analyzeLead(lead: GtmAiInput, context: any): Promise<GtmAiAnalysisResult>;
+  generateSearchTerms(input: SearchTermGenerationInput, context: any): Promise<SearchTermGenerationOutput>;
+  searchAndFilter(state: SearchAndFilterState, context: any): Promise<SearchAndFilterOutput>;
 }
 
 /**
@@ -163,7 +198,7 @@ export class GtmAiClient implements GtmAiClientInterface {
    */
   async analyzeLead(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
     const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
-    
+
     const result = await this.runWithRetries({
       workflowName: "leadAnalysisWorkflow",
       operation: async () => {
@@ -184,6 +219,64 @@ export class GtmAiClient implements GtmAiClientInterface {
     }
 
     return result.result as GtmAiAnalysisResult;
+  }
+
+  /**
+   * Calls the search term generation workflow to produce query strings for a site.
+   */
+  async generateSearchTerms(input: SearchTermGenerationInput, context: any): Promise<SearchTermGenerationOutput> {
+    const workflow = this.client.getWorkflow("search-term-generation-workflow");
+
+    const result = await this.runWithRetries({
+      workflowName: "search-term-generation-workflow",
+      operation: async () => {
+        const run = await workflow.createRun();
+        return {
+          run,
+          promise: run.startAsync({
+            inputData: input,
+            requestContext: context,
+          }),
+        };
+      },
+    });
+
+    if (result.status !== "success") {
+      const errorMsg = result.status === "failed" ? `: ${result.error.message}` : "";
+      throw new Error(`Search term generation workflow failed with status ${result.status}${errorMsg}`);
+    }
+
+    return result.result as SearchTermGenerationOutput;
+  }
+
+  /**
+   * Calls the search-and-filter workflow. Accepts state fields via initialState
+   * since the workflow's input schema is empty and all data lives in state.
+   */
+  async searchAndFilter(state: SearchAndFilterState, context: any): Promise<SearchAndFilterOutput> {
+    const workflow = this.client.getWorkflow("search-and-filter-workflow");
+
+    const result = await this.runWithRetries({
+      workflowName: "search-and-filter-workflow",
+      operation: async () => {
+        const run = await workflow.createRun();
+        return {
+          run,
+          promise: run.startAsync({
+            inputData: {},
+            initialState: state,
+            requestContext: context,
+          }),
+        };
+      },
+    });
+
+    if (result.status !== "success") {
+      const errorMsg = result.status === "failed" ? `: ${result.error.message}` : "";
+      throw new Error(`Search and filter workflow failed with status ${result.status}${errorMsg}`);
+    }
+
+    return result.result as SearchAndFilterOutput;
   }
 }
 

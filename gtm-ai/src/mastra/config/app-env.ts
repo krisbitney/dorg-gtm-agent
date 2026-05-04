@@ -14,8 +14,6 @@ export const EnvSchema = z.object({
   MASTRA_OBSERVABILITY_DB_PATH: z.string().default("./mastra-observability.db"),
   MASTRA_CLOUD_ACCESS_TOKEN: z.string().optional(),
 
-  OLLAMA_API_KEY: z.string().optional(),
-
   // ── Models ───────────────────────────────────────────────
   GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma3:4b"),
   GTM_ANALYSIS_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
@@ -25,6 +23,7 @@ export const EnvSchema = z.object({
   GTM_MESSAGE_GEN_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
 
   // ── External APIs ────────────────────────────────────────
+  OLLAMA_API_KEY: z.string().optional(),
   SERPER_API_KEY: z.string().optional(),
   CONTEXT_DEV_API_KEY: z.string().optional(),
 

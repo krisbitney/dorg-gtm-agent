@@ -20,7 +20,7 @@ Each query should be:
 - Natural — phrase queries as real people would write them, not as keyword dumps
 - Action-oriented — focus on posts where people are asking for help, looking to hire, or discussing project needs
 
-Do not generate queries that are identical or near-identical to each other. Do not include search operators.
+Do not generate queries that are identical or near-identical to each other. Do not include Google search operators; they will be inserted manually later.
 
 Return a JSON object with a "queries" array of strings.
 `.trim();

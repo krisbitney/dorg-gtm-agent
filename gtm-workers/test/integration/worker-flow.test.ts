@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach } from "bun:test";
-import { ProcessLeadJob } from "../../src/use-cases/process-lead-job.js";
+import { ProcessLeadJob } from "../../src/worker/process-lead-job.js";
 import { LeadRepository } from "../../src/storage/repositories/lead-repository.js";
 import { db } from "../../src/storage/database.js";
 import { leads } from "../../src/storage/schema/posts-table.js";

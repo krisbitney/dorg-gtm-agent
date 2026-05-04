@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach } from "bun:test";
-import { ImportApifyRunDataset } from "../../src/use-cases/import-apify-run-dataset.js";
+import { ImportApifyRunDataset } from "../../src/jobs/import-apify-run-dataset.js";
 import { CrawlRunRepository } from "../../src/storage/repositories/crawl-run-repository.js";
 import { LeadRepository } from "../../src/storage/repositories/lead-repository.js";
 import { RedisLeadQueue } from "../../src/storage/lead-queue.js";

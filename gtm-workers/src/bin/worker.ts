@@ -2,8 +2,8 @@ import { RedisLeadQueue } from "../storage/lead-queue.js";
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import { GtmAiClient } from "../clients/gtm-ai-client.js";
 import { DorgApiClient } from "../clients/dorg-api-client.js";
-import { ProcessLeadJob } from "../use-cases/process-lead-job.js";
-import { ProcessQueueLoop } from "../use-cases/process-queue-loop.js";
+import { ProcessLeadJob } from "../worker/process-lead-job.js";
+import { ProcessQueueLoop } from "../worker/process-queue-loop.js";
 import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
 

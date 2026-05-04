@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach } from "bun:test";
-import { StartApifyCrawlRun } from "../../src/use-cases/start-apify-crawl-run.js";
+import { StartApifyCrawlRun } from "../../src/jobs/start-apify-crawl-run.js";
 import { CrawlRunRepository } from "../../src/storage/repositories/crawl-run-repository.js";
 import { db } from "../../src/storage/database.js";
 import { crawlRuns } from "../../src/storage/schema/crawl-runs-table.js";

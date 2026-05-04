@@ -6,7 +6,8 @@ import { z } from "zod";
  */
 export const SearchAndFilterStateSchema = z.object({
   searchQuery: z.string(),
-  site: z.string(),
+  /** e.g., https://reddit.com, https://x.com */
+  sourceUrl: z.string(),
   startDateTime: z.string(),
   endDateTime: z.string(),
   pages: z.number().int().positive().default(1),

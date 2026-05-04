@@ -3,7 +3,7 @@
  */
 export interface SearchParams {
   query: string;
-  site: string;
+  sourceUrl: string;
   startDateTime: string;
   endDateTime: string;
   page?: number,

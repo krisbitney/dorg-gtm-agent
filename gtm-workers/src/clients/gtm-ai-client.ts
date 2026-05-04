@@ -35,7 +35,8 @@ export type GtmAiAnalysisResult =
 /** Input for the search term generation workflow. */
 export interface SearchTermGenerationInput {
   numberOfSearchTerms?: number;
-  site: string;
+  /** Target site to search on (e.g. "https://reddit.com", "https://linkedin.com") */
+  sourceUrl: string;
   targetDescription: string;
 }
 
@@ -47,7 +48,8 @@ export interface SearchTermGenerationOutput {
 /** State for the search-and-filter workflow (persists across steps). */
 export interface SearchAndFilterState {
   searchQuery: string;
-  site: string;
+  /** Target site to search on (e.g. "https://reddit.com", "https://linkedin.com") */
+  sourceUrl: string;
   startDateTime: string;
   endDateTime: string;
   pages?: number;
@@ -283,7 +285,7 @@ export class GtmAiClient implements GtmAiClientInterface {
 /**
  * Maps a database post row to the GTM AI input shape.
  */
-export function mapPostToAiInput(lead: Lead): GtmAiInput {
+export function mapLeadToAiInput(lead: Lead): GtmAiInput {
   return {
     id: lead.id,
     platform: lead.platform,

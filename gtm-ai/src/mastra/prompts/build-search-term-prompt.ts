@@ -7,13 +7,13 @@ import type { SearchTermGenerationInput } from "../schemas/search-term-generatio
  */
 export const buildSearchTermPrompt = (input: SearchTermGenerationInput): string => {
   return `
-You are an expert search strategist helping the target consultancy find leads. Your job is to generate effective search queries that will surface potential clients on ${input.site}.
+You are an expert search strategist helping the target consultancy find leads. Your job is to generate effective search queries that will surface potential clients on ${input.sourceUrl}.
 
 ### Target Consultancy Description
 ${input.targetDescription}
 
 ### Instructions
-Generate exactly ${input.numberOfSearchTerms} search queries optimized for finding leads on ${input.site} through Google search.
+Generate exactly ${input.numberOfSearchTerms} search queries optimized for finding leads on ${input.sourceUrl} through Google search.
 Each query should be:
 - Specific and targeted — avoid overly broad terms
 - Varied — cover different angles and phrasings that potential clients might use

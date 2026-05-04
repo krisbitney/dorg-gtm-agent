@@ -3,13 +3,13 @@ export interface Platform {
   url: string;
 }
 
-export const SupportedPlatforms: Record<string, Platform> = {
-  reddit: {
+export const SupportedPlatforms: Array<Platform> = [
+  {
     name: "reddit",
     url: "https://reddit.com",
   },
-  x: {
+  {
     name: "x",
     url: "https://x.com"
   }
-}
+];

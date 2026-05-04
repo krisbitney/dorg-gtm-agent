@@ -27,10 +27,10 @@ export const searchTermGenerationWorkflow = createWorkflow({
       outputSchema: SearchTermGenerationOutputSchema,
       execute: async ({ inputData, mastra }) => {
         const logger = mastra.getLogger();
-        const { numberOfSearchTerms, site } = inputData;
+        const { numberOfSearchTerms, sourceUrl } = inputData;
 
         logger.info(
-          `Generating ${numberOfSearchTerms} search queries for site "${site}".`,
+          `Generating ${numberOfSearchTerms} search queries for site "${sourceUrl}".`,
         );
 
         const prompt = buildSearchTermPrompt(inputData);

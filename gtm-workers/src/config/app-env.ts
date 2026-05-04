@@ -36,11 +36,17 @@ const envSchema = z.object({
   QUEUE_DLQ_NAME: z.string().default("gtm:posts:dlq"),
   PROCESSED_URLS_KEY: z.string().default("gtm:processed_urls"),
   SEARCH_TERM_DEDUP_PREFIX: z.string().default("gtm:search_term:"),
-  SEARCH_TERM_DEDUP_TTL_SECONDS: z.coerce.number().int().positive().default(43200), // 12 hours
+  SEARCH_TERM_DEDUP_TTL_SECONDS: z.coerce.number().int().positive().default(86_400), // 24 hours
 
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(20),
   WORKER_REQUEUE_STALE_ON_STARTUP: z.preprocess((val) => val === "true" || val === true, z.boolean()).default(true),
+
+  SEARCH_SITE: z.string().min(1),
+  SEARCH_TERMS_GENERATION_COUNT: z.coerce.number().int().positive().default(50),
+  SEARCH_DAYS_BACK: z.coerce.number().int().positive().default(7),
+  SEARCH_PAGES: z.coerce.number().int().positive().default(3),
+  SEARCH_LOOP_DELAY_MS: z.coerce.number().int().positive().default(5_000),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

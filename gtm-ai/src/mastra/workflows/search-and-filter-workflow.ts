@@ -49,11 +49,11 @@ export const searchAndFilterWorkflow = createWorkflow({
       }),
       execute: async ({ state, mastra }) => {
         const logger = mastra.getLogger();
-        const { searchQuery, site, startDateTime, endDateTime, pages } =
+        const { searchQuery, sourceUrl, startDateTime, endDateTime, pages } =
           state as SearchAndFilterState;
 
         logger.info(
-          `Executing search across ${pages} page(s) for site "${site}".`,
+          `Executing search across ${pages} page(s) for site "${sourceUrl}".`,
         );
 
         const allResults: SearchResult[] = [];
@@ -61,7 +61,7 @@ export const searchAndFilterWorkflow = createWorkflow({
         for (let page = 1; page <= pages; page++) {
           const response = await serper.search({
             query: searchQuery,
-            platform: site,
+            sourceUrl,
             startDateTime,
             endDateTime,
             page,

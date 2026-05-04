@@ -15,10 +15,10 @@ export class SerperProvider implements SearchProviderInterface {
     this.apiKey = options.apiKey;
   }
 
-  async search({ query, site, startDateTime, endDateTime, page }: SearchParams): Promise<SearchResponse> {
+  async search({ query, sourceUrl, startDateTime, endDateTime, page }: SearchParams): Promise<SearchResponse> {
 
     const tbs = this.buildTbs(startDateTime, endDateTime);
-    const q = `site:${site} ${tbs} ${query}`;
+    const q = `site:${sourceUrl} ${tbs} ${query}`;
 
     const body: Record<string, unknown> = { q, page };
 

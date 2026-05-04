@@ -8,8 +8,8 @@ import { z } from "zod";
 export const SearchTermGenerationInputSchema = z.object({
   /** Number of search terms to generate */
   numberOfSearchTerms: z.number().int().positive().default(5),
-  /** Target site to search on (e.g. "reddit", "linkedin") */
-  site: z.string(),
+  /** Target site to search on (e.g. "https://reddit.com", "https://linkedin.com") */
+  sourceUrl: z.string(),
   /**
    * Description of the target consultancy and what constitutes a good lead.
    * This is used to tailor the generated search queries.

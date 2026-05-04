@@ -2,7 +2,7 @@ import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import type { GtmAiClientInterface } from "../clients/gtm-ai-client.js";
 import type { DorgApiClientInterface } from "../clients/dorg-api-client.js";
 import { LeadStatus } from "../constants/lead-status.js";
-import { mapPostToAiInput } from "../clients/gtm-ai-client.js";
+import { mapLeadToAiInput } from "../clients/gtm-ai-client.js";
 import { buildSurfaceBrief } from "../worker/build-surface-brief.js";
 import { appEnv } from "../config/app-env.js";
 
@@ -41,7 +41,7 @@ export class ProcessLeadJob {
       return;
     }
 
-    const aiInput = mapPostToAiInput(lead);
+    const aiInput = mapLeadToAiInput(lead);
     const context = {
       postId: leadId,
       platform: lead.platform,

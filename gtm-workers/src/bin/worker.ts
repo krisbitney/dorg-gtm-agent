@@ -1,9 +1,12 @@
 import { RedisLeadQueue } from "../storage/lead-queue.js";
+import { RedisSearchTermStore } from "../storage/search-term-store.js";
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
+import { SearchRunRepository } from "../storage/repositories/search-run-repository.js";
 import { GtmAiClient } from "../clients/gtm-ai-client.js";
 import { DorgApiClient } from "../clients/dorg-api-client.js";
 import { ProcessLeadJob } from "../worker/process-lead-job.js";
 import { ProcessQueueLoop } from "../worker/process-queue-loop.js";
+import { SearchWorkerLoop } from "../worker/search-worker-loop.js";
 import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
 
@@ -17,7 +20,9 @@ async function main(): Promise<void> {
   await runMigrations();
 
   const leadQueue = new RedisLeadQueue();
+  const searchTermStore = new RedisSearchTermStore();
   const postRepository = new LeadRepository();
+  const searchRunRepository = new SearchRunRepository();
   const gtmAiClient = new GtmAiClient();
   const dorgApiClient = new DorgApiClient();
 
@@ -28,14 +33,14 @@ async function main(): Promise<void> {
   }
 
   const concurrency = appEnv.WORKER_CONCURRENCY;
-  console.log(`Main: Starting ${concurrency} concurrent async worker loops...`);
+  console.log(`Main: Starting ${concurrency} concurrent lead processing loop(s)...`);
 
-  const createJob = (runId: string) => 
+  const createJob = (runId: string) =>
     new ProcessLeadJob(postRepository, gtmAiClient, dorgApiClient, runId);
 
-  // Start the loops concurrently
+  // Start the lead processing loops concurrently
   for (let i = 0; i < concurrency; i++) {
-    const loopRunId = `${processRunId}-loop-${i}`;
+    const loopRunId = `${processRunId}-lead-loop-${i}`;
     const loop = new ProcessQueueLoop(
       leadQueue,
       postRepository,
@@ -43,13 +48,30 @@ async function main(): Promise<void> {
       loopRunId
     );
 
-    // Start the loop without awaiting it
     loop.execute().catch((error) => {
-      console.error(`Worker loop ${i} (ID: ${loopRunId}) failed:`, error);
+      console.error(`Lead processing loop ${i} (ID: ${loopRunId}) failed:`, error);
     });
   }
 
-  console.log(`Main: All ${concurrency} worker loops are running.`);
+  console.log(`Main: All ${concurrency} lead processing loop(s) are running.`);
+
+  // Start the search worker loop
+  const searchLoopRunId = `${processRunId}-search-loop`;
+  const searchLoop = new SearchWorkerLoop(
+    gtmAiClient,
+    searchTermStore,
+    leadQueue,
+    postRepository,
+    searchRunRepository,
+    searchLoopRunId
+  );
+
+  console.log("Main: Starting search worker loop...");
+  searchLoop.execute().catch((error) => {
+    console.error(`Search worker loop (ID: ${searchLoopRunId}) failed:`, error);
+  });
+
+  console.log("Main: All worker loops are running.");
 }
 
 main().catch((error) => {

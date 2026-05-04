@@ -26,14 +26,6 @@ export class LeadRepository {
   }
 
   /**
-   * Fetches a lead record by its URL.
-   */
-  async findByUrl(url: string): Promise<Lead | undefined> {
-    const results = await db.select().from(leads).where(eq(leads.url, url)).limit(1);
-    return results[0];
-  }
-
-  /**
    * Saves the lead score result and advances the lead status.
    */
   async saveScore(id: string, leadProbability: number, status: LeadStatusType): Promise<void> {

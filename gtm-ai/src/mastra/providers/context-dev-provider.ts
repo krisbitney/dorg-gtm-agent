@@ -1,5 +1,7 @@
 import type { PageScraperInterface, ScrapedPage } from "../interfaces/page-scraper-interface.js";
 
+// TODO: respect rate limits (e.g., 1 scrape call per second, configurable)
+// TODO: handle retries (on retriable errors) with exponential backoff
 /**
  * Concrete implementation of PageScraperInterface using the context.dev API.
  *
@@ -31,7 +33,7 @@ export class ContextDevProvider implements PageScraperInterface {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`ContextDev scrape failed (${response.status}): ${errorText}`);
+      throw new Error(`ContextDev scrape failed with HTTP error (${response.status}): ${errorText}`);
     }
 
     const data = (await response.json()) as {
@@ -39,6 +41,10 @@ export class ContextDevProvider implements PageScraperInterface {
       markdown: string;
       url: string;
     };
+
+    if (!data.success) {
+      throw new Error(`ContextDev scrape failed with API error (success: false)`);
+    }
 
     return {
       url: data.url ?? url,

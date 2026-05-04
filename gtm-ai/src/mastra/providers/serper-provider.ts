@@ -1,5 +1,7 @@
 import type { SearchParams, SearchResponse, SearchResult, SearchProviderInterface } from "../interfaces/search-provider-interface.js";
 
+// TODO: respect rate limits (e.g., 50 search calls per second, configurable)
+// TODO: handle retries (on retriable errors) with exponential backoff
 /**
  * Concrete implementation of SearchProviderInterface using the serper.dev SERP API.
  *

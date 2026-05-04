@@ -52,9 +52,6 @@ export class SearchWorkerLoop {
       } catch (error: any) {
         console.error(`[SearchWorker ${this.workerRunId}] Search iteration failed for ${platform.name}:`, error.message);
       }
-
-      console.log(`[SearchWorker ${this.workerRunId}] Waiting ${appEnv.SEARCH_LOOP_DELAY_MS}ms before next iteration...`);
-      await Bun.sleep(appEnv.SEARCH_LOOP_DELAY_MS);
     }
   }
 }

@@ -2,8 +2,6 @@ import { z } from "zod";
 
 /**
  * Input schema for the search term generation workflow.
- * The site, startDateTime, and endDateTime are determined by input parameters,
- * not by the LLM. The LLM only generates the searchQuery strings.
  */
 export const SearchTermGenerationInputSchema = z.object({
   /** Number of search terms to generate */
@@ -13,7 +11,6 @@ export const SearchTermGenerationInputSchema = z.object({
   /**
    * Description of the target consultancy and what constitutes a good lead.
    * This is used to tailor the generated search queries.
-   * Should be configurable for different kinds of consultancies.
    */
   targetDescription: z.string(),
 });

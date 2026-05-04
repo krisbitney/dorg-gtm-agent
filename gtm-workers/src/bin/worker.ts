@@ -11,6 +11,12 @@ import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
 import {RedisUrlDedupStore} from "../storage/url-dedup-store.ts";
 
+// TODO: graceful shutdown
+//   Concern: Loops are infinite loops with no handling of `SIGTERM` or `SIGINT`. When the process receives a termination signal:
+//     - Items in the processing queue will be left stranded. `requeueProcessing` only runs at startup.
+//     - In-flight AI calls are aborted mid-request.
+//     - Database connections (`postgres()` client) are never closed.
+//     - Redis connections (`Bun.redis`) are never disconnected.
 /**
  * Entry point for the GTM Workers queue consumer.
  */

@@ -29,7 +29,7 @@ export type GtmAiAnalysisResult =
       isLead: true;
       whyFit: string;
       needs: string;
-      timing: string;
+      timing: string | null;
       contactInfo: string;
     };
 
@@ -98,6 +98,7 @@ export class GtmAiClient implements GtmAiClientInterface {
     this.retryMaxDelayMs = appEnv.GTM_AI_RETRY_MAX_DELAY_MS;
   }
 
+  // TODO: handle other retryable error types
   private async runWithRetries<T>(
     options: {
       workflowName: string;
@@ -124,7 +125,7 @@ export class GtmAiClient implements GtmAiClientInterface {
       } catch (error: any) {
         attempt++;
         const isTimeout = error.message?.includes("timed out");
-        
+
         if (attempt > this.maxRetries || !isTimeout) {
           throw error;
         }
@@ -137,7 +138,7 @@ export class GtmAiClient implements GtmAiClientInterface {
         console.warn(
           `GTM AI client ${options.workflowName} attempt ${attempt} failed: ${error.message}. Retrying in ${delayMs}ms...`
         );
-        
+
         await Bun.sleep(delayMs);
       }
     }
@@ -173,7 +174,7 @@ export class GtmAiClient implements GtmAiClientInterface {
    */
   async scoreLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult> {
     const workflow = this.client.getWorkflow("leadScoreWorkflow");
-    
+
     const result = await this.runWithRetries({
       workflowName: "leadScoreWorkflow",
       operation: async () => {

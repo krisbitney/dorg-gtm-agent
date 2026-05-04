@@ -25,7 +25,7 @@ ${params.lead.content}
 1. Extract only the content relevant to the potential lead.
   - For example, if the page is a social media post (e.g., Reddit, LinkedIn), keep the original post, its title, its author, and the date posted. Drop comments, sidebars, ads, and unrelated replies.
   - Always preserve any contact information (including social media usernames), relevant dates, budget mentions, timelines, and technical requirements.
-4. Return a JSON object with a single "leads" array containing { url, content } with the extracted relevant content.
-5. If the page contains no lead-relevant content after extraction, return an empty array.
+2. Return a JSON object with a single "leads" array containing { url, content } with the extracted relevant content.
+3. If the page contains no lead-relevant content after extraction, return an empty array.
 `.trim();
 };

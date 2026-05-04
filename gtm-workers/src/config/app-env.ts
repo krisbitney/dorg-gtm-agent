@@ -16,7 +16,6 @@ const localhostUrl = z.string().refine((value) => {
 const envSchema = z.object({
   WORKERS_API_HOST: z.string().default("0.0.0.0"),
   WORKERS_API_PORT: z.coerce.number().default(3000),
-  WORKERS_PUBLIC_BASE_URL: z.union([z.url(), localhostUrl]),
 
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),

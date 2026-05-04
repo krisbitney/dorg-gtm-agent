@@ -96,7 +96,6 @@ export class SearchWorkerJob {
       if (await this.urlDedupStore.has(scrapedLead.url)) {
         continue;
       }
-      await this.urlDedupStore.add(scrapedLead.url);
       try {
         const leadId = Bun.randomUUIDv7();
         await this.leadRepository.insert({
@@ -110,6 +109,9 @@ export class SearchWorkerJob {
           id: leadId,
           url: scrapedLead.url,
         }));
+
+        // add url to dedup store
+        await this.urlDedupStore.add(scrapedLead.url);
 
         resultsImported++;
       } catch (error: any) {

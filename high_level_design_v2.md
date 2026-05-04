@@ -10,7 +10,7 @@ The new search flow should look like this:
 
     1. AI workflow creates a set of search terms with the format: { searchQuery: string; site: "reddit", startDateTime: "...", endDateTime: "..." }, where the actual site and datetimes are determined by input parameters and not by the LLM. Note that the search provider manager implementation will handle converting the start/end times to a time-based search (tbs) term.
         - the number of search terms to generate should be configurable
-        - hashing each search term object and check/insert into a bloom filter (redis set) with an expiration timer based on the datetimes
+        - hash each search term and use redis individual keys with expiration timers to prevent searching duplicate terms within a 12 hour time period (the time period should be configurable)
     2. for each generated search term, use search provider to search using the site and tbs parameters to specify the target site and time range.
     3. filters search results by checking URLs against bloom filter (redis set) to avoid duplication
     4. filters remaining search results based on likelihood that result might be a lead (using the basic description from the search results returned by the SERP API)

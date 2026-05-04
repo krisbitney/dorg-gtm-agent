@@ -24,7 +24,7 @@ export type SearchTermGenerationInput = z.infer<typeof SearchTermGenerationInput
  * Output schema for the search term generation workflow.
  */
 export const SearchTermGenerationOutputSchema = z.object({
-  searchTerms: z.array(z.string()),
+  queries: z.array(z.string()),
 });
 
 export type SearchTermGenerationOutput = z.infer<typeof SearchTermGenerationOutputSchema>;

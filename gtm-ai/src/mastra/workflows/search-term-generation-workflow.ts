@@ -41,10 +41,10 @@ export const searchTermGenerationWorkflow = createWorkflow({
           },
         });
 
-        const searchTerms = result.object.queries;
-        logger.info(`Generated ${searchTerms.length} search queries.`);
+        const queries = result.object.queries;
+        logger.info(`Generated ${queries.length} search queries.`);
 
-        return { searchTerms } ;
+        return { queries } ;
       },
     }),
   )

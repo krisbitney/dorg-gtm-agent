@@ -4,8 +4,10 @@ import { PinoLogger } from '@mastra/loggers';
 
 import { leadScoreWorkflow } from './workflows/lead-score-workflow';
 import { leadAnalysisWorkflow } from './workflows/lead-analysis-workflow';
+import { searchTermGenerationWorkflow } from './workflows/search-term-generation-workflow';
 import { leadScoreAgent } from './agents/lead-score-agent';
 import { leadAnalysisAgent } from './agents/lead-analysis-agent';
+import { searchTermAgent } from './agents/search-term-agent';
 import { leadScoreAccuracyScorer } from './scorers/lead-score-accuracy-scorer';
 import { leadAnalysisCompletenessScorer } from './scorers/lead-analysis-completeness-scorer';
 import { searchWebTool } from './tools/search-web.tool';
@@ -22,10 +24,12 @@ export const mastra = new Mastra({
   workflows: {
     leadScoreWorkflow,
     leadAnalysisWorkflow,
+    searchTermGenerationWorkflow,
   },
   agents: {
     leadScoreAgent,
     leadAnalysisAgent,
+    searchTermAgent,
   },
   tools: {
     searchWebTool,

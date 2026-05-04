@@ -43,7 +43,6 @@ const envSchema = z.object({
   PROCESSED_URLS_KEY: z.string().default("gtm:processed_urls"),
   SEARCH_TERM_DEDUP_PREFIX: z.string().default("gtm:search_term:"),
   SEARCH_TERM_DEDUP_TTL_SECONDS: z.coerce.number().int().positive().default(43200), // 12 hours
-  SEARCH_RESULT_URLS_KEY: z.string().default("gtm:search_result_urls"),
 
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(20),

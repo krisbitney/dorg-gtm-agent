@@ -11,14 +11,12 @@ export interface SearchTermDedupStoreInterface {
    * Returns false if the term is a duplicate (was searched recently).
    */
   checkAndMark(term: string): Promise<boolean>;
-}
 
-/**
- * Hashes a search term string into a hex digest for use as a Redis key suffix.
- */
-function hashTerm(term: string): string {
-  // Bun.hash returns a numeric hash — convert to hex for a clean key suffix
-  return Bun.hash(term).toString(16);
+  /** Adds a search term to the persistent Redis set. */
+  addToSet(term: string): Promise<void>;
+
+  /** Removes and returns a random search term from the Redis set, or null if empty. */
+  popRandomMember(): Promise<string | null>;
 }
 
 /**
@@ -28,7 +26,7 @@ function hashTerm(term: string): string {
  * hashed and stored as a key with `SET NX EX`. If the key already exists,
  * the term was searched within the TTL window and is considered a duplicate.
  */
-export class RedisSearchTermDedupStore implements SearchTermDedupStoreInterface {
+export class RedisSearchTermStore implements SearchTermDedupStoreInterface {
   private readonly redis = Bun.redis;
   private readonly prefix = appEnv.SEARCH_TERM_DEDUP_PREFIX;
   private readonly ttlSecs = appEnv.SEARCH_TERM_DEDUP_TTL_SECONDS;
@@ -40,8 +38,19 @@ export class RedisSearchTermDedupStore implements SearchTermDedupStoreInterface 
   }
 
   async checkAndMark(term: string): Promise<boolean> {
-    const key = `${this.prefix}${hashTerm(term)}`;
+    const termHash = Bun.hash(term).toString(16);
+    const key = `${this.prefix}${termHash}`;
     const result = await this.redis.set(key, "1", "EX", String(this.ttlSecs), "NX");
     return result === "OK";
+  }
+
+  async addToSet(term: string): Promise<void> {
+    const key = `${this.prefix}terms-set`;
+    await this.redis.sadd(key, term);
+  }
+
+  async popRandomMember(): Promise<string | null> {
+    const key = `${this.prefix}terms-set`;
+    return await this.redis.spop(key);
   }
 }

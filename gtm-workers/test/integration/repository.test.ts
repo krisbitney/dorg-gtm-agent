@@ -1,19 +1,19 @@
 import { test, expect, describe, beforeEach } from "bun:test";
-import { PostRepository } from "../../src/storage/repositories/post-repository.js";
+import { LeadRepository } from "../../src/storage/repositories/lead-repository.js";
 import { CrawlRunRepository } from "../../src/storage/repositories/crawl-run-repository.js";
-import { PostStatus } from "../../src/constants/post-status.js";
+import { LeadStatus } from "../../src/constants/lead-status.js";
 import { CrawlRunStatus } from "../../src/constants/crawl-run-status.js";
 import { db } from "../../src/storage/database.js";
-import { posts } from "../../src/storage/schema/posts-table.js";
+import { leads } from "../../src/storage/schema/posts-table.js";
 import { crawlRuns } from "../../src/storage/schema/crawl-runs-table.js";
 
 describe("Repositories", () => {
-  const postRepository = new PostRepository();
+  const postRepository = new LeadRepository();
   const crawlRunRepository = new CrawlRunRepository();
 
   beforeEach(async () => {
     // Clear the tables before each test
-    await db.delete(posts);
+    await db.delete(leads);
     await db.delete(crawlRuns);
   });
 
@@ -31,13 +31,13 @@ describe("Repositories", () => {
           content: "test content",
           postedAt: new Date().toISOString(),
         },
-        status: PostStatus.PENDING,
+        status: LeadStatus.PENDING,
       });
 
       const post = await postRepository.findById(postId);
       expect(post).toBeDefined();
       expect(post?.id).toBe(postId);
-      expect(post?.status).toBe(PostStatus.PENDING);
+      expect(post?.status).toBe(LeadStatus.PENDING);
     });
 
     test("should update post status", async () => {
@@ -52,12 +52,12 @@ describe("Repositories", () => {
           content: "test content",
           postedAt: new Date().toISOString(),
         },
-        status: PostStatus.PENDING,
+        status: LeadStatus.PENDING,
       });
 
-      await postRepository.updateStatus(id, PostStatus.SCORING);
+      await postRepository.updateStatus(id, LeadStatus.SCORING);
       const post = await postRepository.findById(id);
-      expect(post?.status).toBe(PostStatus.SCORING);
+      expect(post?.status).toBe(LeadStatus.SCORING);
     });
 
     test("should save lead score", async () => {
@@ -72,13 +72,13 @@ describe("Repositories", () => {
           content: "test content",
           postedAt: new Date().toISOString(),
         },
-        status: PostStatus.PENDING,
+        status: LeadStatus.PENDING,
       });
 
-      await postRepository.saveScore(id, 0.85, PostStatus.ANALYZING);
+      await postRepository.saveScore(id, 0.85, LeadStatus.ANALYZING);
       const post = await postRepository.findById(id);
       expect(Number(post?.leadProbability)).toBe(0.85);
-      expect(post?.status).toBe(PostStatus.ANALYZING);
+      expect(post?.status).toBe(LeadStatus.ANALYZING);
     });
   });
 

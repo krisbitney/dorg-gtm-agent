@@ -31,7 +31,7 @@ export const searchWebTool = createTool({
   execute: async (inputData) => {
     return serper.search({
       query: inputData.query,
-      site: inputData.site,
+      platform: inputData.site,
       startDateTime: inputData.startDateTime,
       endDateTime: inputData.endDateTime,
       page: inputData.page,

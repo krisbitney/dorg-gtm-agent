@@ -1,8 +1,8 @@
 import { RedisLeadQueue } from "../storage/lead-queue.js";
-import { PostRepository } from "../storage/repositories/post-repository.js";
+import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import { GtmAiClient } from "../clients/gtm-ai-client.js";
 import { DorgApiClient } from "../clients/dorg-api-client.js";
-import { ProcessPostJob } from "../use-cases/process-post-job.js";
+import { ProcessLeadJob } from "../use-cases/process-lead-job.js";
 import { ProcessQueueLoop } from "../use-cases/process-queue-loop.js";
 import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   await runMigrations();
 
   const leadQueue = new RedisLeadQueue();
-  const postRepository = new PostRepository();
+  const postRepository = new LeadRepository();
   const gtmAiClient = new GtmAiClient();
   const dorgApiClient = new DorgApiClient();
 
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   console.log(`Main: Starting ${concurrency} concurrent async worker loops...`);
 
   const createJob = (runId: string) => 
-    new ProcessPostJob(postRepository, gtmAiClient, dorgApiClient, runId);
+    new ProcessLeadJob(postRepository, gtmAiClient, dorgApiClient, runId);
 
   // Start the loops concurrently
   for (let i = 0; i < concurrency; i++) {

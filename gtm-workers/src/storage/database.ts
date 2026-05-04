@@ -1,11 +1,11 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { appEnv } from "../config/app-env.js";
-import * as postsSchema from "./schema/posts-table.js";
+import * as leadsSchema from "./schema/leads-table.js";
 import * as crawlRunsSchema from "./schema/crawl-runs-table.js";
 
 const schema = {
-  ...postsSchema,
+  ...leadsSchema,
   ...crawlRunsSchema,
 };
 

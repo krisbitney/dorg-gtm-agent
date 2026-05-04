@@ -1,7 +1,7 @@
 /**
  * Enumeration of all possible states for a post as it moves through the worker pipeline.
  */
-export const PostStatus = {
+export const LeadStatus = {
   PENDING: "pending",
   SCORING: "scoring",
   BELOW_THRESHOLD: "below_threshold",
@@ -14,4 +14,4 @@ export const PostStatus = {
   ERROR: "error",
 } as const;
 
-export type PostStatusType = typeof PostStatus[keyof typeof PostStatus];
+export type LeadStatusType = typeof LeadStatus[keyof typeof LeadStatus];

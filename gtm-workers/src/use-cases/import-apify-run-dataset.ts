@@ -1,6 +1,6 @@
 import type { ApifyCrawlerClientInterface } from "../clients/apify-crawler-client.js";
 import { CrawlRunRepository } from "../storage/repositories/crawl-run-repository.js";
-import { PostRepository } from "../storage/repositories/post-repository.js";
+import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import type { ProcessedUrlStoreInterface } from "../storage/processed-url-store.js";
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import type { ApifyRunWebhook } from "../schemas/apify-run-webhook-schema.js";
@@ -14,7 +14,7 @@ export class ImportApifyRunDataset {
   constructor(
     private readonly apifyClient: ApifyCrawlerClientInterface,
     private readonly crawlRunRepository: CrawlRunRepository,
-    private readonly postRepository: PostRepository,
+    private readonly postRepository: LeadRepository,
     private readonly processedUrlStore: ProcessedUrlStoreInterface,
     private readonly leadQueue: LeadQueueInterface
   ) {}

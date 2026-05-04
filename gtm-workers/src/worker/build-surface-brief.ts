@@ -1,27 +1,27 @@
-import type { Post } from "../storage/schema/posts-table.js";
+import type { Lead } from "../storage/schema/leads-table.js";
 
 /**
  * Pure helper to build a surface brief for dOrg.
  */
-export function buildSurfaceBrief(post: Post): string {
+export function buildSurfaceBrief(lead: Lead): string {
   const parts = [];
 
-  parts.push(`Source: ${post.platform} (${post.url})`);
+  parts.push(`Source: ${lead.platform} (${lead.url})`);
   
-  if (post.whyFit) {
-    parts.push(`\nWhy it's a fit:\n${post.whyFit}`);
+  if (lead.whyFit) {
+    parts.push(`\nWhy it's a fit:\n${lead.whyFit}`);
   }
   
-  if (post.needs) {
-    parts.push(`\nNeeds:\n${post.needs}`);
+  if (lead.needs) {
+    parts.push(`\nNeeds:\n${lead.needs}`);
   }
   
-  if (post.timing) {
-    parts.push(`\nTiming: ${post.timing}`);
+  if (lead.timing) {
+    parts.push(`\nTiming: ${lead.timing}`);
   }
   
-  if (post.contactInfo) {
-    parts.push(`\nContact: ${post.contactInfo}`);
+  if (lead.contactInfo) {
+    parts.push(`\nContact: ${lead.contactInfo}`);
   }
 
   return parts.join("\n");

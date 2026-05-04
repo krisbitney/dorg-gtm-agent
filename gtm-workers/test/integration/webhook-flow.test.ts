@@ -1,12 +1,12 @@
 import { test, expect, describe, beforeEach } from "bun:test";
 import { ImportApifyRunDataset } from "../../src/use-cases/import-apify-run-dataset.js";
 import { CrawlRunRepository } from "../../src/storage/repositories/crawl-run-repository.js";
-import { PostRepository } from "../../src/storage/repositories/post-repository.js";
+import { LeadRepository } from "../../src/storage/repositories/lead-repository.js";
 import { RedisLeadQueue } from "../../src/storage/lead-queue.js";
 import { RedisProcessedUrlStore } from "../../src/storage/processed-url-store.js";
 import { db } from "../../src/storage/database.js";
 import { crawlRuns } from "../../src/storage/schema/crawl-runs-table.js";
-import { posts } from "../../src/storage/schema/posts-table.js";
+import { leads } from "../../src/storage/schema/posts-table.js";
 import { CrawlRunStatus } from "../../src/constants/crawl-run-status.js";
 import { appEnv } from "../../src/config/app-env.js";
 
@@ -36,7 +36,7 @@ class FakeApifyClient {
 
 describe("Webhook Flow Integration", () => {
   const crawlRunRepository = new CrawlRunRepository();
-  const postRepository = new PostRepository();
+  const postRepository = new LeadRepository();
   const leadQueue = new RedisLeadQueue();
   const processedUrlStore = new RedisProcessedUrlStore();
   const fakeApifyClient = new FakeApifyClient();
@@ -49,7 +49,7 @@ describe("Webhook Flow Integration", () => {
   );
 
   beforeEach(async () => {
-    await db.delete(posts);
+    await db.delete(leads);
     await db.delete(crawlRuns);
     await Bun.redis.del(appEnv.PROCESSED_URLS_KEY);
     await Bun.redis.del(appEnv.QUEUE_NAME);
@@ -76,7 +76,7 @@ describe("Webhook Flow Integration", () => {
     expect(run?.status).toBe(CrawlRunStatus.COMPLETED);
     expect(run?.itemsImported).toBe(1);
 
-    const allPosts = await db.select().from(posts);
+    const allPosts = await db.select().from(leads);
     expect(allPosts.length).toBe(1);
     expect(allPosts[0]?.url).toBe("https://reddit.com/r/test/1");
 

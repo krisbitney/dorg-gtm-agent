@@ -1,6 +1,6 @@
 import { MastraClient } from "@mastra/client-js";
 import { appEnv } from "../config/app-env.js";
-import type { Post } from "../storage/schema/posts-table.js";
+import type { Lead } from "../storage/schema/leads-table.js";
 
 /**
  * Input for the GTM AI workflows.
@@ -9,7 +9,7 @@ export interface GtmAiInput {
   id: string;
   platform: string;
   url: string;
-  post: any;
+  content: any;
 }
 
 /**
@@ -190,11 +190,11 @@ export class GtmAiClient implements GtmAiClientInterface {
 /**
  * Maps a database post row to the GTM AI input shape.
  */
-export function mapPostToAiInput(post: Post): GtmAiInput {
+export function mapPostToAiInput(lead: Lead): GtmAiInput {
   return {
-    id: post.id,
-    site: post.platform,
-    url: post.url,
-    content: post.post,
+    id: lead.id,
+    platform: lead.platform,
+    url: lead.url,
+    content: lead.content,
   };
 }

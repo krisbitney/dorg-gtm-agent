@@ -1,7 +1,7 @@
 import type { LeadQueueInterface } from "../storage/lead-queue.js";
-import { ProcessPostJob } from "./process-post-job.js";
+import { ProcessLeadJob } from "./process-lead-job.js";
 import { queuePayloadSchema } from "../schemas/queue-payload-schema.js";
-import { PostRepository } from "../storage/repositories/post-repository.js";
+import { LeadRepository } from "../storage/repositories/lead-repository.js";
 
 /**
  * Use case to process leads from the Redis queue in a continuous loop.
@@ -9,8 +9,8 @@ import { PostRepository } from "../storage/repositories/post-repository.js";
 export class ProcessQueueLoop {
   constructor(
     private readonly leadQueue: LeadQueueInterface,
-    private readonly postRepository: PostRepository,
-    private readonly createJob: (workerRunId: string) => ProcessPostJob,
+    private readonly leadRepository: LeadRepository,
+    private readonly createJob: (workerRunId: string) => ProcessLeadJob,
     private readonly workerRunId: string
   ) {}
 
@@ -60,16 +60,16 @@ export class ProcessQueueLoop {
         if (rawPayload) {
           try {
             // Safe parse to avoid double-throw if original payload was malformed
-            let postId: string | undefined;
+            let leadId: string | undefined;
             try {
               const payload = JSON.parse(rawPayload);
-              postId = payload.id;
+              leadId = payload.id;
             } catch (parseError) {
               console.warn(`[Worker ${this.workerRunId}] Could not parse malformed payload for error logging:`, parseError);
             }
 
-            if (postId) {
-              await this.postRepository.markError(postId, error.message || "Unknown worker error");
+            if (leadId) {
+              await this.leadRepository.markError(leadId, error.message || "Unknown worker error");
             }
             
             await this.leadQueue.moveToDeadLetter(rawPayload, JSON.stringify({

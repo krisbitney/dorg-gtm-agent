@@ -24,6 +24,6 @@ describe("mapPostToAiInput", () => {
     expect(input.id).toBe("post1");
     expect(input.platform).toBe("reddit");
     expect(input.url).toBe("https://reddit.com/r/web3/123");
-    expect(input.post).toEqual(postData);
+    expect(input.content).toEqual(postData);
   });
 });

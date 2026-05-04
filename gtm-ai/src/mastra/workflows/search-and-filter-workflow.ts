@@ -61,7 +61,7 @@ export const searchAndFilterWorkflow = createWorkflow({
         for (let page = 1; page <= pages; page++) {
           const response = await serper.search({
             query: searchQuery,
-            site,
+            platform: site,
             startDateTime,
             endDateTime,
             page,

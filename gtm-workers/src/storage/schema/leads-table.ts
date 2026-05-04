@@ -1,16 +1,16 @@
 import {pgTable, text, uuid, timestamp, doublePrecision, index, varchar, integer, jsonb} from "drizzle-orm/pg-core";
-import { PostStatus } from "../../constants/post-status.js";
+import { LeadStatus } from "../../constants/lead-status.js";
 
 /**
- * Drizzle schema for the posts table.
+ * Drizzle schema for the leads table.
  * Stores data extracted from platforms and tracks its progress through the AI and dOrg pipeline.
  */
-export const posts = pgTable("posts", {
+export const leads = pgTable("leads", {
   id: uuid("id").primaryKey(),
   url: text("url").notNull().unique(),
   platform: varchar("platform", { length: 50 }).notNull(),
-  post: jsonb("post").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default(PostStatus.PENDING),
+  content: jsonb("content").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default(LeadStatus.PENDING),
   leadProbability: doublePrecision("lead_probability"),
   whyFit: text("why_fit"),
   needs: text("needs"),
@@ -18,8 +18,6 @@ export const posts = pgTable("posts", {
   contactInfo: text("contact_info"),
   dorgLeadId: text("dorg_lead_id"),
   errorMessage: text("error_message"),
-  apifyRunId: text("apify_run_id"),
-  apifyDatasetId: text("apify_dataset_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => {
@@ -29,5 +27,5 @@ export const posts = pgTable("posts", {
   };
 });
 
-export type Post = typeof posts.$inferSelect;
-export type NewPost = typeof posts.$inferInsert;
+export type Lead = typeof leads.$inferSelect;
+export type NewLead = typeof leads.$inferInsert;

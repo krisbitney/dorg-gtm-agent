@@ -1,9 +1,9 @@
 import { test, expect, describe, beforeEach } from "bun:test";
-import { ProcessPostJob } from "../../src/use-cases/process-post-job.js";
-import { PostRepository } from "../../src/storage/repositories/post-repository.js";
+import { ProcessLeadJob } from "../../src/use-cases/process-lead-job.js";
+import { LeadRepository } from "../../src/storage/repositories/lead-repository.js";
 import { db } from "../../src/storage/database.js";
-import { posts } from "../../src/storage/schema/posts-table.js";
-import { PostStatus } from "../../src/constants/post-status.js";
+import { leads } from "../../src/storage/schema/posts-table.js";
+import { LeadStatus } from "../../src/constants/lead-status.js";
 
 class FakeGtmAiClient {
   async scorePost() {
@@ -30,11 +30,11 @@ class FakeDorgApiClient {
 }
 
 describe("Worker Flow Integration", () => {
-  const postRepository = new PostRepository();
+  const postRepository = new LeadRepository();
   const gtmAiClient = new FakeGtmAiClient();
   const dorgApiClient = new FakeDorgApiClient();
   const workerRunId = "test-worker-run";
-  const processPostJob = new ProcessPostJob(
+  const processPostJob = new ProcessLeadJob(
     postRepository,
     gtmAiClient as any,
     dorgApiClient as any,
@@ -42,7 +42,7 @@ describe("Worker Flow Integration", () => {
   );
 
   beforeEach(async () => {
-    await db.delete(posts);
+    await db.delete(leads);
   });
 
   test("should process a post from pending to completed", async () => {
@@ -58,7 +58,7 @@ describe("Worker Flow Integration", () => {
         content: "I need help with my DAO",
         postedAt: new Date().toISOString(),
       },
-      status: PostStatus.PENDING
+      status: LeadStatus.PENDING
     });
 
     // 2. Execute processing
@@ -66,7 +66,7 @@ describe("Worker Flow Integration", () => {
 
     // 3. Verify results
     const post = await postRepository.findById(postId);
-    expect(post?.status).toBe(PostStatus.COMPLETED);
+    expect(post?.status).toBe(LeadStatus.COMPLETED);
     expect(post?.dorgLeadId).toBe("dorg-lead-123");
     expect(post?.whyFit).toBe("Matches criteria");
     expect(Number(post?.leadProbability)).toBe(0.9);
@@ -84,7 +84,7 @@ describe("Worker Flow Integration", () => {
         content: "Low probability content",
         postedAt: new Date().toISOString(),
       },
-      status: PostStatus.PENDING
+      status: LeadStatus.PENDING
     });
 
     // Mock low score
@@ -92,12 +92,12 @@ describe("Worker Flow Integration", () => {
       scorePost: async () => ({ leadProbability: 0.1 }),
       analyzePost: async () => ({ isLead: false })
     };
-    const job = new ProcessPostJob(postRepository, lowScoreAiClient as any, dorgApiClient as any, workerRunId);
+    const job = new ProcessLeadJob(postRepository, lowScoreAiClient as any, dorgApiClient as any, workerRunId);
 
     await job.execute(postId);
 
     const post = await postRepository.findById(postId);
-    expect(post?.status).toBe(PostStatus.BELOW_THRESHOLD);
+    expect(post?.status).toBe(LeadStatus.BELOW_THRESHOLD);
     expect(post?.dorgLeadId).toBeNull();
   });
 });

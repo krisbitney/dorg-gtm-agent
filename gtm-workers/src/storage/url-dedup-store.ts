@@ -17,7 +17,7 @@ export interface UrlDedupStoreInterface {
  */
 export class RedisUrlDedupStore implements UrlDedupStoreInterface {
   private readonly redis = Bun.redis;
-  private readonly key = appEnv.PROCESSED_URLS_KEY;
+  private readonly key = appEnv.SEARCH_RESULT_URLS_KEY;
 
   constructor() {
     if (!this.redis.connected) {

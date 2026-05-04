@@ -33,9 +33,6 @@ export const EnvSchema = z.object({
 
   // ── Redis ────────────────────────────────────────────────
   REDIS_URL: z.string().optional(),
-  SEARCH_TERM_DEDUP_PREFIX: z.string().default("gtm:search_term:"),
-  SEARCH_TERM_DEDUP_TTL_SECONDS: z.coerce.number().int().positive().default(43200), // 12 hours
-  PROCESSED_URLS_KEY: z.string().default("gtm:processed_urls"),
 
   /**
    * Threshold for deciding if a post is likely enough to be a lead for dOrg

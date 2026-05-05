@@ -1,16 +1,16 @@
 import { test, expect, describe } from "bun:test";
-import { validateEnv } from "../../src/mastra/config/app-env";
+import {EnvSchema} from "../../src/mastra/config/app-env";
 
 describe("App Environment Configuration", () => {
   test("valid env parses successfully with defaults", () => {
-    const result = validateEnv({});
+    const result = EnvSchema.parse({});
     expect(result.MASTRA_HOST).toBe("0.0.0.0");
     expect(result.MASTRA_PORT).toBe(4111);
     expect(result.MASTRA_LOG_LEVEL).toBe("info");
   });
 
   test("can override defaults", () => {
-    const result = validateEnv({
+    const result = EnvSchema.parse({
       MASTRA_PORT: "5000",
       MASTRA_LOG_LEVEL: "debug",
       GTM_SMALL_MODEL: "ollama/llama3",
@@ -21,10 +21,10 @@ describe("App Environment Configuration", () => {
   });
 
   test("invalid port value fails", () => {
-    expect(() => validateEnv({ MASTRA_PORT: "not-a-number" })).toThrow();
+    expect(() => EnvSchema.parse({ MASTRA_PORT: "not-a-number" })).toThrow();
   });
 
   test("invalid log level fails", () => {
-    expect(() => validateEnv({ MASTRA_LOG_LEVEL: "trace" as any })).toThrow();
+    expect(() => EnvSchema.parse({ MASTRA_LOG_LEVEL: "trace" as any })).toThrow();
   });
 });

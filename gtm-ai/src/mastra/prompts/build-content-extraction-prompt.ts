@@ -1,6 +1,6 @@
 import type { ScrapedLead } from "../schemas/search-and-filter-schema";
 
-const MAX_CONTENT_LENGTH = 200_000;
+const MAX_CONTENT_LENGTH = 400_000;
 
 /**
  * Builds the prompt for extracting relevant lead content from a single scraped page.

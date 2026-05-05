@@ -1,4 +1,4 @@
-import {appEnv} from "../config/app-env";
+import {appEnv} from "../config/app-env.js";
 
 /**
  * Interface for URL deduplication using a Redis SET.

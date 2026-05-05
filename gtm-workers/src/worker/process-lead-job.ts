@@ -1,7 +1,7 @@
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
 import type { GtmAiClientInterface } from "../clients/gtm-ai-client.js";
 import type { DorgApiClientInterface } from "../clients/dorg-api-client.js";
-import {LeadStatus} from "../constants/lead-status.js";
+import {LeadStatus, type LeadStatusType} from "../constants/lead-status.js";
 import { mapLeadToAiLeadScoreAndAnalysisInput } from "../clients/gtm-ai-client.js";
 import { buildSurfaceBrief } from "./build-surface-brief.js";
 import { appEnv } from "../config/app-env.js";
@@ -32,12 +32,12 @@ export class ProcessLeadJob {
     }
 
     // 2. Skip if already in a terminal state
-    const terminalStatuses = [
+    const terminalStatuses: LeadStatusType[] = [
       LeadStatus.BELOW_THRESHOLD,
       LeadStatus.NOT_A_LEAD,
       LeadStatus.COMPLETED,
     ];
-    if (terminalStatuses.includes(lead.status as any)) {
+    if (terminalStatuses.includes(lead.status as LeadStatusType)) {
       console.log(`[Lead ${leadId}] Lead is already in terminal state "${lead.status}", skipping.`);
       return;
     }

@@ -55,6 +55,9 @@ export class DorgApiClient implements DorgApiClientInterface {
     }
 
     const data = (await response.json()) as { lead_id: string };
+    if (!data.lead_id) {
+      return { success: false, message: "dOrg claim failed to return lead_id"}
+    }
     return { success: true, leadId: data.lead_id };
   }
 

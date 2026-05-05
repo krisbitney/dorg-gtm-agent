@@ -31,15 +31,13 @@ export const EnvSchema = z.object({
   DORG_API_BASE_URL: z.string().default("https://agentsofdorg.tech/api"),
 
   // ── Redis ────────────────────────────────────────────────
-  REDIS_URL: z.string().optional(),
+  REDIS_URL: z.string().min(1),
   URLS_DEDUP_KEY: z.string().default("gtm:urls_dedup"),
 });
-
-export const validateEnv = (env: Record<string, string | undefined>) => EnvSchema.parse(env);
 
 /**
  * Validated application environment variables.
  */
-export const appEnv = validateEnv(process.env);
+export const appEnv = EnvSchema.parse(process.env);
 
 export type AppEnv = z.infer<typeof EnvSchema>;

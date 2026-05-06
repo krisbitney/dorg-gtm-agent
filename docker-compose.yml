@@ -42,9 +42,13 @@ services:
       - "4111:4111"
     environment:
       - REDIS_URL=redis://valkey:6379
-      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
-      - GTM_SMALL_MODEL=ollama-cloud/gemma4:31b
-      - GTM_ANALYSIS_MODEL=ollama-cloud/gemma4:31b
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+      - CONTEXT_DEV_API_KEY=${CONTEXT_DEV_API_KEY}
+      - GTM_SCORE_MODEL=deepseek/deepseek-v4-flash
+      - GTM_ANALYSIS_MODEL=deepseek/deepseek-v4-pro
+      - GTM_SEARCH_TERM_MODEL=deepseek/deepseek-v4-flash
+      - GTM_SEARCH_FILTER_MODEL=deepseek/deepseek-v4-pro
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,11 +68,7 @@ services:
       - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
       - REDIS_URL=redis://valkey:6379
       - GTM_AI_BASE_URL=http://gtm-ai:4111
-      - APIFY_TOKEN=${APIFY_TOKEN}
       - DORG_API_TOKEN=${DORG_API_TOKEN}
-      - WORKERS_PUBLIC_BASE_URL=http://localhost:3000
-      - TRIGGER_API_TOKEN=token
-      - APIFY_WEBHOOK_SECRET=secret
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,11 +86,8 @@ services:
       - DATABASE_URL=postgresql://user:password@postgres:5432/gtm
       - REDIS_URL=redis://valkey:6379
       - GTM_AI_BASE_URL=http://gtm-ai:4111
-      - APIFY_TOKEN=${APIFY_TOKEN}
       - DORG_API_TOKEN=${DORG_API_TOKEN}
-      - WORKERS_PUBLIC_BASE_URL=http://localhost:3000
-      - TRIGGER_API_TOKEN=token
-      - APIFY_WEBHOOK_SECRET=secret
+      - SEARCH_DAYS_BACK=14
     depends_on:
       postgres:
         condition: service_healthy

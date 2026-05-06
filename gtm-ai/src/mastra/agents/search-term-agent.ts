@@ -11,8 +11,8 @@ export const searchTermAgent = new Agent({
   id: 'search-term-agent',
   description: 'Generates search queries optimized for finding leads on a given platform.',
   instructions:
-    'You are an expert search strategist. Generate specific, varied search queries optimized for finding potential sales leads.',
+    'You are an expert search strategist. Generate specific, varied search queries optimized for finding potential consultancy client leads.',
   model: appEnv.GTM_SEARCH_TERM_MODEL,
-  maxRetries: 3,
-  maxProcessorRetries: 3,
+  maxRetries: 5,
+  maxProcessorRetries: 5,
 });

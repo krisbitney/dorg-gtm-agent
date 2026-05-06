@@ -22,7 +22,7 @@ export const EnvSchema = z.object({
 
   // ── Models ───────────────────────────────────────────────
   /** Model for lightweight / filtering tasks */
-  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
+  GTM_SCORE_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for analysis and reasoning tasks */
   GTM_ANALYSIS_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for generating search terms */

@@ -29,7 +29,8 @@ ${resultsBlock}
 1. Review each search result's title and snippet.
 2. Identify which results could be leads for the consultancy based on the title and snippet alone.
 3. Return a JSON object with a "promisingUrls" array containing { url } for each result that looks like a potential lead.
-4. Skip generic forum threads, spam, job postings for in-house roles, and clearly irrelevant pages.
-5. If none of the results look like leads, return an empty array.
+4. If you aren't sure if a result page could contain lead, assume it might have a lead and keep it.
+5. Skip spam, job postings for in-house roles, and clearly irrelevant pages.
+6. If none of the results look like leads, return an empty array.
 `.trim();
 };

@@ -148,7 +148,7 @@ export const searchAndFilterWorkflow = createWorkflow({
 
         for (const { url } of promisingUrls) {
           try {
-            const scraped = await contextDev.scrape({ url });
+            const scraped = await contextDev.scrape({ url }, logger);
             leads.push({ url: scraped.url, content: scraped.content });
           } catch (error) {
             logger.warn(`Failed to scrape ${url}: ${error}`);

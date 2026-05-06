@@ -1,4 +1,5 @@
 import type { PageScraperInterface, ScrapedPage } from "../interfaces/page-scraper-interface.js";
+import {IMastraLogger} from "@mastra/core/logger";
 
 // TODO: respect rate limits (e.g., 1 scrape call per second, configurable)
 // TODO: handle retries (on retriable errors) with exponential backoff
@@ -17,11 +18,13 @@ export class ContextDevProvider implements PageScraperInterface {
     this.apiKey = options.apiKey;
   }
 
-  async scrape({ url }: { url: string }): Promise<ScrapedPage> {
+  async scrape({ url }: { url: string }, logger?: IMastraLogger): Promise<ScrapedPage> {
     const params = new URLSearchParams({
       url,
       useMainContentOnly: "true",
     });
+
+    logger?.info(`Scraping content from URL: ${url}`)
 
     const response = await fetch(`https://api.context.dev/v1/web/scrape/markdown?${params}`, {
       method: "GET",
@@ -41,7 +44,7 @@ export class ContextDevProvider implements PageScraperInterface {
       markdown: string;
       url: string;
     };
-
+    
     if (!data.success) {
       throw new Error(`ContextDev scrape failed with API error (success: false)`);
     }

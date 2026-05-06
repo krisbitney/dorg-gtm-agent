@@ -12,22 +12,52 @@ export const buildContentExtractionPrompt = (params: {
   lead: ScrapedLead;
 }): string => {
   return `
-You are extracting relevant content from a scraped web page to evaluate a potential lead for the following consultancy:
+You are an expert Data Extraction Specialist and B2B Lead Researcher. Your objective is to parse raw, scraped web page content (often noisy markdown) and extract ONLY the high-signal information relevant to qualifying a B2B lead for the target consultancy.
 
-### Target Consultancy
+### Target Consultancy Context
 ${params.targetDescription}
 
-### Scraped Page
+### Scraped Page Data
 URL: ${params.lead.url}
----RAW CONTENT (truncated to a maximum of ${MAX_CONTENT_LENGTH} characters)---
-${params.lead.content.slice(0, MAX_CONTENT_LENGTH)}
----END---
 
-### Instructions
-1. Extract only the content relevant to the potential lead.
-  - For example, if the page is a social media post (e.g., Reddit, LinkedIn), keep the original post, its title, its author, the date posted, and anything else important. Drop comments, sidebars, ads, and unrelated replies.
-  - Always preserve any contact information (including social media usernames), relevant dates, budget mentions, timelines, and project technical requirements.
-2. Return a JSON object with a single "leads" array containing { url, content } with the extracted relevant content.
-3. If the page contains no lead-relevant content after extraction, return an empty array.
+--- START RAW CONTENT (Truncated to ${MAX_CONTENT_LENGTH} characters) ---
+${params.lead.content.slice(0, MAX_CONTENT_LENGTH)}
+--- END RAW CONTENT ---
+
+### Extraction Directives
+Your goal is to distill the raw text into a clean, concise summary of the actual lead opportunity.
+
+✅ **WHAT TO EXTRACT & PRESERVE:**
+- **Core Narrative:** The main post body, RFP description, or project announcement.
+- **Metadata:** Author/Poster name, usernames, company name, and exact date/time posted.
+- **Contact Info:** Email addresses, direct links, social handles, or application portals.
+- **Business Parameters:** Explicit mentions of budget, timelines, milestones, or hiring urgency.
+- **Technical Scope:** The required tech stack, architecture, specific blockers, or project scope.
+- **Author Follow-ups:** Any replies or comments made *specifically by the original author* that add context to the project.
+
+❌ **WHAT TO STRIP OUT & IGNORE:**
+- Boilerplate UI elements (navigation menus, footers, sidebars, cookie banners, login prompts).
+- Irrelevant user comments, forum banter, or off-topic replies.
+- Advertisements, promotional links, "related posts" feeds, or generic site disclaimers.
+
+### Output Formatting Rules
+- Structure the extracted 'content' string as clean, readable Markdown. 
+- Use headers, bold text, and bullet points to make it highly legible for a human sales rep.
+- DO NOT hallucinate or infer missing details. If a budget or tech stack isn't mentioned, omit it.
+
+### Output JSON Format
+Return ONLY a valid JSON object containing a "leads" array. 
+- If the page contains valid lead content, the array should contain exactly one object: { "url": "${params.lead.url}", "content": "<your_cleaned_markdown_string>" }.
+- If the full page reveals this is a false positive (e.g., it is actually a W-2 job posting, SEO spam, or contains no actionable project info), return an empty array: { "leads": [] }.
+
+Example format for a valid lead:
+{
+  "leads": [
+    {
+      "url": "https://example.com/forum/post",
+      "content": "**Author:** username123\\n**Date:** Oct 24, 2024\\n\\n**Project Details:**\\nLooking for an agency to build our MVP...\\n\\n**Tech Stack:** React, Node.js\\n**Budget:** $50k"
+    }
+  ]
+}
 `.trim();
 };

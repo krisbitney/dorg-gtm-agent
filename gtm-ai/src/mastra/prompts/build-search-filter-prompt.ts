@@ -12,25 +12,47 @@ export const buildSearchFilterPrompt = (params: {
   const resultsBlock = params.searchResults
     .map(
       (r, i) =>
-        `[${i + 1}] Title: ${r.title}\n    URL: ${r.url}\n    Snippet: ${r.snippet}`,
+        `[Result ${i + 1}]\nTitle: ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`
     )
-    .join("\n\n");
+    .join("\n\n---\n\n");
 
   return `
-You are evaluating search results to find leads for the following consultancy:
+You are an expert B2B Lead Qualifier and SDR. Your job is to evaluate search engine results and identify high-potential B2B leads for the following consultancy:
 
-### Target Consultancy
+### Target Consultancy Context
 ${params.targetDescription}
 
-### Search Results
+### The Objective
+Filter the provided search results based on their Title, URL, and Snippet. You are looking for potential clients (companies, founders, DAOs, project leads) who might need to hire a consultancy, agency, or external dev shop. 
+
+### Evaluation Criteria
+
+✅ **KEEP (Positive Intent Signals):**
+- Posts asking for recommendations for agencies, dev shops, or consultancies.
+- Companies or founders expressing technical pain points, blockers, or needing architectural advice.
+- Requests for Proposals (RFPs), Request for Quotations (RFQs), or grant programs seeking service providers.
+- If a result is ambiguous but hints at a company building a product that aligns with the consultancy's skills, KEEP IT. (Err on the side of caution).
+
+❌ **SKIP (Anti-Patterns & Noise):**
+- **In-house / W-2 Job Postings:** Skip any URLs from job boards (Greenhouse, Lever, LinkedIn Jobs, Indeed) or URLs containing "/jobs/", "/careers/". Skip snippets mentioning "full-time", "salary", "benefits", or "join our team".
+- **Job Seekers:** Individuals looking for work ("I am a developer looking for...").
+- **Listicles & Directories:** Articles listing "Top 10 Agencies in 2024", Clutch.co directories, or general SEO spam.
+- **Tutorials & Docs:** Educational material, wiki pages, or documentation that do not indicate a buying intent.
+- **Irrelevant Chatter:** General news, non-technical hype, or unrelated discussions.
+
+### Search Results to Evaluate
 ${resultsBlock}
 
-### Instructions
-1. Review each search result's title and snippet.
-2. Identify which results could be leads for the consultancy based on the title and snippet alone.
-3. Return a JSON object with a "promisingUrls" array containing { url } for each result that looks like a potential lead.
-4. If you aren't sure if a result page could contain lead, assume it might have a lead and keep it.
-5. Skip spam, job postings for in-house roles, and clearly irrelevant pages.
-6. If none of the results look like leads, return an empty array.
+### Output Instructions
+Return ONLY a valid JSON object with a single key "promisingUrls". The value must be an array of objects, each containing the "url" of a qualifying result. 
+If none of the results look like leads, return an empty array for "promisingUrls".
+
+Example Output:
+{
+  "promisingUrls": [
+    { "url": "https://example.com/forum/need-help-scaling" },
+    { "url": "https://example.com/rfp/new-project" }
+  ]
+}
 `.trim();
 };

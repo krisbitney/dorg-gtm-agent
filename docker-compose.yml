@@ -46,6 +46,7 @@ services:
       - SERPER_API_KEY=${SERPER_API_KEY}
       - CONTEXT_DEV_API_KEY=${CONTEXT_DEV_API_KEY}
       - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - SCRAPFLY_API_KEY=${SCRAPFLY_API_KEY}
       - GTM_SCORE_MODEL=deepseek/deepseek-v4-flash
       - GTM_ANALYSIS_MODEL=deepseek/deepseek-v4-pro
       - GTM_SEARCH_TERM_MODEL=deepseek/deepseek-v4-flash

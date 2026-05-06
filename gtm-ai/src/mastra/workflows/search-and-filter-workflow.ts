@@ -14,12 +14,13 @@ import {
   type SearchAndFilterState, ExecuteSearchOutputSchema,
 } from '../schemas/search-and-filter-schema';
 import type { SearchResult } from '../interfaces/search-provider-interface';
-import {FirecrawlScrapeProvider} from "../providers/firecrawl-scrape-provider";
 import {TwitterScrapeProvider} from "../providers/twitter-scrape-provider";
+import {ScrapflyScrapeProvider} from "../providers/scrapfly-scrape-provider";
 
 const serper = new SerperProvider({ apiKey: appEnv.SERPER_API_KEY ?? '' });
 // const scrapeProvider = new ContextDevProvider({ apiKey: appEnv.CONTEXT_DEV_API_KEY ?? '' });
-const webScrapeProvider = new FirecrawlScrapeProvider({ apiKey: appEnv.FIRECRAWL_API_KEY ?? '' });
+// const webScrapeProvider = new FirecrawlScrapeProvider({ apiKey: appEnv.FIRECRAWL_API_KEY ?? '' });
+const webScrapeProvider = new ScrapflyScrapeProvider({ apiKey: appEnv.SCRAPFLY_API_KEY ?? '' });
 const twitterScrapeProvider = new TwitterScrapeProvider();
 const urlDedup = new RedisReadonlyUrlDedupStore();
 

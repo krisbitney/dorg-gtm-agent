@@ -26,6 +26,7 @@
     "@mastra/memory": "^1.15.0",
     "@mastra/observability": "^1.9.0",
     "@mendable/firecrawl-js": "^4.22.0",
+    "@scrapfly/scrapfly-sdk": "npm:@jsr/scrapfly__scrapfly-sdk",
     "zod": "^4"
   }
 }

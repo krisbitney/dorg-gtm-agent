@@ -45,6 +45,8 @@ export const EnvSchema = z.object({
   CONTEXT_DEV_API_KEY: z.string().optional(),
   /** API key for Firecrawl */
   FIRECRAWL_API_KEY: z.string().optional(),
+  /** API key for Scrapfly */
+  SCRAPFLY_API_KEY: z.string().optional(),
 
   /** API token for the dOrg agents API */
   DORG_API_TOKEN: z.string().optional(),

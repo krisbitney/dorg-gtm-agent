@@ -25,6 +25,7 @@
     "@mastra/loggers": "^1.1.1",
     "@mastra/memory": "^1.15.0",
     "@mastra/observability": "^1.9.0",
+    "@mendable/firecrawl-js": "^4.22.0",
     "zod": "^4"
   }
 }

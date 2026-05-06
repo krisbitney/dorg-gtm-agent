@@ -2,7 +2,6 @@ import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 
 import { SerperProvider } from '../providers/serper-provider';
-import { ContextDevProvider } from '../providers/context-dev-provider';
 import { RedisReadonlyUrlDedupStore } from '../storage/url-dedup-store';
 import { searchFilterAgent } from '../agents/search-filter-agent';
 import { buildSearchFilterPrompt } from '../prompts/build-search-filter-prompt';
@@ -12,12 +11,14 @@ import {
   SearchAndFilterStateSchema,
   SearchFilterOutputSchema,
   SearchAndFilterOutputSchema,
-  type SearchAndFilterState,
+  type SearchAndFilterState, ExecuteSearchOutputSchema,
 } from '../schemas/search-and-filter-schema';
 import type { SearchResult } from '../interfaces/search-provider-interface';
+import {FirecrawlScrapeProvider} from "../providers/firecrawl-scrape-provider";
 
 const serper = new SerperProvider({ apiKey: appEnv.SERPER_API_KEY ?? '' });
-const contextDev = new ContextDevProvider({ apiKey: appEnv.CONTEXT_DEV_API_KEY ?? '' });
+// const scrapeProvider = new ContextDevProvider({ apiKey: appEnv.CONTEXT_DEV_API_KEY ?? '' });
+const scrapeProvider = new FirecrawlScrapeProvider({ apiKey: appEnv.FIRECRAWL_API_KEY ?? '' })
 const urlDedup = new RedisReadonlyUrlDedupStore();
 
 /**
@@ -38,15 +39,7 @@ export const searchAndFilterWorkflow = createWorkflow({
     createStep({
       id: 'execute-search',
       inputSchema: z.object({}),
-      outputSchema: z.object({
-        searchResults: z.array(
-          z.object({
-            url: z.string(),
-            title: z.string(),
-            snippet: z.string(),
-          }),
-        ),
-      }),
+      outputSchema: ExecuteSearchOutputSchema,
       execute: async ({ state, mastra }) => {
         const logger = mastra.getLogger();
         const { searchQuery, sourceUrl, startDateTime, endDateTime, pages } =
@@ -85,15 +78,7 @@ export const searchAndFilterWorkflow = createWorkflow({
   .then(
     createStep({
       id: 'filter-results',
-      inputSchema: z.object({
-        searchResults: z.array(
-          z.object({
-            url: z.string(),
-            title: z.string(),
-            snippet: z.string(),
-          }),
-        ),
-      }),
+      inputSchema: ExecuteSearchOutputSchema,
       outputSchema: SearchFilterOutputSchema,
       execute: async ({ inputData, state, mastra }) => {
         const logger = mastra.getLogger();
@@ -148,7 +133,7 @@ export const searchAndFilterWorkflow = createWorkflow({
 
         for (const { url } of promisingUrls) {
           try {
-            const scraped = await contextDev.scrape({ url }, logger);
+            const scraped = await scrapeProvider.scrape({ url }, logger);
             leads.push({ url: scraped.url, content: scraped.content });
           } catch (error) {
             logger.warn(`Failed to scrape ${url}: ${error}`);

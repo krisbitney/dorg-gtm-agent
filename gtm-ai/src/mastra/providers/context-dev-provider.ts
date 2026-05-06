@@ -44,7 +44,7 @@ export class ContextDevProvider implements PageScraperInterface {
       markdown: string;
       url: string;
     };
-    
+
     if (!data.success) {
       throw new Error(`ContextDev scrape failed with API error (success: false)`);
     }

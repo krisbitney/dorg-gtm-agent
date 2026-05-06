@@ -16,6 +16,16 @@ export const SearchAndFilterStateSchema = z.object({
 
 export type SearchAndFilterState = z.infer<typeof SearchAndFilterStateSchema>;
 
+export const ExecuteSearchOutputSchema = z.object({
+  searchResults: z.array(
+    z.object({
+      url: z.string(),
+      title: z.string(),
+      snippet: z.string(),
+    }),
+  ),
+})
+
 /**
  * Output from the agent filter step — URLs that look promising based on
  * title and snippet alone.

@@ -60,9 +60,7 @@ const envSchema = z.object({
   /** Number of concurrent worker jobs */
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   /** How long to block waiting for new jobs (seconds) */
-  WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(3),
-  /** Worker sleep delay when lead queue is empty (ms) */
-  LEAD_LOOP_DELAY_MS: z.coerce.number().int().positive().default(30_000),
+  WORKER_POLL_TIMEOUT_SECONDS: z.coerce.number().default(20),
   /** Re-queue stale processing jobs on startup */
   WORKER_REQUEUE_STALE_ON_STARTUP: z.preprocess((val) => val === "true" || val === true, z.boolean()).default(true),
 

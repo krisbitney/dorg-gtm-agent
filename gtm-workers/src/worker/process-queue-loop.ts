@@ -2,7 +2,6 @@ import type { LeadQueueInterface } from "../storage/lead-queue.js";
 import { ProcessLeadJob } from "./process-lead-job.js";
 import { queuePayloadSchema } from "../schemas/queue-payload-schema.js";
 import { LeadRepository } from "../storage/repositories/lead-repository.js";
-import {appEnv} from "../config/app-env.ts";
 
 /**
  * Use case to process leads from the Redis queue in a continuous loop.
@@ -29,7 +28,6 @@ export class ProcessQueueLoop {
         rawPayload = await this.leadQueue.reserveNext();
         if (!rawPayload) {
           console.log(`[Worker ${this.workerRunId}] No message available, waiting for next iteration...`);
-          await Bun.sleep(appEnv.LEAD_LOOP_DELAY_MS);
           continue;
         }
 

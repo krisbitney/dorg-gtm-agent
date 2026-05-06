@@ -191,6 +191,8 @@ export const searchAndFilterWorkflow = createWorkflow({
               lead,
             });
 
+            logger.info(prompt);
+
             const result = await searchFilterAgent.generate(prompt, {
               structuredOutput: {
                 schema: SearchAndFilterOutputSchema,

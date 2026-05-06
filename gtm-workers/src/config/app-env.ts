@@ -58,7 +58,7 @@ const envSchema = z.object({
   URLS_DEDUP_KEY: z.string().default("gtm:urls_dedup"),
 
   /** Number of concurrent lead processing workers */
-  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
+  LEAD_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   /** Number of concurrent search workers */
   SEARCH_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   /** How long to block waiting for new jobs (ms) */

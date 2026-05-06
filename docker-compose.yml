@@ -95,6 +95,7 @@ services:
       - DORG_API_TOKEN=${DORG_API_TOKEN}
       - SEARCH_DAYS_BACK=30
       - SEARCH_PAGES=2
+      - SEARCH_LEAD_WORKER_CONCURRENCY=2
     depends_on:
       postgres:
         condition: service_healthy

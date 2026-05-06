@@ -40,7 +40,7 @@ async function main(): Promise<void> {
     await leadQueue.requeueProcessing();
   }
 
-  const concurrency = appEnv.WORKER_CONCURRENCY;
+  const concurrency = appEnv.LEAD_WORKER_CONCURRENCY;
   console.log(`Main: Starting ${concurrency} concurrent lead processing loop(s)...`);
 
   const createJob = (runId: string) =>

@@ -10,6 +10,7 @@ import { leadScoreAgent } from './agents/lead-score-agent';
 import { leadAnalysisAgent } from './agents/lead-analysis-agent';
 import { searchTermAgent } from './agents/search-term-agent';
 import { searchFilterAgent } from './agents/search-filter-agent';
+import { twitterAgent } from './agents/twitter-agent';
 import { leadAnalysisCompletenessScorer } from './scorers/lead-analysis-completeness-scorer';
 import { searchWebTool } from './tools/search-web.tool';
 import { scrapePageTool } from './tools/scrape-page.tool';
@@ -33,6 +34,7 @@ export const mastra = new Mastra({
     leadAnalysisAgent,
     searchTermAgent,
     searchFilterAgent,
+    twitterAgent,
   },
   tools: {
     searchWebTool,

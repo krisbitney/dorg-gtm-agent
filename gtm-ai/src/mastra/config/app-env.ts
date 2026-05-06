@@ -29,6 +29,8 @@ export const EnvSchema = z.object({
   GTM_SEARCH_TERM_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for filtering search results */
   GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
+  /** Model for Twitter/X post analysis (xAI Grok 4.3) */
+  GTM_TWITTER_MODEL: z.string().default("xai/grok-4-latest"),
 
   // ── External APIs ────────────────────────────────────────
   /** API key for the Ollama Cloud provider */

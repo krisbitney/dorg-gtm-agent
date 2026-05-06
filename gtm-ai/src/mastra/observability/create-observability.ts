@@ -23,7 +23,7 @@ export const createObservability = () => {
         spanOutputProcessors: [
           new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
         ],
-        requestContextKeys: ['postId', 'platform', 'source', 'workerRunId'],
+        requestContextKeys: ['leadId', 'platform', 'source', 'workerRunId'],
       },
     },
   });

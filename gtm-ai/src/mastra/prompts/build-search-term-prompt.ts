@@ -18,7 +18,7 @@ Each query should be:
 - Specific and targeted — avoid overly broad terms
 - Varied — cover different angles and phrasings that potential clients might use
 - Natural — phrase queries as real people would write them, not as keyword dumps
-- Action-oriented — focus on posts where people are asking for help, looking to hire, or discussing project needs
+- Action-oriented — focus on posts/content where people are asking for help, looking to hire, or discussing project needs
 
 Do not generate queries that are identical or near-identical to each other. Do not include Google search operators; they will be inserted manually later.
 

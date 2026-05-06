@@ -1,7 +1,7 @@
 /**
  * Builds the system prompt for the lead score agent.
  * This prompt instructs the model to return a likelihood [0,1]
- * of a post being a lead for the consultancy.
+ * of content being a lead for the consultancy.
  */
 export const buildLeadScorePrompt = (): string => {
   return `

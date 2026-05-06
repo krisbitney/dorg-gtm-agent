@@ -31,6 +31,7 @@ export type GtmAiAnalysisResult =
       needs: string;
       timing: string | null;
       contactInfo: string;
+      draftMessage: string;
     };
 
 /** Input for the search term generation workflow. */

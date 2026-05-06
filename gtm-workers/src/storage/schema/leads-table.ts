@@ -1,4 +1,4 @@
-import {pgTable, text, uuid, timestamp, doublePrecision, index, varchar, integer, jsonb} from "drizzle-orm/pg-core";
+import {pgTable, text, uuid, timestamp, doublePrecision, index, varchar, jsonb} from "drizzle-orm/pg-core";
 import { LeadStatus } from "../../constants/lead-status.js";
 
 /**
@@ -16,6 +16,7 @@ export const leads = pgTable("leads", {
   needs: text("needs"),
   timing: text("timing"),
   contactInfo: text("contact_info"),
+  draftMessage: text("draft_message"),
   dorgLeadId: text("dorg_lead_id"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

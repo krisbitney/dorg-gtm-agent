@@ -24,5 +24,9 @@ export function buildSurfaceBrief(lead: Lead): string {
     parts.push(`\nContact: ${lead.contactInfo}`);
   }
 
+  if (lead.draftMessage) {
+    parts.push(`\nDraft Message:\n${lead.draftMessage}`);
+  }
+
   return parts.join("\n");
 }

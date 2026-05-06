@@ -8,6 +8,13 @@
       "when": 1778068368882,
       "tag": "0000_black_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778073743614,
+      "tag": "0001_perfect_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

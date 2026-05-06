@@ -54,6 +54,12 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4111/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
     restart: always
 
   gtm-workers-api:
@@ -92,6 +98,8 @@ services:
       postgres:
         condition: service_healthy
       valkey:
+        condition: service_healthy
+      gtm-ai:
         condition: service_healthy
     restart: always
     command: worker

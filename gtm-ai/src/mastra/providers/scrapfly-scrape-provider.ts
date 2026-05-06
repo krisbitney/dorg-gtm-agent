@@ -12,7 +12,6 @@ import {ScrapflyClient, ScrapeConfig, ScrapeResult} from 'scrapfly-sdk';
  */
 export class ScrapflyScrapeProvider implements PageScraperInterface {
   private readonly scrapfly: ScrapflyClient;
-  private readonly timeout: number = 30000;
 
   constructor(options: { apiKey: string }) {
     this.scrapfly = new ScrapflyClient({ key: options.apiKey });
@@ -27,7 +26,6 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
         asp: true,
         render_js: true,
         country: "us",
-        timeout: this.timeout
       })) as ScrapeResult;
 
       if (!result.result.success) {

@@ -1,4 +1,5 @@
 import type { SearchParams, SearchResponse, SearchResult, SearchProviderInterface } from "../interfaces/search-provider-interface.js";
+import {IMastraLogger} from "@mastra/core/logger";
 
 // TODO: respect rate limits (e.g., 50 search calls per second, configurable)
 // TODO: handle retries (on retriable errors) with exponential backoff
@@ -17,14 +18,14 @@ export class SerperProvider implements SearchProviderInterface {
     this.apiKey = options.apiKey;
   }
 
-  async search({ query, sourceUrl, startDateTime, endDateTime, page }: SearchParams): Promise<SearchResponse> {
+  async search({ query, sourceUrl, startDateTime, endDateTime, page }: SearchParams, logger?: IMastraLogger): Promise<SearchResponse> {
 
     const tbs = this.buildTbs(startDateTime, endDateTime) ?? "";
     const q = `site:${sourceUrl} ${tbs} ${query}`;
 
     const body: Record<string, unknown> = { q, ...(page ? { page } : {}) };
 
-
+    logger?.info(`Executing Serper.dev search with query: ${q}`)
     const response = await fetch("https://google.serper.dev/search", {
       method: "POST",
       headers: {
@@ -54,8 +55,8 @@ export class SerperProvider implements SearchProviderInterface {
   }
 
   /**
-   * Converts ISO 8601 datetimes to Google's cdr (custom date range) tbs format.
-   * Format: `cdr:1,cd_min:MM/DD/YYYY,cd_max:MM/DD/YYYY`
+   * Converts ISO 8601 datetimes to Google's search operator tbs format.
+   * Format: `after:YYYY-MM-DD before:YYYY-MM-DD`
    */
   private buildTbs(startDateTime?: string, endDateTime?: string): string | undefined {
     if (!startDateTime && !endDateTime) {
@@ -67,16 +68,16 @@ export class SerperProvider implements SearchProviderInterface {
       const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
       const dd = String(d.getUTCDate()).padStart(2, "0");
       const yyyy = d.getUTCFullYear();
-      return `${mm}/${dd}/${yyyy}`;
+      return `${yyyy}-${mm}-${dd}`;
     };
 
     const now = new Date();
     const defaultMin = formatDate(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString());
     const defaultMax = formatDate(now.toISOString());
 
-    const cdMin = startDateTime ? formatDate(startDateTime) : defaultMin;
-    const cdMax = endDateTime ? formatDate(endDateTime) : defaultMax;
+    const dateMin = startDateTime ? formatDate(startDateTime) : defaultMin;
+    const dateMax = endDateTime ? formatDate(endDateTime) : defaultMax;
 
-    return `cdr:1,cd_min:${cdMin},cd_max:${cdMax}`;
+    return `after:${dateMin} before:${dateMax}`;
   }
 }

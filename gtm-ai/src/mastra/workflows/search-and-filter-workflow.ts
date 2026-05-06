@@ -65,7 +65,7 @@ export const searchAndFilterWorkflow = createWorkflow({
             startDateTime,
             endDateTime,
             page,
-          });
+          }, logger);
 
           for (const result of response.results) {
             if (!(await urlDedup.has(result.url))) {

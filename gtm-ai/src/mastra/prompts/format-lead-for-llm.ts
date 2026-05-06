@@ -4,17 +4,18 @@ import { LeadInput } from "../schemas/lead-input-schema";
  * Formats a potential lead into a deterministic text block for LLM prompts.
  */
 export const formatLeadForLlm = (input: LeadInput): string => {
-
   return `
-### Target Consultancy
+### Target Consultancy Context
 ${input.targetDescription}
-  
-### Potential Lead
-  
+
+---
+
+### Potential Lead Data
 Lead ID: ${input.id}
 Platform: ${input.platform}
 URL: ${input.url}
 
-Content: ${JSON.stringify(input.content)};
-`.trim();
+### Extracted Content
+${input.content}
+  `.trim();
 };

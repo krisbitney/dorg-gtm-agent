@@ -1,6 +1,6 @@
 import type { PageScraperInterface, ScrapedPage } from "../interfaces/page-scraper-interface.js";
 import { IMastraLogger } from "@mastra/core/logger";
-import {ScrapflyClient, ScrapeConfig, ScrapeResult} from '@scrapfly/scrapfly-sdk';
+import {ScrapflyClient, ScrapeConfig, ScrapeResult} from 'scrapfly-sdk';
 
 // TODO: respect rate limits (e.g., 1 scrape call per second, configurable)
 // TODO: handle retries (on retriable errors) with exponential backoff

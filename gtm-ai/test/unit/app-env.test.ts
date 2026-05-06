@@ -17,7 +17,7 @@ describe("App Environment Configuration", () => {
     });
     expect(result.MASTRA_PORT).toBe(5000);
     expect(result.MASTRA_LOG_LEVEL).toBe("debug");
-    expect(result.GTM_SMALL_MODEL).toBe("ollama/llama3");
+    expect(result.GTM_SCORE_MODEL).toBe("ollama/llama3");
   });
 
   test("invalid port value fails", () => {

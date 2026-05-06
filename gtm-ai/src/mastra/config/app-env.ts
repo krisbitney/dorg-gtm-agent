@@ -22,17 +22,19 @@ export const EnvSchema = z.object({
 
   // ── Models ───────────────────────────────────────────────
   /** Model for lightweight / filtering tasks */
-  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma3:31b"),
+  GTM_SMALL_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for analysis and reasoning tasks */
   GTM_ANALYSIS_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for generating search terms */
   GTM_SEARCH_TERM_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for filtering search results */
-  GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma3:31b"),
+  GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
 
   // ── External APIs ────────────────────────────────────────
   /** API key for the Ollama Cloud provider */
   OLLAMA_API_KEY: z.string().optional(),
+  /** API key for the Deepseek provider */
+  DEEPSEEK_API_KEY: z.string().optional(),
   /** API key for Serper (Google search) */
   SERPER_API_KEY: z.string(),
   /** API key for Context.dev */

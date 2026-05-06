@@ -29,14 +29,16 @@ export const EnvSchema = z.object({
   GTM_SEARCH_TERM_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
   /** Model for filtering search results */
   GTM_SEARCH_FILTER_MODEL: z.string().default("ollama-cloud/gemma4:31b"),
-  /** Model for Twitter/X post analysis (xAI Grok 4.3) */
-  GTM_TWITTER_MODEL: z.string().default("xai/grok-4-latest"),
+  /** Model for Twitter/X post analysis (XAI Grok model) */
+  GTM_TWITTER_MODEL: z.string().default("openrouter/x-ai/grok-4.3"),
 
   // ── External APIs ────────────────────────────────────────
   /** API key for the Ollama Cloud provider */
   OLLAMA_API_KEY: z.string().optional(),
   /** API key for the Deepseek provider */
   DEEPSEEK_API_KEY: z.string().optional(),
+  /** API key for the Openrouter provider */
+  OPENROUTER_API_KEY: z.string().optional(),
   /** API key for Serper (Google search) */
   SERPER_API_KEY: z.string(),
   /** API key for Context.dev */

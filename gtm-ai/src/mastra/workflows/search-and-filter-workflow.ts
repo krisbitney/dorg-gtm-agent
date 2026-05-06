@@ -185,19 +185,25 @@ export const searchAndFilterWorkflow = createWorkflow({
         const extractedLeads: { url: string; content: string }[] = [];
 
         for (const lead of leads) {
-          const prompt = buildContentExtractionPrompt({
-            targetDescription,
-            lead,
-          });
+          try {
+            const prompt = buildContentExtractionPrompt({
+              targetDescription,
+              lead,
+            });
 
-          const result = await searchFilterAgent.generate(prompt, {
-            structuredOutput: {
-              schema: SearchAndFilterOutputSchema,
-            },
-          });
+            const result = await searchFilterAgent.generate(prompt, {
+              structuredOutput: {
+                schema: SearchAndFilterOutputSchema,
+              },
+            });
 
-          if (result.object.leads.length > 0) {
-            extractedLeads.push(...result.object.leads);
+            if (result.object.leads.length > 0) {
+              extractedLeads.push(...result.object.leads);
+            }
+          } catch (error) {
+            logger.warn(
+              `Failed to extract content from ${lead.url}: ${error}`,
+            );
           }
         }
 

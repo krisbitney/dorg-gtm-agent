@@ -63,22 +63,28 @@ async function main(): Promise<void> {
 
   console.log(`Main: All ${concurrency} lead processing loop(s) are running.`);
 
-  // Start the search worker loop
-  const searchLoopRunId = `${processRunId}-search-loop`;
-  const searchLoop = new SearchWorkerLoop(
-    gtmAiClient,
-    searchTermStore,
-    urlDedupStore,
-    leadQueue,
-    postRepository,
-    searchRunRepository,
-    searchLoopRunId
-  );
+  // Start the search worker loops concurrently
+  const searchConcurrency = appEnv.SEARCH_WORKER_CONCURRENCY;
+  console.log(`Main: Starting ${searchConcurrency} concurrent search worker loop(s)...`);
 
-  console.log("Main: Starting search worker loop...");
-  searchLoop.execute().catch((error) => {
-    console.error(`Search worker loop (ID: ${searchLoopRunId}) failed:`, error);
-  });
+  for (let i = 0; i < searchConcurrency; i++) {
+    const searchLoopRunId = `${processRunId}-search-loop-${i}`;
+    const searchLoop = new SearchWorkerLoop(
+      gtmAiClient,
+      searchTermStore,
+      urlDedupStore,
+      leadQueue,
+      postRepository,
+      searchRunRepository,
+      searchLoopRunId
+    );
+
+    searchLoop.execute().catch((error) => {
+      console.error(`Search worker loop ${i} (ID: ${searchLoopRunId}) failed:`, error);
+    });
+  }
+
+  console.log(`Main: All ${searchConcurrency} search worker loop(s) are running.`);
 
   console.log("Main: All worker loops are running.");
 }

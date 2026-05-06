@@ -22,10 +22,11 @@ export class SearchWorkerJob {
 
   async execute(platform: Platform): Promise<void> {
     // 1. Ensure search terms are available — generate if the set is empty
-    let searchQuery = await this.searchTermStore.popRandomMember();
+    const platformName = platform.name;
+    let searchQuery = await this.searchTermStore.popRandomMember(platformName);
 
     if (!searchQuery) {
-      console.log(`[SearchWorker ${this.workerRunId}] Search term set is empty. Generating ${appEnv.SEARCH_TERMS_GENERATION_COUNT} new search terms for ${platform.name}...`);
+      console.log(`[SearchWorker ${this.workerRunId}] Search term set is empty for ${platformName}. Generating ${appEnv.SEARCH_TERMS_GENERATION_COUNT} new search terms...`);
 
       const context = { source: "search-worker", workerRunId: this.workerRunId };
       const result = await this.gtmAiClient.generateSearchTerms({
@@ -38,18 +39,18 @@ export class SearchWorkerJob {
 
       const newTerms: string[] = [];
       for (const query of result.queries) {
-        const isNew = await this.searchTermStore.checkAndMark(query);
+        const isNew = await this.searchTermStore.checkAndMark(platformName, query);
         if (isNew) {
           newTerms.push(query);
         }
       }
 
       if (newTerms.length > 0) {
-        const addedCount = await this.searchTermStore.addToSet(newTerms);
-        console.log(`[SearchWorker ${this.workerRunId}] Added ${addedCount} new search terms to the set.`);
+        const addedCount = await this.searchTermStore.addToSet(platformName, newTerms);
+        console.log(`[SearchWorker ${this.workerRunId}] Added ${addedCount} new search terms to the ${platformName} set.`);
       }
 
-      searchQuery = await this.searchTermStore.popRandomMember();
+      searchQuery = await this.searchTermStore.popRandomMember(platformName);
     }
 
     if (!searchQuery) {

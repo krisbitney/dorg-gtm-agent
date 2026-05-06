@@ -8,7 +8,7 @@ import { appEnv } from "../config/app-env.js";
 import {defaultTargetConsultancyDescription} from "../constants/default-target-consultancy-description.js";
 
 /**
- * Use case to process a single post through the AI and dOrg pipeline.
+ * Use case to process a single lead through the AI and dOrg pipeline.
  */
 export class ProcessLeadJob {
   constructor(
@@ -22,9 +22,9 @@ export class ProcessLeadJob {
    * Orchestrates the AI scoring, analysis, and dOrg claim/surface flow.
    */
   async execute(leadId: string) {
-    console.log(`[Lead ${leadId}] Starting post processing job...`);
+    console.log(`[Lead ${leadId}] Starting lead processing job...`);
 
-    // 1. Load the post
+    // 1. Load the lead
     const lead = await this.leadRepository.findById(leadId);
     if (!lead) {
       console.error(`[Lead ${leadId}] Lead not found in repository.`);
@@ -44,7 +44,7 @@ export class ProcessLeadJob {
 
     const aiInput = mapLeadToAiLeadScoreAndAnalysisInput(lead, defaultTargetConsultancyDescription);
     const context = {
-      postId: leadId,
+      leadId: leadId,
       platform: lead.platform,
       source: "worker",
       workerRunId: this.workerRunId,
@@ -52,7 +52,7 @@ export class ProcessLeadJob {
 
     // 3. Scoring
     if (lead.status === LeadStatus.PENDING || lead.status === LeadStatus.SCORING) {
-      console.log(`[Lead ${leadId}] Step: Scoring post...`);
+      console.log(`[Lead ${leadId}] Step: Scoring lead...`);
       await this.leadRepository.updateStatus(leadId, LeadStatus.SCORING);
       const scoreResult = await this.gtmAiClient.scoreLead(aiInput, context);
       
@@ -65,13 +65,13 @@ export class ProcessLeadJob {
       }
       
       await this.leadRepository.saveScore(leadId, scoreResult.leadProbability, LeadStatus.ANALYZING);
-      // Refresh local post object or just proceed as we know it's ANALYZING now
+      // Refresh local lead object or just proceed as we know it's ANALYZING now
       lead.status = LeadStatus.ANALYZING;
     }
 
     // 4. Analysis
     if (lead.status === LeadStatus.ANALYZING) {
-      console.log(`[Lead ${leadId}] Step: Analyzing post...`);
+      console.log(`[Lead ${leadId}] Step: Analyzing lead...`);
       const analysisResult = await this.gtmAiClient.analyzeLead(aiInput, context);
       
       console.log(`[Lead ${leadId}] Analysis complete. isLead: ${analysisResult.isLead}`);

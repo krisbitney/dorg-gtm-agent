@@ -10,7 +10,7 @@ export const leadScoreAgent = new Agent({
   id: 'lead-score-agent',
   description: 'Estimates the likelihood of content being a lead for a consultancy (0 to 1).',
   instructions: buildLeadScorePrompt(),
-  model: appEnv.GTM_SMALL_MODEL,
+  model: appEnv.GTM_SCORE_MODEL,
   maxRetries: 5,
   maxProcessorRetries: 5,
 });

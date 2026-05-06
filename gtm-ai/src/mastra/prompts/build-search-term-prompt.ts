@@ -13,23 +13,28 @@ You are an expert B2B lead generation specialist and search strategist. Your obj
 ${input.targetDescription}
 
 ### Search Strategy & Psychology
-To find promising B2B leads (potential clients looking to outsource, hire an agency, or engage a consultancy), your search queries must target buying intent, project pain points, and vendor sourcing. 
-Keep in mind the linguistic style of ${input.sourceUrl} — phrase queries exactly how users on that specific platform talk when they need external help, face a technical blocker, or want to outsource a project.
+To find promising B2B leads, your queries must capture the exact phrasing a founder, project lead, or CTO uses when they realize they need to outsource work or hire an external team.
 
-Use a strategic mix of the following query types:
-1. **Vendor Sourcing:** Language used when actively looking for an agency or dev shop (e.g., "recommendations for an agency", "looking for a dev shop", "need a consultancy to").
-2. **Problem & Pain Point Resolution:** Phrases used when a team is stuck and needs expert intervention (e.g., "struggling to implement", "failing audit", "how to scale our architecture").
-3. **Project Announcements & RFPs:** Language indicating new budgets or project kickoffs (e.g., "grant proposal", "request for proposals", "building a new [X] need help").
-4. **Advice Seeking:** Questions asked by founders or project leads before they make a hiring decision (e.g., "how much does it cost to build", "best tech stack for", "should we outsource our").
+You must combine **Buying Intent** (words indicating they want to hire/outsource) with **Service Keywords** (the specific technologies or services the consultancy offers).
 
-### Strict Rules & Exclusions
-- **No Full-Time Job Hunting:** DO NOT generate queries that will surface standard job boards, W-2 employment posts, or individuals looking for full-time jobs (e.g., avoid "hiring a senior engineer", "job opening", "salary"). Target B2B engagements.
-- **No Generic Keywords:** Avoid broad keyword dumps (e.g., "AI development", "Web3 consulting"). Queries must be specific, multi-word phrases.
+Use a strategic mix of these four angles:
+1. **Direct Vendor Sourcing:** "recommend a [tech] agency", "looking for a [tech] dev shop", "need a consultancy to build"
+2. **Team Expansion / Outsourcing:** "outsource our [tech] development", "hire a team of [tech] contractors", "need external developers for"
+3. **Pain Points / Rescues:** "need help auditing our [tech]", "struggling to scale our [tech] architecture", "failing to implement [tech]"
+4. **Budget / RFPs (if applicable to the platform):** "grant proposal for [tech]", "RFP [tech] development", "budget for [tech] agency"
+
+### ⚠️ CRITICAL RULES FOR AVOIDING 0-RESULT SEARCHES ⚠️
+- **The Goldilocks Specificity:** Queries should ideally be 3 to 6 words long. 
+  - ❌ *Too Broad (Millions of junk results):* "AI development" or "Web3 consulting"
+  - ❌ *Too Specific (Zero results):* "looking for an agency to build a custom rust substrate pallet for our defi protocol"
+  - ✅ *Just Right (High intent, good volume):* "recommend a web3 dev shop" or "need help building AI agent"
+- **Conversational Tone:** Phrase queries exactly how real humans write on ${input.sourceUrl}. Use first-person phrasing like "we need to hire" or "looking for recommendations."
+- **No W-2/FTE Jobs:** DO NOT generate queries looking for single employees (e.g., avoid "hiring a senior engineer", "job opening", "salary"). Target B2B, agency, and dev shop engagements.
 - **No Search Operators:** Do NOT use site:, quotes (""), OR, AND, or other Google search operators. Write the natural text phrase only.
-- **Uniqueness:** Every query must be distinct in angle or phrasing. Do not generate near-duplicates.
-- **Exact Count:** You must generate EXACTLY ${input.numberOfSearchTerms} queries.
+- **Uniqueness:** Every query must be distinct in angle or phrasing.
 
 ### Output Format
+Generate EXACTLY ${input.numberOfSearchTerms} queries.
 Return ONLY a valid JSON object containing a single key "queries" mapping to an array of exactly ${input.numberOfSearchTerms} strings. Do not include markdown formatting or extra text outside the JSON.
 `.trim();
-}
+};

@@ -93,7 +93,8 @@ services:
       - REDIS_URL=redis://valkey:6379
       - GTM_AI_BASE_URL=http://gtm-ai:4111
       - DORG_API_TOKEN=${DORG_API_TOKEN}
-      - SEARCH_DAYS_BACK=14
+      - SEARCH_DAYS_BACK=30
+      - SEARCH_PAGES=2
     depends_on:
       postgres:
         condition: service_healthy

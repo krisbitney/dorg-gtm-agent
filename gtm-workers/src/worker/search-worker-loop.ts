@@ -36,7 +36,7 @@ export class SearchWorkerLoop {
 
     while (true) {
       const queueSize = await this.leadQueue.length();
-      if (queueSize >= appEnv.SEARCH_QUEUE_MAX_SIZE) {
+      if (queueSize > appEnv.SEARCH_QUEUE_MAX_SIZE) {
         console.log(`[SearchWorker ${this.workerRunId}] Lead queue at ${queueSize} (max ${appEnv.SEARCH_QUEUE_MAX_SIZE}). Backing off for ${appEnv.SEARCH_LOOP_DELAY_MS}ms...`);
         await Bun.sleep(appEnv.SEARCH_LOOP_DELAY_MS);
         continue;

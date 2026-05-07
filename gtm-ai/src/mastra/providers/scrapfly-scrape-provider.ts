@@ -26,17 +26,18 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
         asp: true,
         render_js: true,
         country: "us",
-      })) as ScrapeResult;
+        extraction_model: "social_media_post",
+      })) as unknown as { result: { success: boolean, error?: unknown, url: string; extracted_data: { data: string }}};
 
       if (!result.result.success) {
         throw new Error(`Scrapfly scrape failed with API error: ${JSON.stringify(result.result.error, null, 2)}`);
       }
 
-      console.log(JSON.stringify(result.result, null, 2));
+      console.log(JSON.stringify(result.result.extracted_data.data, null, 2));
 
       return {
         url: result.result.url,
-        content: result.result.content,
+        content: result.result.extracted_data.data
       };
     } catch (e: unknown) {
       const error = e?.toString();

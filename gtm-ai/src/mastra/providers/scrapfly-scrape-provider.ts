@@ -33,11 +33,9 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
         throw new Error(`Scrapfly scrape failed with API error: ${JSON.stringify(result.result.error, null, 2)}`);
       }
 
-      console.log(JSON.stringify(result.result.extracted_data.data, null, 2));
-
       return {
         url: result.result.url,
-        content: result.result.extracted_data.data
+        content: JSON.stringify(result.result.extracted_data.data, null, 2)
       };
     } catch (e: unknown) {
       const error = e?.toString();

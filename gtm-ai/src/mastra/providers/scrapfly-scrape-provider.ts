@@ -27,6 +27,10 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
         "$1old.reddit.com$2.json",
       );
 
+    if (url !== scrapeUrl) {
+      logger?.info(`Modified scrape URL to: ${url}`);
+    }
+
     try {
       const response = await this.scrapfly.scrape(new ScrapeConfig({
         url: scrapeUrl,
@@ -40,8 +44,6 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
       if (!response.result.success) {
         throw new Error(`Scrapfly scrape failed with API error: ${JSON.stringify(response.result.error, null, 2)}`);
       }
-
-      console.log(response.result.content);
 
       return {
         url: response.result.url,

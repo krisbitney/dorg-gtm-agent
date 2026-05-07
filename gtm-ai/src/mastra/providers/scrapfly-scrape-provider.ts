@@ -20,22 +20,32 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
   async scrape({ url }: { url: string }, logger?: IMastraLogger): Promise<ScrapedPage> {
     logger?.info(`Scraping content from URL: ${url}`);
 
-    try {
-      const result = await this.scrapfly.scrape(new ScrapeConfig({
-        url: url,
-        asp: true,
-        render_js: true,
-        country: "us",
-        extraction_model: "social_media_post",
-      })) as unknown as { result: { success: boolean, error?: unknown, url: string; extracted_data: { data: string }}};
+    const scrapeUrl = url
+      .replace(/^(https?:\/\/)www\./, "$1")
+      .replace(
+        /^(https?:\/\/)(?:www\.)?reddit\.com(\/.*?)\/?$/,
+        "$1old.reddit.com$2.json",
+      );
 
-      if (!result.result.success) {
-        throw new Error(`Scrapfly scrape failed with API error: ${JSON.stringify(result.result.error, null, 2)}`);
+    try {
+      const response = await this.scrapfly.scrape(new ScrapeConfig({
+        url: scrapeUrl,
+        asp: true,
+        render_js: !scrapeUrl.includes("old.reddit.com"),
+        country: "us",
+        format_options: ["no_images", "only_content"],
+        format: "markdown",
+      })) as ScrapeResult;
+
+      if (!response.result.success) {
+        throw new Error(`Scrapfly scrape failed with API error: ${JSON.stringify(response.result.error, null, 2)}`);
       }
 
+      console.log(response.result.content);
+
       return {
-        url: result.result.url,
-        content: JSON.stringify(result.result.extracted_data.data, null, 2)
+        url: response.result.url,
+        content: response.result.content
       };
     } catch (e: unknown) {
       const error = e?.toString();

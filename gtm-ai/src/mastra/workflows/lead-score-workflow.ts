@@ -34,7 +34,7 @@ export const leadScoreWorkflow = createWorkflow({
         const clamped = Math.max(0, Math.min(1, result.object.leadProbability));
         const rounded = Math.round(clamped * 1000) / 1000;
         logger.info(`[Lead ${inputData.id}] LLM generated lead score: ${result.object.leadProbability}, normalized to ${rounded}`);
-        return { leadProbability: rounded }
+        return { ...result.object, leadProbability: rounded }
       },
     }),
   )

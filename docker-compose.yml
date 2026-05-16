@@ -48,10 +48,10 @@ services:
       - CONTEXT_DEV_API_KEY=${CONTEXT_DEV_API_KEY}
       - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
       - SCRAPFLY_API_KEY=${SCRAPFLY_API_KEY}
-      - GTM_SCORE_MODEL=deepseek/deepseek-v4-pro
-      - GTM_ANALYSIS_MODEL=deepseek/deepseek-v4-pro
-      - GTM_SEARCH_TERM_MODEL=deepseek/deepseek-v4-pro
-      - GTM_SEARCH_FILTER_MODEL=deepseek/deepseek-v4-pro
+      - GTM_SCORE_MODEL=deepseek/deepseek-v4-flash
+      - GTM_ANALYSIS_MODEL=deepseek/deepseek-v4-flash
+      - GTM_SEARCH_TERM_MODEL=deepseek/deepseek-v4-flash
+      - GTM_SEARCH_FILTER_MODEL=deepseek/deepseek-v4-flash
       - GTM_TWITTER_MODEL=openrouter/x-ai/grok-4.3
     depends_on:
       postgres:
@@ -77,8 +77,9 @@ services:
       - GTM_AI_BASE_URL=http://gtm-ai:4111
       - DORG_API_TOKEN=${DORG_API_TOKEN}
       - SEARCH_DAYS_BACK=30
-      - SEARCH_PAGES=2
-      - SEARCH_WORKER_CONCURRENCY=2
+      - SEARCH_PAGES=1
+      - SEARCH_WORKER_CONCURRENCY=4
+      - LEAD_SCORE_THRESHOLD=0.3
     depends_on:
       postgres:
         condition: service_healthy

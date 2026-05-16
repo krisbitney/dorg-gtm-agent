@@ -20,15 +20,9 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
   async scrape({ url }: { url: string }, logger?: IMastraLogger): Promise<ScrapedPage> {
     logger?.info(`Scraping content from URL: ${url}`);
 
-    const scrapeUrl = url
-      .replace(/^(https?:\/\/)www\./, "$1")
-      .replace(
-        /^(https?:\/\/)(?:www\.)?reddit\.com(\/.*?)\/?$/,
-        "$1old.reddit.com$2.json",
-      );
-
+    const scrapeUrl = isRedditUrl(url) ? toOldRedditJson(url) : url;
     if (url !== scrapeUrl) {
-      logger?.info(`Modified scrape URL to: ${url}`);
+      logger?.info(`Modified scrape URL to: ${scrapeUrl}`);
     }
 
     try {
@@ -55,4 +49,38 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
       return { url, content: "" };
     }
   }
+}
+
+function isRedditUrl(input: string): boolean {
+  try {
+    const withProtocol = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+    const parsed = new URL(withProtocol);
+
+    return (
+      parsed.hostname === "reddit.com" ||
+      parsed.hostname === "www.reddit.com" ||
+      parsed.hostname === "old.reddit.com"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function toOldRedditJson(input: string): string {
+  const withProtocol = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+  const parsed = new URL(withProtocol);
+
+  if (
+    parsed.hostname === "reddit.com" ||
+    parsed.hostname === "www.reddit.com" ||
+    parsed.hostname === "old.reddit.com"
+  ) {
+    parsed.hostname = "old.reddit.com";
+
+    if (!parsed.pathname.endsWith(".json")) {
+      parsed.pathname = parsed.pathname.replace(/\/$/, "") + ".json";
+    }
+  }
+
+  return parsed.toString();
 }

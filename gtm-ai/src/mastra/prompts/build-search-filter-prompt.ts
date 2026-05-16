@@ -24,7 +24,7 @@ ${params.targetDescription}
 
 ### The Objective
 Filter the provided search results based on their Title, URL, and Snippet. You are looking for potential clients (companies, founders, DAOs, project leads) who might need to hire a consultancy, agency, or external dev shop, OR companies that have recently raised capital and need to scale quickly. 
-We are only trying to filter out results that are definitely not leads. A url is promising if there is at least a 5% chance that it might be a lead. 
+We are only trying to filter out results that are definitely not leads. A url is promising if there is at least a 10% chance that it might be a lead. 
 
 ### Evaluation Criteria
 

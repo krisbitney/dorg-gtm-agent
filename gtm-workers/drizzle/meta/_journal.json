@@ -5,8 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1776006445671,
-      "tag": "0000_warm_cannonball",
+      "when": 1778068368882,
+      "tag": "0000_black_the_executioner",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778073743614,
+      "tag": "0001_perfect_squirrel_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778936056384,
+      "tag": "0002_superb_lord_tyger",
       "breakpoints": true
     }
   ]

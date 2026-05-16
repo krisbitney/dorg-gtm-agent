@@ -1,0 +1,1357 @@
+# High-Level Technical Design: GTM Agent V2
+
+## 1. Boundary Shift
+
+In the previous design, `gtm-workers` contained substantial business logic — `ProcessPostJob` orchestrated the score → analyze → claim → surface pipeline, `SearchForLeads` orchestrated the search → filter → scrape loop, and so on. The workers were the brain; `gtm-ai` was just an LLM-calling utility.
+
+This design **shifts the boundary**: `gtm-ai` (Mastra) becomes the brain. It owns all decision-making, orchestration logic, agent prompts, and external API calls (via tools). `gtm-workers` becomes a thin infrastructure layer — it handles operational concerns that Mastra is not designed for (persistent queue consumption, concurrency, graceful shutdown, custom auth) and delegates everything else to Mastra workflows.
+
+### Rationale
+
+| Concern | Best Home | Why |
+|---|---|---|
+| **LLM calls, prompts, structured output** | gtm-ai | Core competency of Mastra agents |
+| **Orchestration logic** (what to do, in what order) | gtm-ai | Mastra workflows chain steps natively |
+| **External API calls** (dOrg, Serper, ContextDev) | gtm-ai | Mastra tools are the natural abstraction |
+| **Observability / tracing** | gtm-ai | Mastra has built-in OpenTelemetry + span export |
+| **Persistent queue consumption** (blocking `BRPOPLPUSH`, `while(true)` loops) | gtm-workers | Mastra workflows are finite request/response; they are not infinite polling loops |
+| **Concurrent worker pool** (N parallel consumers) | gtm-workers | Mastra has no built-in concurrency control for long-running consumers |
+| **Graceful shutdown** (drain in-flight jobs, ack queue, then exit) | gtm-workers | Mastra's lifecycle is request-scoped, not job-drain-scoped |
+| **Redis queue management** (blocking ops, BRPOPLPUSH, DLQ) | gtm-workers | Mastra workflows are finite request/response; they are not infinite polling loops |
+| **Redis dedup** (search-term individual keys + processed-URLs SET) | gtm-ai | Deduping drives workflow decisions (which terms/URLs to skip); these reads/writes belong in the workflow, accessed via Mastra tools |
+| **Custom HTTP auth** (Bearer tokens, webhook secrets) | gtm-workers | Mastra's auto-generated endpoints lack per-endpoint auth config |
+| **Postgres persistence** (Drizzle ORM, migrations, row-level CRUD) | gtm-workers | Existing Drizzle setup is mature; Mastra uses LibSQL internally |
+
+---
+
+## 2. Service Responsibilities
+
+### gtm-ai (Mastra) — The Brain
+
+Owns all decision-making, orchestration, and external API access:
+
+- **All LLM calls**: agents, prompts, and structured output schemas
+- **All orchestration**: workflows that decide what to do, in what order, and what the outcome means
+- **All external API calls**: dOrg API, Serper API, and ContextDev API are accessed via Mastra tools
+- **Observability**: built-in OpenTelemetry tracing with span export
+- **Redis dedup**: search-term hashes (individual keys `gtm:search-term:<hash>` with per-key TTL) and processed-URL SETs are read/written via Mastra tools (`dedupSearchTermTool`, `dedupProcessedUrlTool`). Queue and run-state data structures remain in gtm-workers. No Postgres dependency
+
+### gtm-workers (Bun) — Thin Infrastructure Layer
+
+Handles operational concerns that Mastra is not designed for:
+
+1. **Consume Redis queues** — blocking `BRPOPLPUSH` loops, concurrent worker pools — and invoke the appropriate Mastra workflow for each message.
+2. **Persist results** to Postgres after workflows complete — workers own the Drizzle schema and run migrations.
+3. **Manage Redis state** — run state tracking (`gtm:run-state:<id>`), runtime config cache (`gtm:run-config`), and queue/processing/DLQ lists. (Dedup data — the `gtm:processed_urls` SET and `gtm:search-term:<hash>` individual keys — are owned by gtm-ai via Mastra tools.)
+4. **HTTP API with custom auth** — Bearer token endpoints for manual triggers, lead CRUD, configuration, and health checks.
+5. **Graceful shutdown** — drain in-flight jobs, ack queues, then exit on `SIGTERM`/`SIGINT`.
+
+Workers contain **no business logic** — no thresholds, no if/else about what-happens-next, no orchestration. They are a dumb pipe: dequeue → call workflow → persist outcome → ack.
+
+---
+
+## 3. System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      gtm-workers (Bun)                       │
+│                      "Thin Infrastructure Layer"              │
+│                                                             │
+│  ┌──────────────┐  ┌────────────────┐  ┌────────────────┐  │
+│  │  API Server  │  │ Search Worker  │  │  Lead Worker   │  │
+│  │  (Bun.serve) │  │  (N loops)     │  │  (N loops)     │  │
+│  │              │  │                │  │                │  │
+│  │ - Auth       │  │ while(true):   │  │ while(true):   │  │
+│  │ - Routes     │  │   reserveNext  │  │   reserveNext  │  │
+│  │ - Validation │  │   → call       │  │   → call       │  │
+│  │              │  │     Mastra     │  │     Mastra     │  │
+│  │              │  │     workflow   │  │     workflow   │  │
+│  │              │  │   → persist    │  │   → persist    │  │
+│  │              │  │   → ack/DLQ   │  │   → ack/DLQ   │  │
+│  └──────┬───────┘  └───────┬────────┘  └───────┬────────┘  │
+│         │                  │                   │            │
+│  ┌──────┴──────────────────┴───────────────────┴─────────┐  │
+│  │  ┌────────────────────┐                                │  │
+│  │  │ Deep Research      │                                │  │
+│  │  │ Worker (N loops)   │                                │  │
+│  │  │                    │                                │  │
+│  │  │ while(true):       │                                │  │
+│  │  │   reserveNext      │                                │  │
+│  │  │   → call           │                                │  │
+│  │  │     deepResearch   │                                │  │
+│  │  │     Workflow       │                                │  │
+│  │  │   → call msgGen    │                                │  │
+│  │  │     Workflow       │                                │  │
+│  │  │     (conditional)  │                                │  │
+│  │  │   → call surface   │                                │  │
+│  │  │     Lead Workflow  │                                │  │
+│  │  │   → persist        │                                │  │
+│  │  │   → ack/DLQ        │                                │  │
+│  │  └────────────────────┘                                │  │
+│  └────────────────────────────────────────────────────────┘  │
+│         │                  │                   │            │
+│  ┌──────┴──────────────────┴───────────────────┴─────────┐  │
+│  │                   Storage Layer                        │  │
+│  │  ┌──────────┐  ┌──────────────────────────────────┐   │  │
+│  │  │ Postgres │  │  Redis                            │   │  │
+│  │  │(Drizzle) │  │  - gtm:posts:queue                │   │  │
+│  │  │          │  │  - gtm:search-runs:queue          │   │  │
+│  │  │          │  │  - gtm:deep-research:queue        │   │  │
+│  │  │          │  │  - gtm:run-state:<id> (HASH)      │   │  │
+│  │  │          │  │  - gtm:run-config (HASH)          │   │  │
+│  │  │          │  │  - gtm:posts:processing (list)    │   │  │
+│  │  │          │  │  - gtm:posts:dlq (list)           │   │  │
+│  │  └──────────┘  └──────────────────────────────────┘   │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          │ HTTP (Mastra REST API)
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      gtm-ai (Mastra)                         │
+│                      "The Brain"                             │
+│                                                             │
+│  Agents:                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│  │leadScoreAgent│ │leadAnalysis  │ │searchTermAgent       │ │
+│  │              │ │Agent         │ │                      │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│  │searchFilter  │ │deepResearch  │ │messageGenAgent       │ │
+│  │Agent         │ │Agent *       │ │                      │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│  │webSummary    │ │evaluation    │ │learningExtraction    │ │
+│  │Agent         │ │Agent         │ │Agent                 │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│  ┌──────────────┐                                            │
+│  │reportAgent   │                                            │
+│  └──────────────┘                                            │
+│  * tool-equipped agent (drives research autonomously)         │
+│                                                             │
+│  Workflows (own all orchestration logic):                    │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ process-lead-workflow (NEW — replaces ProcessPostJob)  │   │
+│  │  score → normalize → [below_threshold | analyze]     │   │
+│  │  → post-completion checks                            │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ search-for-leads-workflow (NEW — replaces SearchForLeads)│   │
+│  │  generate_terms → search → filter → scrape → enqueue │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ deep-research-workflow (research → synthesize → report) │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ generate-message-workflow (craft outreach message)     │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ surface-lead-workflow (NEW — replaces old surface step) │   │
+│  │  build-brief → surface → notify                      │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────┐ ┌────────────────────────────────────┐   │
+│  │lead-score    │ │lead-analysis-workflow              │   │
+│  │workflow      │ │(modified: configurable, structured) │   │
+│  │(0–1 scale)   │ │                                    │   │
+│  └──────────────┘ └────────────────────────────────────┘   │
+│                                                             │
+│  Tools (external API access + agent utilities):             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
+│  │searchWeb │ │scrapePage│ │claimLead │ │surfaceLead   │   │
+│  │(Serper)  │ │(Context  │ │(dOrg API)│ │(dOrg API)    │   │
+│  │          │ │ Dev+summ)│ │          │ │              │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
+│  ┌──────────┐ ┌──────────────┐ ┌────────────────────────┐   │
+│  │sendDiscord│ │evaluateResult│ │extractLearnings        │   │
+│  │Message   │ │(entity check)│ │(learnings + follow-ups) │   │
+│  │(dOrg API)│ │              │ │                        │   │
+│  └──────────┘ └──────────────┘ └────────────────────────┘   │
+│  ┌────────────────┐ ┌──────────────────────────────────┐   │
+│  │dedupSearchTerm │ │dedupProcessedUrl                  │   │
+│  │(Redis SET      │ │(Redis SET                        │   │
+│  │ SISMEMBER/SADD)│ │ SISMEMBER/SADD)                  │   │
+│  └────────────────┘ └──────────────────────────────────┘   │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Redis (dedup)                                           │   │
+│  │  - gtm:processed_urls (SET)                              │   │
+│  │  - gtm:search-term:<hash> (individual keys w/ per-key    │   │
+│  │    TTL — SETs don't support per-member expiry)           │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. gtm-ai: The Brain
+
+### 4.1 Tools (New)
+
+Tools are Mastra's mechanism for agents/workflows to call external APIs. These replace the client classes that previously lived in gtm-workers.
+
+```typescript
+// src/mastra/tools/search-web.tool.ts
+export const searchWebTool = createTool({
+  id: 'search-web',
+  description: 'Searches the web using a SERP API. Returns ranked results with URLs, titles, and snippets.',
+  inputSchema: z.object({
+    query: z.string(),
+    site: z.string().optional(),
+    startDateTime: z.string().optional(),
+    endDateTime: z.string().optional(),
+    num: z.number().default(10),
+  }),
+  outputSchema: z.object({
+    results: z.array(z.object({
+      url: z.string(),
+      title: z.string(),
+      snippet: z.string(),
+    })),
+  }),
+  execute: async ({ context }) => {
+    // Calls serper.dev API
+    // Translates site + startDateTime/endDateTime into serper's tbs parameter
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/scrape-page.tool.ts
+export const scrapePageTool = createTool({
+  id: 'scrape-page',
+  description: 'Fetches a web page URL, extracts the core relevant content while dropping irrelevant junk (navigation, ads, sidebar, etc.), and summarizes it via webSummarizationAgent to prevent token blowup. The summarized content is the final output used for downstream processing.',
+  inputSchema: z.object({
+    url: z.string().url(),
+  }),
+  outputSchema: z.object({
+    url: z.string(),
+    title: z.string(),
+    content: z.string(),        // Summarized content (not raw — reduced by 80–95%)
+  }),
+  execute: async ({ context }) => {
+    // 1. Calls context.dev API to fetch the page
+    // 2. Passes content through webSummarizationAgent to extract core relevant content
+    //    and drop irrelevant junk (navigation, ads, sidebar, etc.)
+    // 3. Returns summary as 'content' (raw text is discarded)
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/dorg-claim-lead.tool.ts
+export const claimLeadTool = createTool({
+  id: 'claim-lead',
+  description: 'Claims a lead in the dOrg system by its identifier (URL) and channel (platform).',
+  inputSchema: z.object({
+    identifier: z.string(),
+    channel: z.string(),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    leadId: z.string().optional(),
+    message: z.string().optional(),
+  }),
+  execute: async ({ context }) => {
+    // POST to dOrg API /leads/claim
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/dorg-surface-lead.tool.ts
+export const surfaceLeadTool = createTool({
+  id: 'surface-lead',
+  description: 'Surfaces a claimed lead to the dOrg team with a formatted brief.',
+  inputSchema: z.object({
+    leadId: z.string(),
+    brief: z.string(),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    message: z.string().optional(),
+  }),
+  execute: async ({ context }) => {
+    // POST to dOrg API /leads/surface
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/dorg-send-message.tool.ts
+export const sendDiscordMessageTool = createTool({
+  id: 'send-discord-message',
+  description: 'Sends a message to the dOrg Discord via the dOrg API.',
+  inputSchema: z.object({
+    content: z.string(),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    message: z.string().optional(),
+  }),
+  execute: async ({ context }) => {
+    // POST to dOrg API /discord/post
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/evaluate-result.tool.ts
+export const evaluateResultTool = createTool({
+  id: 'evaluate-result',
+  description: 'Evaluates whether a search result is relevant to the lead research query and confirms it refers to the correct entity (not a namesake).',
+  inputSchema: z.object({
+    query: z.string(),
+    result: z.object({
+      title: z.string(),
+      url: z.string(),
+      content: z.string(),
+    }),
+    leadContext: z.string(),
+    existingUrls: z.array(z.string()).optional(),
+  }),
+  outputSchema: z.object({
+    isRelevant: z.boolean(),
+    reason: z.string(),
+    isCorrectEntity: z.boolean(),
+  }),
+  execute: async (inputData, { mastra }) => {
+    // Uses evaluationAgent to assess relevance and entity match
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/extract-learnings.tool.ts
+export const extractLearningsTool = createTool({
+  id: 'extract-learnings',
+  description: 'Extracts key learnings from a search result and generates follow-up questions for deeper research.',
+  inputSchema: z.object({
+    query: z.string(),
+    result: z.object({
+      title: z.string(),
+      url: z.string(),
+      content: z.string(),
+    }),
+    leadContext: z.string(),
+  }),
+  outputSchema: z.object({
+    learning: z.string(),
+    followUpQuestions: z.array(z.string()).max(3),
+  }),
+  execute: async (inputData, { mastra }) => {
+    // Uses learningExtractionAgent to extract insights and follow-up questions
+    // Follow-up questions are capped at 3 to limit research breadth
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/dedup-search-term.tool.ts
+export const dedupSearchTermTool = createTool({
+  id: 'dedup-search-term',
+  description: 'Checks and inserts a hashed search term using individual Redis keys with per-key TTL. Returns whether the term is new (should be searched) or a duplicate (should be skipped).',
+  inputSchema: z.object({
+    termHash: z.string(),
+    ttlSeconds: z.number(),
+  }),
+  outputSchema: z.object({
+    isNew: z.boolean(),
+  }),
+  execute: async ({ context }) => {
+    // Individual keys (gtm:search-term:<termHash>) with per-key EXPIRE.
+    // Redis SETs don't support per-member TTL, so each term gets its own key.
+    // EXISTS gtm:search-term:<termHash>
+    // If exists → { isNew: false }
+    // If not → SET gtm:search-term:<termHash> "1" EX <ttlSeconds>, { isNew: true }
+  },
+});
+```
+
+```typescript
+// src/mastra/tools/dedup-processed-url.tool.ts
+export const dedupProcessedUrlTool = createTool({
+  id: 'dedup-processed-url',
+  description: 'Checks or inserts a URL into the Redis processed-URLs SET for bloom-filter dedup. Returns whether the URL is new or already processed.',
+  inputSchema: z.object({
+    url: z.string().url(),
+    mode: z.enum(['check', 'insert']),
+  }),
+  outputSchema: z.object({
+    isProcessed: z.boolean(),
+  }),
+  execute: async ({ context }) => {
+    // If mode=check: SISMEMBER gtm:processed_urls <url> → { isProcessed: true/false }
+    // If mode=insert: SADD gtm:processed_urls <url> → { isProcessed: true }
+  },
+});
+```
+
+### 4.2 Agents (Modified & New)
+
+#### Modified: `leadScoreAgent`
+- Instructions now accept `ConsultancyConfig` as a runtime parameter (injected via workflow step that reads from `requestContext`).
+- Uses `structuredOutput` with `LeadScoreResultSchema` (now `{ probabilityScore: number }` where `probabilityScore` is 0–1, with 0 meaning definitely not a lead and 1 meaning definitely a lead).
+
+#### Modified: `leadAnalysisAgent`
+- Instructions accept `ConsultancyConfig`.
+- Output schema gains optional `budget` and `companyName` fields.
+
+#### New: `searchTermAgent`
+- Generates diverse, high-signal search queries targeting specific platforms.
+- The agent only generates the `searchQuery` string. The `site`, `startDateTime`, and `endDateTime` fields are **injected by the workflow step** from the `RunConfig` input parameters — the LLM does not set them.
+- Returns structured search terms that are executed by the workflow via direct `searchWebTool.execute()` calls.
+- Model: `GTM_SEARCH_TERM_MODEL`.
+
+#### New: `searchFilterAgent`
+- Cheap model that filters raw SERP results, assigning a probability score (0–1) to each result indicating how likely it is to be a lead.
+- Results with a probability below `runConfig.searchFilterProbabilityThreshold` (configurable, e.g., 0.3) are filtered out.
+- Returns only promising results with their probability scores.
+- Model: `GTM_SEARCH_FILTER_MODEL` (defaults to a small/cheap model like `gemma3:4b`).
+
+#### New: `webSummarizationAgent`
+- Extracts the core relevant content from scraped web pages while dropping irrelevant junk (navigation, ads, sidebar, etc.), and summarizes it to prevent token limit issues when passing content to other agents.
+- Reduces page content by 80–95% while preserving key facts, statistics, and contact information.
+- Used by `scrapePageTool` internally — when a page is scraped, the content is summarized before being returned to the calling agent. The original full text is not retained (only the summary is passed forward).
+- Model: `GTM_SMALL_MODEL` (cheap model since summarization is high-volume, low-complexity).
+
+#### New: `evaluationAgent`
+- Evaluates whether search results are relevant to a lead research query.
+- Confirms the result refers to the correct entity — e.g., a startup named "Apex" should not be confused with the Apex programming language.
+- Criteria: direct relevance to the query topic, source credibility, information usefulness, and entity match.
+- Model: `GTM_SEARCH_FILTER_MODEL` (cheap model — binary decisions with brief reasoning).
+
+#### New: `learningExtractionAgent`
+- Extracts the most valuable piece of information from a search result's content.
+- Generates 1–3 focused follow-up questions that would deepen the research.
+- Focuses on actionable, specific insights rather than general observations.
+- Model: `GTM_DEEP_RESEARCH_MODEL`.
+
+#### New: `deepResearchAgent`
+- **Agent-driven research**: equipped with `searchWebTool`, `scrapePageTool`, `evaluateResultTool`, and `extractLearningsTool`. The agent drives the research process itself, deciding what to search next based on what it finds — no separate orchestration by the worker.
+- Uses a **two-phase approach** (inspired by the Mastra deep research template):
+
+  **Phase 1 — Initial Research:**
+  1. Breaks down the lead into 2–3 specific, focused search queries (e.g., LinkedIn profile, company funding, contact information).
+  2. For each query, calls `searchWebTool` to search the web.
+  3. For promising results, calls `scrapePageTool` to fetch full page content (which is auto-summarized by the tool).
+  4. Uses `evaluateResultTool` to confirm relevance and entity match.
+  5. For relevant, verified results, uses `extractLearningsTool` to extract key findings and follow-up questions.
+
+  **Phase 2 — Follow-up Research:**
+  1. Collects ALL follow-up questions from Phase 1 learnings.
+  2. Searches each follow-up question using `searchWebTool`.
+  3. Scrapes, evaluates, and extracts learnings from follow-up results.
+  4. **Stops after Phase 2** — does not search follow-up questions from Phase 2 results (prevents infinite loops).
+
+- Always includes the user's social profile as a search target if the lead source is a social post.
+- `maxSteps: 12` on `agent.generate()` provides a hard stop to control token spend. (Mastra's default is 5; 12 is explicitly chosen to accommodate the full two-phase research process.)
+- Model: `GTM_DEEP_RESEARCH_MODEL`.
+
+#### New: `reportAgent`
+- Synthesizes all extracted learnings, evaluations, and source URLs from the deep research phases into a structured, comprehensive markdown report.
+- The report includes: executive summary, key findings (contact info, company size, budget, business strategy), source references with URLs, and confidence assessment.
+- Receives the deepResearchAgent's structured output (queries, learnings, follow-up questions, source URLs) and transforms it into a polished report.
+- Model: `GTM_DEEP_RESEARCH_MODEL`.
+
+#### New: `messageGenerationAgent`
+- Crafts personalized outreach messages using all available lead data (base post, analysis, deep research report if present).
+- Model: `GTM_MESSAGE_GEN_MODEL`.
+
+### 4.3 Workflows (New & Modified)
+
+#### New: `process-lead-workflow` (replaces `ProcessPostJob` in workers)
+
+This is the most significant change. All orchestration logic that was in `ProcessPostJob.execute()` moves into a Mastra workflow.
+
+```
+ID: process-lead-workflow
+Input: { post: LeadInput, runConfig: RunConfig }
+
+Steps:
+
+1. lead-score
+   - Calls leadScoreAgent.generate()
+   - Output: { probabilityScore: number }
+   
+2. normalize-score
+   - Clamps to [0,1], rounds to 4 decimal places
+   
+3. below-threshold-check
+   - If probabilityScore < runConfig.minProbabilityScore
+     → Return { outcome: "below_threshold", probabilityScore }
+   - Else → continue
+
+4. lead-analysis
+   - Calls leadAnalysisAgent.generate()
+   - Output: { isLead, whyFit, needs, timing, contactInfo, budget?, companyName? }
+   
+5. not-a-lead-check
+   - If !isLead
+     → Return { outcome: "not_a_lead" }
+   - Else → continue
+
+6. claim-lead
+   - Calls claimLeadTool with { identifier: post.url, channel: post.platform }
+   - Output: { success, leadId }
+   - If claim fails → Return { outcome: "claim_failed", error: claimResult.message }
+
+7. post-completion-checks
+   - If probabilityScore >= runConfig.deepResearchThreshold
+     AND runConfig.autoDeepResearch → Return { outcome: "awaiting_research", probabilityScore, leadId, triggerDeepResearch: true }
+   - Else → Return { outcome: "awaiting_research", probabilityScore, leadId }
+```
+
+Note: The lead is claimed immediately after passing scoring and analysis thresholds. Surfacing happens later, when the deep research worker calls `surface-lead-workflow` after deep research completes, so the surfaced brief can include the deep research report and draft outreach message.
+
+The **worker** calls this workflow and handles the outcome:
+- `below_threshold` → update post status, save score, ack queue
+- `not_a_lead` → update post status, ack queue
+- `claim_failed` → update post with error, ack queue
+- `awaiting_research` + `triggerDeepResearch` → update post with analysis results and dOrg lead ID, set status to AWAITING_RESEARCH, enqueue for deep research, ack queue
+- `awaiting_research` (no trigger) → update post with analysis results and dOrg lead ID, set status to AWAITING_RESEARCH, ack queue (lead awaits manual review — deep research and surfacing happen only after a human manually triggers deep research)
+
+#### New: `search-for-leads-workflow` (replaces `SearchForLeads` in workers)
+
+This is the other major shift. The search orchestration loop moves into a workflow. Tools are called **directly from workflow steps** (via `tool.execute()`), not through agents — so search and scrape I/O costs zero LLM tokens and can be parallelized within a step. Only the reasoning steps (generate terms, filter, evaluate) use the LLM.
+
+```
+ID: search-for-leads-workflow
+Input: { runConfig: RunConfig }  // runConfig includes searchFilterProbabilityThreshold (default 0.3)
+
+Steps:
+
+1. generate-search-terms
+   - Calls searchTermAgent.generate() — LLM call, generates `runConfig.numSearchTerms` diverse `searchQuery` strings (the worker reads `numSearchTerms` from Redis `gtm:run-config` and passes it in `runConfig`)
+   - The workflow step injects `site`, `startDateTime`, and `endDateTime` from `runConfig` input parameters — the LLM does not set these fields
+   - Hashes each search term, checks/inserts into Redis via `dedupSearchTermTool` — skips duplicates
+   - Output: { searchTerms: Array<{ searchQuery, site, startDateTime, endDateTime }> }
+
+2. execute-searches
+   - Calls searchWebTool.execute() for each search term — parallelized, zero LLM tokens
+   - Output: { searchResults: Array<{ query, results: Array<{ url, title, snippet }> }> }
+
+3. filter-results
+   - For each search result URL, checks Redis via `dedupProcessedUrlTool` — skips already-processed URLs
+   - Calls searchFilterAgent.generate() on remaining results — cheap LLM call, assigns each result a lead probability (0–1)
+   - Filters out results below `runConfig.searchFilterProbabilityThreshold` (configurable, e.g., 0.3)
+   - Output: { promising: Array<{ url, reason, probability }>, notPromising: Array<{ url }> }
+
+4. scrape-pages
+   - Calls scrapePageTool.execute() for each promising URL — parallelized, zero LLM tokens
+   - scrapePageTool fetches the page via ContextDev and summarizes it via webSummarizationAgent, which extracts the core relevant post content while dropping irrelevant junk (navigation, ads, sidebar, etc.)
+   - The summarized content becomes the "post" for downstream lead processing
+   - Output: { scrapedPages: Array<{ url, title, content }> }
+
+5. evaluate-and-collect
+   - Inserts scraped URLs into Redis via `dedupProcessedUrlTool` to prevent re-processing
+   - Checks stopping conditions (maxDurationMinutes, maxSearchResults, maxLeads)
+   - Returns { outcome, counters, leads: Array<{ url, title, postContent }> }
+```
+   
+   The **worker** receives the extracted posts from the workflow result and enqueues them into the leads queue (`gtm:posts:queue`). The workflow itself does not enqueue — queue management is the worker's responsibility.
+
+All external API access (Serper, ContextDev) lives inside the tools in gtm-ai. The worker simply calls this workflow, persists results, and enqueues discovered leads — it has no search or scrape clients.
+
+Token usage is bounded: steps 1 (generate terms) and 3 (filter) involve LLM calls. Step 4's summarization also uses a cheap model per page. The bulk I/O (searching, fetching pages) consumes no tokens at all.
+
+#### New: `deep-research-workflow`
+
+Deep research uses an **agent-driven pattern** (inspired by the Mastra deep research template). The `deepResearchAgent` is equipped with tools that call external APIs. Unlike `search-for-leads-workflow` (which calls tools directly from steps for deterministic batch I/O), deep research benefits from agent-driven tool use because the agent must adapt its research direction based on what it finds — generating follow-up questions that couldn't be predicted upfront. The scope is intentionally limited (2–3 initial queries + follow-ups = ~6–10 total searches), so the sequential agent-tool round-trips are acceptable.
+
+```
+ID: deep-research-workflow
+Input: { lead: LeadWithContext, runConfig: RunConfig }
+  // lead includes: post content, analysis results, dOrg leadId (from process-lead-workflow claim)
+
+Steps:
+
+1. execute-deep-research
+   - Calls deepResearchAgent.generate() with maxSteps: 12
+   - The agent uses its tools (searchWebTool, scrapePageTool,
+     evaluateResultTool, extractLearningsTool) to drive the two-phase
+     research process autonomously.
+   - The agent is given a prompt that includes:
+       * Lead context (URL, platform, post content, analysis results)
+       * Instructions to find contact info, company size, budget,
+         business strategy, products, and key decision-makers
+       * Instruction to always include the user's social profile
+         if the lead source is a social post
+       * Instruction to stop after Phase 2 (no infinite loops)
+   - structuredOutput enforces the research result schema
+   - Output: { queries: string[], learnings: Learning[],
+     sourceUrls: string[], followUpQuestions: string[] }
+
+2. synthesize-report
+   - Calls reportAgent.generate() with the structured research output
+   - Produces a polished, structured markdown report with sections:
+       * Executive Summary
+       * Key Findings (contact info, company details, budget,
+         business strategy)
+       * Source References (with URLs)
+       * Confidence Assessment
+   - Output: { researchReportMarkdown: string }
+
+Returns:
+  - { outcome: "completed", researchReportMarkdown }
+```
+
+The **worker** calls this workflow synchronously, persists the report, then orchestrates the remaining steps:
+- If `runConfig.autoMessageGen` AND `lead.probabilityScore >= runConfig.messageGenThreshold` → calls `generate-message-workflow`
+- Then calls `surface-lead-workflow` with lead analysis, research report, and optional message
+
+No suspense steps, no batch I/O coordination. The deepResearchAgent handles all external API calls itself through its tools. Claiming already happened in `process-lead-workflow`, so the dOrg lead ID is available from the start.
+
+Note: The deep research workflow does **not** use URL dedup (`dedupProcessedUrlTool`). Deep research may legitimately need to re-access pages that were scraped during the search flow (e.g., to extract different information with a different lens).
+
+**Design rationale for agent-driven pattern (vs. step-driven in search-for-leads-workflow):**
+- Deep research has intentionally limited scope (max 6–10 searches). Sequential agent-tool round-trips are acceptable.
+- The two-phase approach (initial → extract learnings → follow-up → stop) requires the agent to adapt based on what it finds — it cannot know all follow-up questions upfront.
+- `maxSteps: 12` provides a hard token/time budget, preventing runaway costs. (Mastra's default is 5; 12 is explicitly chosen to accommodate the two-phase research process.)
+- The `webSummarizationAgent` keeps context size manageable by summarizing scraped content before it reaches the agent.
+- Message generation and surfacing are orchestrated by the **worker** after the workflow completes — this keeps the workflow focused on research and allows the worker to handle conditional branching (thresholds, auto-message-gen toggle) without embedding it in the workflow.
+- **Token cost vs. speed**: Mastra's default `toolCallConcurrency` is 10, meaning agent tool calls within a single step execute concurrently — so the speed gap between agent-driven and step-driven patterns is narrower than it first appears. However, each agent step still costs LLM tokens (the agent must reason about *which* tools to call and process their results), whereas step-driven `tool.execute()` calls cost zero tokens. For research that requires adaptive decision-making, the token cost is worth the flexibility.
+
+#### New: `generate-message-workflow`
+
+```
+ID: generate-message-workflow
+Input: { lead: LeadWithResearch, runConfig: RunConfig }
+
+Steps:
+
+1. craft-message
+   - Calls messageGenerationAgent.generate()
+   - Has access to: base post, analysis results, deep research report (if present)
+   - Output: { message: string, subject: string, tone: string }
+```
+
+This workflow is synchronous (no suspense steps needed). It is called by the worker after `deep-research-workflow` completes (conditionally, if auto-message-gen is enabled and the probability score meets the threshold). The worker persists the result.
+
+#### New: `surface-lead-workflow`
+
+Surfaces a claimed lead to the dOrg team with a comprehensive, nicely formatted markdown brief. This workflow is called by the **worker** after deep research and message generation complete, so the brief can include all available data.
+
+```
+ID: surface-lead-workflow
+Input: {
+  leadId: string,              // dOrg lead ID (from claimLeadTool)
+  channel: string,              // source platform
+  leadAnalysis: {               // from leadAnalysisAgent
+    whyFit: string,
+    needs: string,
+    timing: string,
+    contactInfo: string,
+    budget: string | null,
+    companyName: string | null,
+  },
+  deepResearchReport: string | null,   // from deep-research-workflow (optional)
+  outreachMessage: {                    // from generate-message-workflow (optional)
+    message: string,
+    subject: string,
+    tone: string,
+  } | null,
+  runConfig: RunConfig,
+}
+
+Steps:
+
+1. build-surface-brief
+   - Constructs a comprehensive markdown brief, including all of the following that are available:
+       * Lead analysis (whyFit, needs, timing, contact info, budget, company name)
+       * Deep research report (full markdown)
+       * Draft outreach message
+   - Sections are clearly separated with markdown headers
+   - Output: { brief: string }
+
+2. surface-lead
+   - Uses surfaceLeadTool
+   - Input: { leadId, brief }
+
+3. notify-discord
+   - Uses sendDiscordMessageTool
+   - Input: { content: brief }
+```
+
+#### Modified: `lead-score-workflow`
+- Output schema: `{ probabilityScore: number }` (0–1, where 0 means definitely not a lead and 1 means definitely a lead)
+- Normalize step: clamps to [0, 1], rounds to 4 decimal places
+
+#### Modified: `lead-analysis-workflow`
+- System prompt parameterized with `ConsultancyConfig`
+- Output schema gains: `budget` (string | null), `companyName` (string | null)
+
+---
+
+## 5. gtm-workers: The Thin Infrastructure Layer
+
+### 5.1 What Gets Removed (Entirely)
+
+All files that contained business logic. These responsibilities move to Mastra workflows/tools:
+
+| Removed File | Where Logic Moves |
+|---|---|
+| `src/use-cases/process-post-job.ts` | `process-lead-workflow` in gtm-ai |
+| `src/use-cases/search-for-leads.ts` | `search-for-leads-workflow` in gtm-ai |
+| `src/use-cases/start-apify-crawl-run.ts` | N/A (Apify removed) |
+| `src/use-cases/import-apify-run-dataset.ts` | N/A (Apify removed) |
+| `src/clients/apify-crawler-client.ts` | N/A (Apify removed) |
+| `src/clients/dorg-api-client.ts` | `claimLeadTool`, `surfaceLeadTool`, `sendDiscordMessageTool` in gtm-ai |
+| `src/clients/gtm-ai-client.ts` | Revised into `mastra-client.ts` — thin `@mastra/client-js` wrapper (v1 retry/timeout logic removed) |
+| `src/config/crawler-configs.ts` | N/A (Apify removed) |
+| `src/config/crawler-inputs/` | N/A (Apify removed) |
+| `src/schemas/post-schemas/apify-reddit-post-schema.ts` | Replaced by generic scraped page handling |
+| `src/schemas/post-schemas/apify-twitter-post-schema.ts` | Replaced by generic scraped page handling |
+| `src/schemas/platform.ts` | Simplified or removed |
+| `src/worker/build-surface-brief.ts` | Logic moves into `surface-lead-workflow` step 1 |
+| `src/http/handle-trigger-crawl-request.ts` | N/A (Apify removed) |
+| `src/http/handle-apify-webhook-request.ts` | N/A (Apify removed) |
+| `src/storage/schema/crawl-runs-table.ts` | N/A |
+| `src/storage/repositories/crawl-run-repository.ts` | N/A |
+| `src/constants/crawl-run-status.ts` | N/A |
+
+### 5.2 What Stays (or Gets Added)
+
+Workers keep only the operational layer:
+
+```
+gtm-workers/src/
+├── bin/
+│   ├── api.ts                          # HTTP server entry point
+│   ├── worker.ts                       # Lead worker entry point
+│   ├── search-worker.ts                # Search worker entry point
+│   └── deep-research-worker.ts         # Deep research worker entry point
+├── clients/
+│   ├── mastra-client.ts                # THIN: wraps @mastra/client-js
+│   │                                    # (createRun + startAsync for workflow execution)
+├── config/
+│   └── app-env.ts                      # Environment variable validation
+├── constants/
+│   ├── post-status.ts                  # Post status enum
+│   └── route-paths.ts                  # HTTP route paths
+├── http/
+│   ├── create-server.ts                # Bun.serve HTTP server + route dispatch
+│   ├── handle-health-request.ts        # GET /healthz
+│   ├── handle-search-run-request.ts    # POST /search-runs, GET/POST /search-runs/:id
+│   ├── handle-lead-request.ts          # GET /leads, GET/POST /leads/:id/...
+│   └── handle-configuration-request.ts # GET/PATCH /configuration
+├── schemas/
+│   ├── queue-payload-schema.ts         # { id: uuid, platform: string }
+│   ├── search-run-request-schema.ts    # Search run request body
+│   └── configuration-schema.ts         # Runtime config shape
+├── storage/
+│   ├── database.ts                     # Drizzle + Postgres connection
+│   ├── migrate.ts                      # Migration runner
+│   ├── lead-queue.ts                   # Redis lead queue (BRPOPLPUSH pattern)
+│   ├── search-run-queue.ts             # Redis search run queue
+│   ├── deep-research-queue.ts          # Redis deep research queue
+│   ├── run-state-store.ts              # Redis HASH for run state + config
+│   ├── repositories/
+│   │   ├── post-repository.ts          # Post CRUD (lean — no orchestration)
+│   │   └── search-run-repository.ts    # Search run CRUD
+│   └── schema/
+│       ├── posts-table.ts              # Drizzle schema: posts
+│       └── search-runs-table.ts        # Drizzle schema: search_runs
+├── worker/
+│   └── mark-post-error.ts             # Pure helper: mark post as ERROR in DB
+```
+
+### 5.3 The Lead Worker Loop
+
+The worker loop becomes a minimal wrapper around the Mastra workflow:
+
+```typescript
+// bin/worker.ts — conceptual sketch
+
+async function runLeadWorkerLoop(workerRunId: string) {
+  while (true) {
+    let rawPayload: string | null = null;
+    try {
+      // 1. Block on the queue
+      rawPayload = await leadQueue.reserveNext();
+      if (!rawPayload) continue;
+
+      // 2. Parse payload
+      const { id: postId } = queuePayloadSchema.parse(JSON.parse(rawPayload));
+
+      // 3. Load post from DB with idempotency guard
+      const post = await postRepository.findById(postId);
+      if (!post || isTerminal(post.status)) {
+        await leadQueue.ack(rawPayload);
+        continue;
+      }
+
+      // 4. Load run config from Redis
+      const runConfig = await runStateStore.getConfig();
+
+      // 5. Invoke Mastra workflow (all business logic is here)
+      const workflow = mastraClient.getWorkflow('process-lead-workflow');
+      const run = await workflow.createRun();
+      const result = await run.startAsync({
+        inputData: {
+          post: mapPostToWorkflowInput(post),
+          runConfig,
+        },
+      });
+
+      // 6. Persist results based on workflow outcome
+      if (result.status === 'success') {
+        await handleWorkflowOutcome(postId, result.result, rawPayload);
+      } else if (result.status === 'failed') {
+        await handleWorkflowError(postId, result.error, rawPayload);
+      }
+
+    } catch (error) {
+      await handleError(rawPayload, postId, error);
+    }
+  }
+}
+```
+
+The `handleWorkflowOutcome` function is a pure mapping of workflow results to DB updates — no decision-making, just persistence:
+
+```typescript
+async function handleWorkflowOutcome(postId: string, result: ProcessLeadResult, rawPayload: string) {
+  if (isTerminalPost(postId)) {
+    await leadQueue.ack(rawPayload);
+    return;
+  }
+  switch (result.outcome) {
+    case 'below_threshold':
+      await postRepository.saveScore(postId, result.probabilityScore, PostStatus.BELOW_THRESHOLD);
+      break;
+    case 'not_a_lead':
+      await postRepository.updateStatus(postId, PostStatus.NOT_A_LEAD);
+      break;
+    case 'claim_failed':
+      await postRepository.markError(postId, result.error);
+      break;
+    case 'awaiting_research':
+      await postRepository.saveAnalysisResult(postId, result);
+      await postRepository.saveDorgLeadId(postId, result.leadId);
+      await postRepository.updateStatus(postId, PostStatus.AWAITING_RESEARCH);
+      if (result.triggerDeepResearch) {
+        await deepResearchQueue.enqueue(postId);
+      }
+      break;
+  }
+  await leadQueue.ack(rawPayload);
+}
+```
+
+### 5.4 The Search Worker Loop
+
+The search worker is a thin loop — it dequeues search run requests, calls the workflow, persists results, and enqueues discovered leads into the leads queue. All search and scrape execution happens inside the workflow via direct tool calls (`searchWebTool.execute()`, `scrapePageTool.execute()`). The worker has no Serper or ContextDev clients.
+
+```typescript
+async function runSearchWorkerLoop(workerRunId: string) {
+  while (true) {
+    const rawPayload = await searchRunQueue.reserveNext();
+    if (!rawPayload) continue;
+
+    const { searchRunId } = parsePayload(rawPayload);
+
+    // Idempotency guard: skip if run is already in a terminal state
+    const existingRun = await searchRunRepository.findById(searchRunId);
+    if (existingRun && isTerminalSearchRun(existingRun.status)) {
+      await searchRunQueue.ack(rawPayload);
+      continue;
+    }
+
+    const runConfig = await runStateStore.getConfig(searchRunId);
+
+    // Invoke workflow — it handles all search/scrape/filter/evaluate internally
+    const workflow = mastraClient.getWorkflow('search-for-leads-workflow');
+    const run = await workflow.createRun();
+    const result = await run.startAsync({
+      inputData: { runConfig },
+    });
+
+    // Persist results based on workflow outcome
+    if (result.status === 'success') {
+      // Enqueue discovered leads into the leads queue for downstream processing
+      for (const lead of result.result.leads) {
+        const postId = await postRepository.insertFromSearchResult(lead, searchRunId);
+        await leadQueue.enqueue(postId);
+      }
+      await searchRunRepository.markCompleted(searchRunId, result.result.counters);
+    } else if (result.status === 'failed') {
+      await searchRunRepository.markFailed(searchRunId, result.error);
+    }
+    await searchRunQueue.ack(rawPayload);
+  }
+}
+```
+
+### 5.5 Deep Research Worker
+
+The deep research worker orchestrates three sequential Mastra workflow calls: deep research → message generation (conditional) → surfacing. Claiming already happened in `process-lead-workflow`, so the dOrg lead ID is available from the start.
+
+```typescript
+// bin/deep-research-worker.ts — conceptual sketch
+
+async function runDeepResearchWorkerLoop(workerRunId: string) {
+  while (true) {
+    const rawPayload = await deepResearchQueue.reserveNext();
+    if (!rawPayload) continue;
+
+    const { postId } = parsePayload(rawPayload);
+    const post = await postRepository.findById(postId);
+
+    // Idempotency guard: skip if already in a terminal state
+    if (!post || isTerminal(post.status)) {
+      await deepResearchQueue.ack(rawPayload);
+      continue;
+    }
+
+    // Idempotency guard: skip if deep research already completed for this post
+    if (post.deepResearchData && post.status === PostStatus.AWAITING_RESEARCH) {
+      await deepResearchQueue.ack(rawPayload);
+      continue;
+    }
+
+    const runConfig = await runStateStore.getConfig();
+    const lead = mapPostToLeadWithAnalysis(post);  // includes dOrg leadId from process-lead-workflow
+
+    // Step 1: Deep research (agent-driven, two-phase)
+    const researchWorkflow = mastraClient.getWorkflow('deep-research-workflow');
+    const researchRun = await researchWorkflow.createRun();
+    const researchResult = await researchRun.startAsync({
+      inputData: { lead, runConfig },
+    });
+
+    if (researchResult.status !== 'success') {
+      await postRepository.markError(postId, researchResult.error);
+      await deepResearchQueue.ack(rawPayload);
+      continue;
+    }
+
+    await postRepository.saveDeepResearch(postId, researchResult.result.researchReportMarkdown);
+
+    // Step 2: Message generation (conditional)
+    let message: MessageResult | null = null;
+    if (runConfig.autoMessageGen && lead.probabilityScore >= runConfig.messageGenThreshold) {
+      const messageWorkflow = mastraClient.getWorkflow('generate-message-workflow');
+      const messageRun = await messageWorkflow.createRun();
+      const messageResult = await messageRun.startAsync({
+        inputData: { lead, runConfig, researchReport: researchResult.result.researchReportMarkdown },
+      });
+
+      if (messageResult.status === 'success') {
+        message = messageResult.result;
+        await postRepository.saveMessage(postId, message);
+      }
+    }
+
+    // Step 3: Surface the lead with comprehensive brief
+    const surfaceWorkflow = mastraClient.getWorkflow('surface-lead-workflow');
+    const surfaceRun = await surfaceWorkflow.createRun();
+    const surfaceResult = await surfaceRun.startAsync({
+      inputData: {
+        leadId: lead.dorgLeadId,
+        channel: lead.platform,
+        leadAnalysis: lead.analysis,
+        deepResearchReport: researchResult.result.researchReportMarkdown,
+        outreachMessage: message,
+        runConfig,
+      },
+    });
+
+    if (surfaceResult.status !== 'success') {
+      await postRepository.markError(postId, surfaceResult.error);
+      await deepResearchQueue.ack(rawPayload);
+      continue;
+    }
+
+    await postRepository.updateStatus(postId, PostStatus.AWAITING_RESEARCH);
+    await deepResearchQueue.ack(rawPayload);
+  }
+}
+```
+
+---
+
+## 6. Database Schema
+
+The workers are the sole owner of Postgres — Mastra uses LibSQL internally and does not interact with these tables.
+
+### Posts Table
+
+| Column | Type | Change |
+|---|---|---|
+| `id` | `uuid` | preserved |
+| `url` | `text` | preserved |
+| `platform` | `varchar(50)` | preserved |
+| `post` | `jsonb` | preserved |
+| `status` | `varchar(50)` | preserved + new values |
+| `probability_score` | `float` | **added** (0–1 probability, replaces `lead_probability`) |
+| `why_fit` | `text` | preserved |
+| `needs` | `text` | preserved |
+| `timing` | `text` | preserved |
+| `contact_info` | `text` | preserved |
+| `budget` | `text` | **added** (from lead-analysis-workflow) |
+| `company_name` | `text` | **added** (from lead-analysis-workflow) |
+| `dorg_lead_id` | `text` | preserved |
+| `deep_research_data` | `text` | **added** (markdown report) |
+| `outreach_message` | `text` | **added** |
+| `search_run_id` | `text` | **added** |
+| `source` | `text` | **added** (`"search"` or `"manual"`) |
+| `error_message` | `text` | preserved |
+| `created_at` | `timestamp` | preserved |
+| `updated_at` | `timestamp` | preserved |
+| `lead_probability` | `float` | **removed** |
+| `apify_run_id` | `text` | **removed** |
+| `apify_dataset_id` | `text` | **removed** |
+
+### New Table: `search_runs`
+
+```sql
+CREATE TABLE search_runs (
+  id          uuid PRIMARY KEY,
+  status      varchar(50) NOT NULL DEFAULT 'running',
+  config      jsonb NOT NULL,
+  counters    jsonb NOT NULL DEFAULT '{}',
+  started_at  timestamp NOT NULL DEFAULT now(),
+  stopped_at  timestamp,
+  error_message text,
+  created_at  timestamp NOT NULL DEFAULT now(),
+  updated_at  timestamp NOT NULL DEFAULT now()
+);
+```
+
+Runtime configuration is stored **only in Redis** (`gtm:run-config` HASH) — see §8.2. There is no Postgres table for runtime config.
+
+---
+
+## 7. Post Status State Machine
+
+```
+PENDING  (set by search worker when inserting a new post into DB before enqueuing)
+  → SCORING  (set by lead worker after dequeuing from the leads queue)
+  → [BELOW_THRESHOLD | ANALYZING]
+ANALYZING → [NOT_A_LEAD | AWAITING_RESEARCH]
+  (Lead is claimed during process-lead-workflow via claimLeadTool)
+  (dOrg leadId is stored; lead status set to AWAITING_RESEARCH)
+
+AWAITING_RESEARCH triggers:
+  Auto: if probability score >= deepResearchThreshold (and auto-deep-research enabled) → DEEP_RESEARCHING
+  Manual: POST /leads/:id/deep-research → DEEP_RESEARCHING (from any non-terminal state)
+
+DEEP_RESEARCHING → AWAITING_RESEARCH
+  (Worker orchestrates: deep-research-workflow → generate-message-workflow (conditional) → surface-lead-workflow)
+  (Worker calls three workflows sequentially, persisting results after each)
+
+ERROR → DEEP_RESEARCHING (manual recovery via POST /leads/:id/deep-research)
+
+Any state → ERROR
+```
+
+---
+
+## 8. Configuration System
+
+### 8.1 Static Configuration (env vars)
+
+**gtm-workers env vars (leaner — no Apify, no dOrg, no Serper, no ContextDev):**
+```
+# Server
+WORKERS_API_HOST=0.0.0.0
+WORKERS_API_PORT=3000
+TRIGGER_API_TOKEN=...
+
+# Infrastructure
+DATABASE_URL=postgres://...
+REDIS_URL=redis://...
+
+# Mastra
+GTM_AI_BASE_URL=http://localhost:4111
+
+# Queue & Storage Keys
+QUEUE_NAME=gtm:posts:queue
+QUEUE_PROCESSING_NAME=gtm:posts:processing
+QUEUE_DLQ_NAME=gtm:posts:dlq
+SEARCH_QUEUE_NAME=gtm:search-runs:queue
+DEEP_RESEARCH_QUEUE_NAME=gtm:deep-research:queue
+
+# Worker
+WORKER_CONCURRENCY=1
+WORKER_POLL_TIMEOUT_SECONDS=20
+WORKER_REQUEUE_STALE_ON_STARTUP=true
+SEARCH_WORKER_CONCURRENCY=1
+```
+
+**gtm-ai env vars (now includes external API keys for tools):**
+```
+# Server
+MASTRA_HOST=0.0.0.0
+MASTRA_PORT=4111
+MASTRA_LOG_LEVEL=info
+
+# Models
+GTM_SMALL_MODEL=ollama-cloud/gemma3:4b
+GTM_ANALYSIS_MODEL=ollama-cloud/gemma4:31b
+GTM_SEARCH_TERM_MODEL=ollama-cloud/gemma4:31b
+GTM_SEARCH_FILTER_MODEL=ollama-cloud/gemma3:4b
+GTM_DEEP_RESEARCH_MODEL=ollama-cloud/gemma4:31b
+GTM_MESSAGE_GEN_MODEL=ollama-cloud/gemma4:31b
+OLLAMA_API_KEY=...
+
+# External APIs (for tools)
+SERPER_API_KEY=...
+SERPER_BASE_URL=https://google.serper.dev
+CONTEXT_DEV_API_KEY=...
+CONTEXT_DEV_BASE_URL=https://api.context.dev
+DORG_API_TOKEN=...
+DORG_API_BASE_URL=https://agentsofdorg.tech/api
+
+# Redis (for dedup: processed_urls SET + search-term:<hash> individual keys)
+REDIS_URL=redis://...
+
+# Storage
+MASTRA_STORAGE_URL=file:./mastra.db
+MASTRA_OBSERVABILITY_DB_PATH=./mastra-observability.db
+```
+
+Note: All external API keys (`DORG_API_*`, `SERPER_API_*`, `CONTEXT_DEV_*`) live **only** in gtm-ai. Workflows call these APIs via tools (`searchWebTool`, `scrapePageTool`, `claimLeadTool`, etc.) — the worker never makes external API calls directly. gtm-workers only needs `GTM_AI_BASE_URL` to reach Mastra.
+
+Note: Both services connect to the **same Redis instance**. The `REDIS_URL` is identical in both — gtm-ai uses it for dedup (processed-URLs SET and search-term individual keys), gtm-workers uses it for queues, processing lists, DLQ, run state, and runtime config.
+
+### 8.2 Runtime Configuration
+
+Stored **only in Redis** as `gtm:run-config` HASH. Workers read config on each job iteration and pass it as `runConfig` to workflows. Changes take effect immediately without restart. No Postgres table — Redis is the single source of truth.
+
+Runtime config fields:
+
+```typescript
+interface RunConfig {
+  // Scoring & filtering
+  minProbabilityScore: number;                    // default 0.5 — leads below this are discarded
+  searchFilterProbabilityThreshold: number;       // default 0.3 — search results below this are discarded
+
+  // Automation thresholds
+  autoDeepResearch: boolean;                      // default true
+  autoMessageGen: boolean;                        // default true
+  deepResearchThreshold: number;                  // default 0.9 — probability score >= this triggers auto deep research
+  messageGenThreshold: number;                    // default 0.9 — probability score >= this triggers auto message gen
+
+  // Search tuning
+  numSearchTerms: number;                         // number of search terms to generate per run
+  consultancyConfig: ConsultancyConfig;           // injected into agent prompts for filtering/targeting
+
+  // Stopping parameters
+  maxDurationMinutes: number;                     // max time a search run can execute
+  maxSearchResults: number;                       // max search results to process before stopping
+  maxLeads: number;                               // max leads to generate before stopping
+}
+```
+
+The `PATCH /configuration` endpoint writes directly to Redis. `GET /configuration` reads from Redis.
+
+---
+
+## 9. API Endpoints
+
+| Method | Path | Purpose | Auth |
+|---|---|---|---|
+| `GET` | `/healthz` | Health check | none |
+| `POST` | `/search-runs` | Trigger a new search run | `TRIGGER_API_TOKEN` |
+| `POST` | `/search-runs/:id/stop` | Stop a running search | `TRIGGER_API_TOKEN` |
+| `GET` | `/search-runs/:id` | Get search run status | `TRIGGER_API_TOKEN` |
+| `POST` | `/leads/:id/deep-research` | Manually trigger deep research | `TRIGGER_API_TOKEN` |
+| `POST` | `/leads/:id/generate-message` | Manually trigger message gen | `TRIGGER_API_TOKEN` |
+| `GET` | `/leads` | List leads (filterable by status, score) | `TRIGGER_API_TOKEN` |
+| `GET` | `/leads/:id` | Get single lead with full data | `TRIGGER_API_TOKEN` |
+| `PATCH` | `/configuration` | Update runtime config | `TRIGGER_API_TOKEN` |
+| `GET` | `/configuration` | Get current config | `TRIGGER_API_TOKEN` |
+
+---
+
+## 10. Data Flow: End-to-End Lead Processing
+
+```
+                              ┌─────────────────────────┐
+                              │   gtm-workers            │
+                              │   Lead Worker Loop       │
+                              └────────────┬────────────┘
+                                           │
+  1. BRPOPLPUSH gtm:posts:queue           │
+     → { id: "uuid-123", platform: "reddit" }
+                                           │
+  2. Load post from Postgres              │
+     Load runConfig from Redis             │
+                                           │
+  3. mastraClient.getWorkflow('process-lead-workflow')
+     → workflow.createRun() → run.startAsync({ inputData })
+     ┌─────────────────────────────────────┼──────────────────────────┐
+     │               gtm-ai                │                          │
+     │                                     ▼                          │
+     │  process-lead-workflow:                                           │
+     │                                                                 │
+     │  Step 1: lead-score                                            │
+     │    leadScoreAgent.generate(prompt, structuredOutput)            │
+     │    → { probabilityScore: 0.78 }                                      │
+     │                                                                 │
+     │  Step 2: normalize-score                                       │
+     │    → { probabilityScore: 0.78 }                                      │
+     │                                                                 │
+     │  Step 3: below-threshold-check                                 │
+     │    78 >= 50 → continue                                         │
+     │                                                                 │
+     │  Step 4: lead-analysis                                         │
+     │    leadAnalysisAgent.generate(prompt, structuredOutput)         │
+     │    → { isLead: true, whyFit: "...", needs: "...", ... }        │
+     │                                                                 │
+     │  Step 5: not-a-lead-check                                      │
+     │    isLead: true → continue                                     │
+     │                                                                 │
+     │  Step 6: claim-lead                                            │
+     │    claimLeadTool.execute({ identifier: post.url, ... })        │
+     │    → { success: true, leadId: "dorg-456" }                     │
+     │                                                                 │
+     │  Step 7: post-completion-checks                                │
+     │    78 >= 90? No → { outcome: "awaiting_research" }            │
+     │                                                                 │
+     └─────────────────────────────────────────────────────────────────┘
+                                           │
+  4. Worker receives result               │
+     → outcome: "awaiting_research"        │
+     → Update Postgres: probability_score=0.78, status=AWAITING_RESEARCH,   │
+       dorg_lead_id="dorg-456", why_fit="...", needs="..."
+     → Enqueue postId in gtm:deep-research:queue (if triggerDeepResearch)
+     → LREM gtm:posts:processing (ack)                                │
+                                           │
+  (If probability_score >= 0.9, deep research worker picks up:)            │
+                                           │
+  5. Deep Research Worker:                │
+     deep-research-workflow → generate-message-workflow (conditional) → surface-lead-workflow
+     → Status: AWAITING_RESEARCH (surfaced with comprehensive brief)
+```
+
+---
+
+## 11. Provider Swap Interfaces
+
+The `SearchProvider` and `PageScraper` interfaces live **only in gtm-ai**, as the backing implementations for `searchWebTool` and `scrapePageTool`. All search and scrape calls — whether from `search-for-leads-workflow` (direct tool calls from steps) or `deep-research-workflow` (agent-driven tool calls) — go through these tools. gtm-workers never calls Serper or ContextDev directly and has no need for these interfaces or their implementations.
+
+---
+
+## 12. File Structure
+
+### gtm-ai (new/modified)
+
+```
+gtm-ai/src/mastra/
+├── index.ts                                    # Register everything
+├── config/
+│   └── app-env.ts                              # + Serper, ContextDev, dOrg env vars
+├── agents/
+│   ├── lead-score-agent.ts                     # Modified: 0–1, parameterized prompt
+│   ├── lead-analysis-agent.ts                  # Modified: parameterized prompt
+│   ├── search-term-agent.ts                    # New
+│   ├── search-filter-agent.ts                  # New
+│   ├── web-summarization-agent.ts              # New: summarizes scraped content (cheap model)
+│   ├── evaluation-agent.ts                     # New: relevance + entity match checks
+│   ├── learning-extraction-agent.ts            # New: extracts learnings + follow-up questions
+│   ├── deep-research-agent.ts                  # New: tool-equipped, two-phase research
+│   ├── report-agent.ts                         # New: synthesizes learnings into markdown report
+│   └── message-generation-agent.ts             # New
+├── tools/
+│   ├── search-web.tool.ts                      # New: Serper API wrapper
+│   ├── scrape-page.tool.ts                     # New: ContextDev wrapper + auto-summarization
+│   ├── evaluate-result.tool.ts                 # New: relevance + entity match evaluation
+│   ├── extract-learnings.tool.ts               # New: learning extraction + follow-up questions
+│   ├── dedup-search-term.tool.ts               # New: Redis SISMEMBER/SADD for search-term dedup
+│   ├── dedup-processed-url.tool.ts             # New: Redis SISMEMBER/SADD for URL dedup
+│   ├── claim-lead.tool.ts                      # New: dOrg /leads/claim
+│   ├── surface-lead.tool.ts                    # New: dOrg /leads/surface
+│   └── send-discord-message.tool.ts            # New: dOrg /discord/post
+├── workflows/
+│   ├── lead-score-workflow.ts                  # Modified: 0–1 output
+│   ├── lead-analysis-workflow.ts               # Modified: configurable
+│   ├── process-lead-workflow.ts                # New: replaces ProcessPostJob
+│   ├── search-for-leads-workflow.ts            # New: replaces SearchForLeads
+│   ├── deep-research-workflow.ts               # New
+│   ├── generate-message-workflow.ts            # New
+│   └── surface-lead-workflow.ts                 # New: builds brief + surfaces + notifies
+├── prompts/
+│   ├── build-lead-score-prompt.ts              # Modified: accepts ConsultancyConfig
+│   ├── build-lead-analysis-prompt.ts           # Modified: accepts ConsultancyConfig
+│   ├── build-search-term-prompt.ts             # New
+│   ├── build-search-filter-prompt.ts           # New
+│   ├── build-deep-research-prompt.ts           # New
+│   ├── build-message-generation-prompt.ts      # New
+│   ├── build-surface-brief.ts                  # New (moved from workers, used by surface-lead-workflow)
+│   └── format-crawler-post-for-llm.ts          # Preserved
+├── schemas/
+│   ├── crawler-post-input-schema.ts            # Preserved
+│   ├── lead-score-result-schema.ts             # Modified: probabilityScore
+│   ├── lead-analysis-result-schema.ts          # Modified: +budget, +companyName
+│   ├── process-lead-result-schema.ts           # New
+│   ├── search-term-result-schema.ts            # New
+│   ├── search-filter-result-schema.ts          # New
+│   ├── deep-research-result-schema.ts          # New
+│   ├── message-generation-result-schema.ts     # New
+│   └── consultancy-config-schema.ts            # New
+├── scorers/                                    # Updated for new schemas
+├── observability/                              # Preserved
+├── storage/                                    # Preserved
+└── types/
+    ├── gtm-request-context.ts                  # Modified
+    └── consultancy-config.ts                   # New
+```
+
+### gtm-workers (slimmed down)
+
+```
+gtm-workers/src/
+├── bin/
+│   ├── api.ts
+│   ├── worker.ts
+│   ├── search-worker.ts
+│   └── deep-research-worker.ts
+├── clients/
+│   └── mastra-client.ts                        # Thin wrapper around @mastra/client-js
+├── config/
+│   └── app-env.ts
+├── constants/
+│   ├── post-status.ts
+│   └── route-paths.ts
+├── http/
+│   ├── create-server.ts
+│   ├── handle-health-request.ts
+│   ├── handle-search-run-request.ts
+│   ├── handle-lead-request.ts
+│   └── handle-configuration-request.ts
+├── schemas/
+│   ├── queue-payload-schema.ts
+│   ├── search-run-request-schema.ts
+│   └── configuration-schema.ts
+├── storage/
+│   ├── database.ts
+│   ├── migrate.ts
+│   ├── lead-queue.ts
+│   ├── search-run-queue.ts
+│   ├── deep-research-queue.ts
+│   ├── run-state-store.ts
+│   ├── repositories/
+│   │   ├── post-repository.ts
+│   │   └── search-run-repository.ts
+│   └── schema/
+│       ├── posts-table.ts
+│       └── search-runs-table.ts
+└── worker/
+    └── mark-post-error.ts
+```
+
+---
+
+## 13. Key Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| **Most orchestration logic moves to Mastra workflows** | Business rules (thresholds, auto-triggers, state transitions) live primarily in workflows. The deep research worker does some orchestration — it calls three workflows in sequence (deep-research-workflow → generate-message-workflow (conditional) → surface-lead-workflow) — but the branching logic is minimal (checking auto-message-gen toggle and threshold). This keeps workflows focused and testable. |
+| **Claiming happens in `process-lead-workflow`** | The lead is claimed in dOrg via `claimLeadTool` at the end of `process-lead-workflow` (after scoring and analysis pass). The dOrg lead ID is then available for all downstream workflows (`deep-research-workflow`, `surface-lead-workflow`). Claiming early ensures the lead is tracked in dOrg from the moment it's identified. |
+| **`search-for-leads-workflow` calls tools directly from steps (not via agents)** | Tools called via `tool.execute()` in workflow steps are plain TypeScript functions — zero LLM tokens, and multiple calls can be parallelized within a single step. This means the workflow can execute hundreds of searches and scrapes without paying any LLM cost for the I/O. Only the reasoning steps (generate terms, filter, evaluate) use the LLM. All external API clients (Serper, ContextDev) and Redis dedup operations live only in gtm-ai, inside the tools. |
+| **Deep research uses an agent-driven pattern** | Deep research has intentionally limited scope (~6–10 searches). The `deepResearchAgent` is equipped with tools and drives a two-phase research process autonomously. The agent-driven pattern is appropriate here because the agent must adapt its research direction based on what it finds — generating follow-up questions mid-flight that can't be predicted upfront. `maxSteps: 12` and content summarization via `webSummarizationAgent` keep token spend bounded. |
+| **Workers remain the sole owner of Postgres** | Mastra uses LibSQL internally. Keeping Postgres in workers avoids schema conflicts and keeps a single source of truth for lead data. The CRM/management app will query the workers' API, not Mastra's. |
+| **Runtime config flows as `runConfig` in every workflow call** | Agents rebuild their system prompts per execution using the config from `requestContext`. This makes config changes take effect instantly — no need to restart agents. |
+| **No retry logic in workers' Mastra client** | Retry logic for transient failures belongs in Mastra's agent configuration (`maxRetries`, `maxProcessorRetries`). The worker's HTTP call to Mastra is a simple fetch — if it fails, the worker moves the message to the DLQ (the queue's BRPOPLPUSH guarantees no message loss). |

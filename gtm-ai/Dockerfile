@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy package.json and bun.lock
 COPY package.json bun.lock ./
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 RUN bun install
 

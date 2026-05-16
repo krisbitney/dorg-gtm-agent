@@ -9,6 +9,7 @@ export interface LeadQueueInterface {
   ack(payload: string): Promise<void>;
   moveToDeadLetter(payload: string, deadLetterPayload: string): Promise<void>;
   requeueProcessing(): Promise<void>;
+  length(): Promise<number>;
 }
 
 /**
@@ -20,7 +21,6 @@ export class RedisLeadQueue implements LeadQueueInterface {
   private readonly mainQueue = appEnv.QUEUE_NAME;
   private readonly processingQueue = appEnv.QUEUE_PROCESSING_NAME;
   private readonly dlq = appEnv.QUEUE_DLQ_NAME;
-  private readonly pollTimeout = appEnv.WORKER_POLL_TIMEOUT_SECONDS;
 
   constructor() {
     if (!this.redis.connected) {
@@ -37,10 +37,10 @@ export class RedisLeadQueue implements LeadQueueInterface {
 
   /**
    * Atomically moves an item from the main queue to the processing queue.
-   * Blocks for up to pollTimeout seconds if the main queue is empty.
+   * Returns null immediately if the main queue is empty (non-blocking).
    */
   async reserveNext(): Promise<string | null> {
-    return await this.redis.brpoplpush(this.mainQueue, this.processingQueue, this.pollTimeout);
+    return await this.redis.rpoplpush(this.mainQueue, this.processingQueue);
   }
 
   /**
@@ -68,5 +68,12 @@ export class RedisLeadQueue implements LeadQueueInterface {
     while ((payload = await this.redis.rpop(this.processingQueue))) {
       await this.redis.lpush(this.mainQueue, payload);
     }
+  }
+
+  /**
+   * Returns the total number of items in the main queue.
+   */
+  async length(): Promise<number> {
+    return await this.redis.llen(this.mainQueue);
   }
 }

@@ -12,8 +12,6 @@ The service consists of two main runtimes:
 ## HTTP Endpoints
 
 -   `GET /healthz`: Health check endpoint.
--   `POST /internal/crawl-runs`: Internal endpoint to trigger an Apify crawl run. Protected by `TRIGGER_API_TOKEN`.
--   `POST /webhooks/apify/run-finished`: Webhook endpoint called by Apify when a crawl run reaches a terminal state. Protected by `APIFY_WEBHOOK_SECRET`.
 
 ## Setup
 
@@ -23,8 +21,6 @@ Required variables:
 
 - `WORKERS_API_PORT`: Port for the HTTP API (default: 3000)
 - `WORKERS_PUBLIC_BASE_URL`: Publicly accessible URL for Apify webhooks
-- `TRIGGER_API_TOKEN`: Secret token for authenticating trigger requests
-- `APIFY_WEBHOOK_SECRET`: Secret for authenticating Apify webhooks
 - `DATABASE_URL`: PostgreSQL connection string
 - `REDIS_URL`: Redis connection string
 - `APIFY_TOKEN`: Apify API token

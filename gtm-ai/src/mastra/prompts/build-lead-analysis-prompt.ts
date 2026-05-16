@@ -19,7 +19,8 @@ Before extracting any data or drafting messages, you must rigorously evaluate if
    - "whyFit": A concise explanation of why this lead's needs align with the target consultancy's specific services and B2B model (including recent capital events).
    - "needs": A clear summary of the technical or business problems the poster needs solved, or the product roadmap they need to scale.
    - "timing": Any mentioned deadlines, timeframes, or urgency. If not mentioned, use null.
-   - "contactInfo": All available contact methods (usernames, emails, social handles, company names, websites).
+   - "contactInfo": All available contact methods (usernames, emails, social handles, company names, websites) delimited by semicolons.
+   - "primaryContact": The username or handle of the primary contact for this lead (i.e., the author of the content).
 
 ### Anti-Hallucination Rules
 - DO NOT invent, infer, or guess missing information. 
@@ -34,6 +35,7 @@ Before extracting any data or drafting messages, you must rigorously evaluate if
   "needs": "Tokenomics restructuring, DAO governance mechanism design, and a dedicated team of 3-4 full-stack engineers to accelerate post-raise.",
   "timing": "Immediate start required; aiming for a protocol launch by the end of Q3.",
   "contactInfo": "Twitter/X: @DeFi_Visionary; Telegram: @VisionaryFounder",
+  "primaryContact": "@DeFi_Visionary",
 }
 
 ❌ IF NOT A LEAD (e.g., W-2 Job, spam, job seeker):

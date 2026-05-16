@@ -90,6 +90,7 @@ export class ProcessLeadJob {
           needs: analysisResult.needs,
           timing: analysisResult.timing,
           contactInfo: analysisResult.contactInfo,
+          primaryContact: analysisResult.primaryContact,
         },
         LeadStatus.CLAIMING
       );
@@ -98,6 +99,7 @@ export class ProcessLeadJob {
       lead.needs = analysisResult.needs;
       lead.timing = analysisResult.timing;
       lead.contactInfo = analysisResult.contactInfo;
+      lead.primaryContact = analysisResult.primaryContact;
     }
 
     // 5. dOrg Claim
@@ -108,7 +110,7 @@ export class ProcessLeadJob {
         console.log(`[Lead ${leadId}] Already has dorgLeadId ${lead.dorgLeadId}, skipping claim.`);
       } else {
         const claimResult = await this.dorgApiClient.claimLead({
-          identifier: lead.url,
+          identifier: lead.primaryContact ?? lead.contactInfo?.split(";")[0] ?? "",
           channel: lead.platform,
         });
 

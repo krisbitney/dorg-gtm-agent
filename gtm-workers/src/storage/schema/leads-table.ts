@@ -16,6 +16,7 @@ export const leads = pgTable("leads", {
   needs: text("needs"),
   timing: text("timing"),
   contactInfo: text("contact_info"),
+  primaryContact: text("primary_contact"),
   draftMessage: text("draft_message"),
   dorgLeadId: text("dorg_lead_id"),
   errorMessage: text("error_message"),

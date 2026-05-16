@@ -48,6 +48,7 @@ export class LeadRepository {
       needs: string;
       timing?: string | null;
       contactInfo: string;
+      primaryContact: string;
       draftMessage?: string;
     },
     status: LeadStatusType

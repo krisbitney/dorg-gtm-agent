@@ -40,7 +40,7 @@ export class ScrapflyScrapeProvider implements PageScraperInterface {
       }
 
       return {
-        url: response.result.url,
+        url,
         content: response.result.content
       };
     } catch (e: unknown) {

@@ -14,14 +14,12 @@ import {
   type SearchAndFilterState, ExecuteSearchOutputSchema, ScrapedLeadSchema,
 } from '../schemas/search-and-filter-schema';
 import type { SearchResult } from '../interfaces/search-provider-interface';
-import {TwitterScrapeProvider} from "../providers/twitter-scrape-provider";
 import {ScrapflyScrapeProvider} from "../providers/scrapfly-scrape-provider";
 
 const serper = new SerperProvider({ apiKey: appEnv.SERPER_API_KEY ?? '' });
 // const scrapeProvider = new ContextDevProvider({ apiKey: appEnv.CONTEXT_DEV_API_KEY ?? '' });
 // const webScrapeProvider = new FirecrawlScrapeProvider({ apiKey: appEnv.FIRECRAWL_API_KEY ?? '' });
 const webScrapeProvider = new ScrapflyScrapeProvider({ apiKey: appEnv.SCRAPFLY_API_KEY ?? '' });
-const twitterScrapeProvider = new TwitterScrapeProvider();
 const urlDedup = new RedisReadonlyUrlDedupStore();
 
 /**
@@ -135,9 +133,8 @@ export const searchAndFilterWorkflow = createWorkflow({
         const leads: { url: string; content: string }[] = [];
 
         for (const { url } of promisingUrls) {
-          const scrapeProvider = url.includes("//x.com") ? twitterScrapeProvider : webScrapeProvider;
           try {
-            const scraped = await scrapeProvider.scrape({ url }, logger);
+            const scraped = await webScrapeProvider.scrape({ url }, logger);
             leads.push({ url: scraped.url, content: scraped.content });
           } catch (error) {
             logger.warn(`Failed to scrape ${url}: ${error}`);

@@ -16,6 +16,7 @@ Evaluate the intent, budget, and context of the lead using this scale:
 - Job seekers looking for work.
 - Listicles, SEO spam, or general news without context on company scaling.
 - Irrelevant technology or out of scope.
+- An advertisement or promotional post.
 
 🟡 0.30 - 0.50 (Cold / Ambiguous)
 - Technical discussions or questions without clear buying intent.

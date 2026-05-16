@@ -29,7 +29,7 @@ export const leadAnalysisWorkflow = createWorkflow({
           },
           abortSignal,
         });
-        logger.info(`[Lead ${inputData.id}] LLM generated lead analysis. isLead: ${result.object.isLead}`);
+        logger.info(`[Lead ${inputData.id}] LLM generated lead analysis for url ${inputData.url}. isLead: ${result.object.isLead}`);
         return result.object;
       },
     }),

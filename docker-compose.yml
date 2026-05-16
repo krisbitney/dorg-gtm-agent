@@ -80,7 +80,7 @@ services:
       - SEARCH_DAYS_BACK=30
       - SEARCH_PAGES=1
       - SEARCH_WORKER_CONCURRENCY=4
-      - LEAD_SCORE_THRESHOLD=0.3
+      - LEAD_SCORE_THRESHOLD=0.5
     depends_on:
       postgres:
         condition: service_healthy

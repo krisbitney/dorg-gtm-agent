@@ -42,7 +42,7 @@ You MUST return a valid JSON object.
 Example:
 {
   "reasoning": "The company just announced a $10M Series A and mentioned scaling their engineering team rapidly. High probability they have the budget and need for an external dev shop to accelerate their roadmap.",
-  "score": 0.95
+  "leadProbability": 0.95
 }
   `.trim();
 };

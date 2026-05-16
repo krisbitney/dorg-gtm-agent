@@ -11,7 +11,7 @@ import {
   SearchAndFilterStateSchema,
   SearchFilterOutputSchema,
   SearchAndFilterOutputSchema,
-  type SearchAndFilterState, ExecuteSearchOutputSchema,
+  type SearchAndFilterState, ExecuteSearchOutputSchema, ScrapedLeadSchema,
 } from '../schemas/search-and-filter-schema';
 import type { SearchResult } from '../interfaces/search-provider-interface';
 import {TwitterScrapeProvider} from "../providers/twitter-scrape-provider";
@@ -182,13 +182,10 @@ export const searchAndFilterWorkflow = createWorkflow({
 
             const result = await searchFilterAgent.generate(prompt, {
               structuredOutput: {
-                schema: SearchAndFilterOutputSchema,
+                schema: ScrapedLeadSchema,
               },
             });
-
-            if (result.object.leads.length > 0) {
-              extractedLeads.push(...result.object.leads);
-            }
+            extractedLeads.push(result.object);
           } catch (error) {
             logger.warn(
               `Failed to extract content from ${lead.url}: ${error}`,

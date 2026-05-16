@@ -12,10 +12,7 @@ export const buildContentExtractionPrompt = (params: {
   lead: ScrapedLead;
 }): string => {
   return `
-You are an expert Data Extraction Specialist and B2B Lead Researcher. Your objective is to parse raw, scraped web page content (often noisy markdown) and extract ONLY the high-signal information relevant to qualifying a B2B lead for the target consultancy.
-
-### Target Consultancy Context
-${params.targetDescription}
+You are an expert Data Extraction Specialist and B2B Lead Researcher. Your objective is to parse raw, scraped web page content (often noisy markdown or json) and extract the raw content that may be relevant to qualifying a B2B lead for the target consultancy.
 
 ### Scraped Page Data
 URL: ${params.lead.url}
@@ -25,7 +22,7 @@ ${params.lead.content.slice(0, MAX_CONTENT_LENGTH)}
 --- END RAW CONTENT ---
 
 ### Extraction Directives
-Your goal is to distill the raw text into a clean, concise summary of the actual lead opportunity.
+Your goal is to extract the core content (e.g., the user post if it is a reddit post).
 
 ✅ **WHAT TO EXTRACT & PRESERVE:**
 - **Core Narrative:** The main post body, RFP description, project announcement, or press release detailing a recent funding round/capital raise.
@@ -34,30 +31,26 @@ Your goal is to distill the raw text into a clean, concise summary of the actual
 - **Business & Financial Parameters:** Explicit mentions of budget, timelines, milestones, hiring urgency, specific funding rounds (e.g., Seed, Series A), or amount of capital raised (e.g., "$10 million").
 - **Technical Scope:** The required tech stack, architecture, specific blockers, or project scope that needs scaling.
 - **Author Follow-ups:** Any replies or comments made *specifically by the original author* that add context to the project.
+- **Other useful content:** Any additional details or context that might be relevant to the lead.
 
 ❌ **WHAT TO STRIP OUT & IGNORE:**
 - Boilerplate UI elements (navigation menus, footers, sidebars, cookie banners, login prompts).
 - Irrelevant user comments, forum banter, or off-topic replies.
 - Advertisements, promotional links, "related posts" feeds, or generic site disclaimers.
+- Irrelevant metadata.
 
 ### Output Formatting Rules
 - Structure the extracted 'content' string as clean, readable Markdown. 
 - Use headers, bold text, and bullet points to make it highly legible for a human sales rep.
-- DO NOT hallucinate or infer missing details. If a budget, tech stack, or funding amount isn't mentioned, omit it.
+- DO NOT hallucinate or infer missing details.
 
 ### Output JSON Format
-Return ONLY a valid JSON object containing a "leads" array. 
-- If the page contains valid lead content, the array should contain exactly one object: { "url": "${params.lead.url}", "content": "<your_cleaned_markdown_string>" }.
-- If the full page reveals this is a false positive (e.g., it is actually a W-2 job posting, SEO spam, general news with no tech/scaling context, or contains no actionable project info), return an empty array: { "leads": [] }.
+Return ONLY a valid JSON object of the form: { "url": "${params.lead.url}", "content": "<your_cleaned_markdown_string>" }.
 
-Example format for a valid lead:
+Example format:
 {
-  "leads": [
-    {
-      "url": "https://example.com/news/startup-raises-10m",
-      "content": "**Company:** TechFlow\\n**Date:** Oct 24, 2024\\n\\n**Project & Funding Details:**\\nTechFlow just raised $10M in Series A funding to scale their platform and is actively looking to expand their external dev teams.\\n\\n**Tech Stack:** React, Node.js\\n**Capital Raised:** $10M"
-    }
-  ]
+  "url": "https://example.com/news/startup-raises-10m",
+  "content": "**Company:** TechFlow\\n**Date:** Oct 24, 2024\\n\\n**Project & Funding Details:**\\nTechFlow just raised $10M in Series A funding to scale their platform and is actively looking to expand their external dev teams.\\n\\n**Tech Stack:** React, Node.js\\n**Capital Raised:** $10M"
 }
 `.trim();
 };

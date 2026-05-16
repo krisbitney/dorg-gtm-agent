@@ -23,11 +23,12 @@ You are an expert B2B Lead Qualifier and SDR. Your job is to evaluate search eng
 ${params.targetDescription}
 
 ### The Objective
-Filter the provided search results based on their Title, URL, and Snippet. You are looking for potential clients (companies, founders, DAOs, project leads) who might need to hire a consultancy, agency, or external dev shop. 
+Filter the provided search results based on their Title, URL, and Snippet. You are looking for potential clients (companies, founders, DAOs, project leads) who might need to hire a consultancy, agency, or external dev shop, OR companies that have recently raised capital and need to scale quickly.
 
 ### Evaluation Criteria
 
 ✅ **KEEP (Positive Intent Signals):**
+- Companies announcing recent successful funding rounds (e.g., Seed, Series A, "raised $10 million") indicating they have capital to deploy on scaling their technology.
 - Posts asking for recommendations for agencies, dev shops, or consultancies.
 - Companies or founders expressing technical pain points, blockers, or needing architectural advice.
 - Requests for Proposals (RFPs), Request for Quotations (RFQs), or grant programs seeking service providers.
@@ -51,7 +52,8 @@ Example Output:
 {
   "promisingUrls": [
     { "url": "https://example.com/forum/need-help-scaling" },
-    { "url": "https://example.com/rfp/new-project" }
+    { "url": "https://example.com/rfp/new-project" },
+    { "url": "https://example.com/news/startup-raises-10m-series-a" }
   ]
 }
 `.trim();

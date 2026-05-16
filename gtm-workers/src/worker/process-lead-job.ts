@@ -90,7 +90,6 @@ export class ProcessLeadJob {
           needs: analysisResult.needs,
           timing: analysisResult.timing,
           contactInfo: analysisResult.contactInfo,
-          draftMessage: analysisResult.draftMessage,
         },
         LeadStatus.CLAIMING
       );
@@ -99,7 +98,6 @@ export class ProcessLeadJob {
       lead.needs = analysisResult.needs;
       lead.timing = analysisResult.timing;
       lead.contactInfo = analysisResult.contactInfo;
-      lead.draftMessage = analysisResult.draftMessage;
     }
 
     // 5. dOrg Claim

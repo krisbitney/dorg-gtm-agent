@@ -9,7 +9,7 @@ import { buildLeadScorePrompt } from '../prompts/build-lead-score-prompt';
 export const leadScoreAgent = new Agent({
   name: 'Lead Score Agent',
   id: 'lead-score-agent',
-  description: 'Estimates the likelihood of extracted content being a high-intent B2B lead (0.0 to 1.0).',
+  description: 'Estimates the likelihood of extracted content being a high-quality B2B lead (0.0 to 1.0).',
   instructions: buildLeadScorePrompt(),
   model: appEnv.GTM_SCORE_MODEL,
   maxRetries: 5,

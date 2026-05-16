@@ -14,24 +14,25 @@ Evaluate the intent, budget, and context of the lead using this scale:
 🔴 0.00 - 0.20 (Junk / Not a Lead)
 - W-2 / FTE Job postings (looking to hire a single employee).
 - Job seekers looking for work.
-- Listicles, SEO spam, or general news.
+- Listicles, SEO spam, or general news without context on company scaling.
 - Irrelevant technology or out of scope.
 
 🟡 0.30 - 0.50 (Cold / Ambiguous)
 - Technical discussions or questions without clear buying intent.
-- A founder mentioning they are building something relevant, but hasn't indicated they need outside help.
+- A founder mentioning they are building something relevant, but hasn't indicated they need outside help or have the budget.
 - Good target profile, but no active trigger event.
 
 🟢 0.60 - 0.80 (Warm / High Potential)
 - User expressing severe pain points with their current stack or vendor.
 - Founder asking for architectural advice or "how much it costs to build X".
 - Project announcements indicating they are early stage and likely lack in-house engineering capacity.
-- Project announcements suggesting a startup recently received (or will receive) venture capital funding.
+- Indicators of upcoming venture capital funding or early-stage capital seeking.
 
-🔥 0.90 - 1.00 (Hot / Immediate Intent)
+🔥 0.90 - 1.00 (Hot / Immediate Intent & Budget)
 - Explicit requests for recommendations for a dev shop, agency, or consultancy.
 - RFPs, grant announcements, or requests for proposals.
 - Explicit mentions of a budget to outsource a project.
+- Recent, successful funding announcements (e.g., "just raised $10M Seed", "closed Series A") indicating immediate capital to deploy for scaling development.
 
 ### Output Format
 You MUST return a valid JSON object. 
@@ -40,7 +41,7 @@ You MUST return a valid JSON object.
 
 Example:
 {
-  "reasoning": "The author is building a web3 project and explicitly asked for dev shop recommendations. Fits the consultancy perfectly.",
+  "reasoning": "The company just announced a $10M Series A and mentioned scaling their engineering team rapidly. High probability they have the budget and need for an external dev shop to accelerate their roadmap.",
   "score": 0.95
 }
   `.trim();

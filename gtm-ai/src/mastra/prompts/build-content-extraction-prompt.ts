@@ -28,11 +28,11 @@ ${params.lead.content.slice(0, MAX_CONTENT_LENGTH)}
 Your goal is to distill the raw text into a clean, concise summary of the actual lead opportunity.
 
 ✅ **WHAT TO EXTRACT & PRESERVE:**
-- **Core Narrative:** The main post body, RFP description, or project announcement.
+- **Core Narrative:** The main post body, RFP description, project announcement, or press release detailing a recent funding round/capital raise.
 - **Metadata:** Author/Poster name, usernames, company name, and exact date/time posted.
 - **Contact Info:** Email addresses, direct links, social handles, or application portals.
-- **Business Parameters:** Explicit mentions of budget, timelines, milestones, or hiring urgency.
-- **Technical Scope:** The required tech stack, architecture, specific blockers, or project scope.
+- **Business & Financial Parameters:** Explicit mentions of budget, timelines, milestones, hiring urgency, specific funding rounds (e.g., Seed, Series A), or amount of capital raised (e.g., "$10 million").
+- **Technical Scope:** The required tech stack, architecture, specific blockers, or project scope that needs scaling.
 - **Author Follow-ups:** Any replies or comments made *specifically by the original author* that add context to the project.
 
 ❌ **WHAT TO STRIP OUT & IGNORE:**
@@ -43,19 +43,19 @@ Your goal is to distill the raw text into a clean, concise summary of the actual
 ### Output Formatting Rules
 - Structure the extracted 'content' string as clean, readable Markdown. 
 - Use headers, bold text, and bullet points to make it highly legible for a human sales rep.
-- DO NOT hallucinate or infer missing details. If a budget or tech stack isn't mentioned, omit it.
+- DO NOT hallucinate or infer missing details. If a budget, tech stack, or funding amount isn't mentioned, omit it.
 
 ### Output JSON Format
 Return ONLY a valid JSON object containing a "leads" array. 
 - If the page contains valid lead content, the array should contain exactly one object: { "url": "${params.lead.url}", "content": "<your_cleaned_markdown_string>" }.
-- If the full page reveals this is a false positive (e.g., it is actually a W-2 job posting, SEO spam, or contains no actionable project info), return an empty array: { "leads": [] }.
+- If the full page reveals this is a false positive (e.g., it is actually a W-2 job posting, SEO spam, general news with no tech/scaling context, or contains no actionable project info), return an empty array: { "leads": [] }.
 
 Example format for a valid lead:
 {
   "leads": [
     {
-      "url": "https://example.com/forum/post",
-      "content": "**Author:** username123\\n**Date:** Oct 24, 2024\\n\\n**Project Details:**\\nLooking for an agency to build our MVP...\\n\\n**Tech Stack:** React, Node.js\\n**Budget:** $50k"
+      "url": "https://example.com/news/startup-raises-10m",
+      "content": "**Company:** TechFlow\\n**Date:** Oct 24, 2024\\n\\n**Project & Funding Details:**\\nTechFlow just raised $10M in Series A funding to scale their platform and is actively looking to expand their external dev teams.\\n\\n**Tech Stack:** React, Node.js\\n**Capital Raised:** $10M"
     }
   ]
 }

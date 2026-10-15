@@ -52,3 +52,8 @@ curl -X POST "http://localhost:3000/webhooks/apify/run-finished?secret=secret&pl
   • Make sure the gtm-workers-api container logs look good
   • Then monitor the logs of the gtm-workers-workers and gtm-ai containers to verify that the workers are successfully processing the twitter post data
 
+  Let's test everything again from the start.
+  • Run the docker compose @docker-compose.yml with fresh volumes
+  • Then monitor the logs of the gtm-workers-workers and gtm-ai containers to verify that the workers are working successfully as intended
+
+  Why does it seem like the search loop/job is slow?

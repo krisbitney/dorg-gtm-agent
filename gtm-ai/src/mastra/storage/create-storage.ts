@@ -15,7 +15,7 @@ export const createStorage = async () => {
       url: appEnv.MASTRA_STORAGE_URL,
     }),
     domains: {
-      observability: await new DuckDBStore().getStore('observability'),
+      observability: await new DuckDBStore({ path: appEnv.MASTRA_OBSERVABILITY_DB_PATH }).getStore('observability'),
     }
   });
 };

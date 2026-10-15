@@ -1,0 +1,149 @@
+import { LeadRepository } from "../storage/repositories/lead-repository.js";
+import type { GtmAiClientInterface } from "../clients/gtm-ai-client.js";
+import type { DorgApiClientInterface } from "../clients/dorg-api-client.js";
+import {LeadStatus, type LeadStatusType} from "../constants/lead-status.js";
+import { mapLeadToAiLeadScoreAndAnalysisInput } from "../clients/gtm-ai-client.js";
+import { buildSurfaceBrief } from "./build-surface-brief.js";
+import { appEnv } from "../config/app-env.js";
+import {defaultTargetConsultancyDescription} from "../constants/default-target-consultancy-description.js";
+
+/**
+ * Use case to process a single lead through the AI and dOrg pipeline.
+ */
+export class ProcessLeadJob {
+  constructor(
+    private readonly leadRepository: LeadRepository,
+    private readonly gtmAiClient: GtmAiClientInterface,
+    private readonly dorgApiClient: DorgApiClientInterface,
+    private readonly workerRunId: string
+  ) {}
+
+  /**
+   * Orchestrates the AI scoring, analysis, and dOrg claim/surface flow.
+   */
+  async execute(leadId: string) {
+    console.log(`[Lead ${leadId}] Starting lead processing job...`);
+
+    // 1. Load the lead
+    const lead = await this.leadRepository.findById(leadId);
+    if (!lead) {
+      console.error(`[Lead ${leadId}] Lead not found in repository.`);
+      throw new Error(`Lead not found: ${leadId}`);
+    }
+
+    // 2. Skip if already in a terminal state
+    const terminalStatuses: LeadStatusType[] = [
+      LeadStatus.BELOW_THRESHOLD,
+      LeadStatus.NOT_A_LEAD,
+      LeadStatus.COMPLETED,
+    ];
+    if (terminalStatuses.includes(lead.status as LeadStatusType)) {
+      console.log(`[Lead ${leadId}] Lead is already in terminal state "${lead.status}", skipping.`);
+      return;
+    }
+
+    const aiInput = mapLeadToAiLeadScoreAndAnalysisInput(lead, defaultTargetConsultancyDescription);
+    const context = {
+      leadId: leadId,
+      platform: lead.platform,
+      source: "worker",
+      workerRunId: this.workerRunId,
+    };
+
+    // 3. Scoring
+    if (lead.status === LeadStatus.PENDING || lead.status === LeadStatus.SCORING) {
+      console.log(`[Lead ${leadId}] Step: Scoring lead...`);
+      await this.leadRepository.updateStatus(leadId, LeadStatus.SCORING);
+      const scoreResult = await this.gtmAiClient.scoreLead(aiInput, context);
+      
+      console.log(`[Lead ${leadId}] Scoring complete. Probability: ${scoreResult.leadProbability}`);
+
+      if (scoreResult.leadProbability < appEnv.LEAD_SCORE_THRESHOLD) {
+        console.log(`[Lead ${leadId}] Lead probability ${scoreResult.leadProbability} is below threshold ${appEnv.LEAD_SCORE_THRESHOLD}. Marking as BELOW_THRESHOLD.`);
+        await this.leadRepository.saveScore(leadId, scoreResult.leadProbability, LeadStatus.BELOW_THRESHOLD);
+        return;
+      }
+      
+      await this.leadRepository.saveScore(leadId, scoreResult.leadProbability, LeadStatus.ANALYZING);
+      // Refresh local lead object or just proceed as we know it's ANALYZING now
+      lead.status = LeadStatus.ANALYZING;
+    }
+
+    // 4. Analysis
+    if (lead.status === LeadStatus.ANALYZING) {
+      console.log(`[Lead ${leadId}] Step: Analyzing lead...`);
+      const analysisResult = await this.gtmAiClient.analyzeLead(aiInput, context);
+      
+      console.log(`[Lead ${leadId}] Analysis complete. isLead: ${analysisResult.isLead}`);
+
+      if (!analysisResult.isLead) {
+        console.log(`[Lead ${leadId}] AI determined this is not a lead. Marking as NOT_A_LEAD.`);
+        await this.leadRepository.updateStatus(leadId, LeadStatus.NOT_A_LEAD);
+        return;
+      }
+      
+      console.log(`[Lead ${leadId}] AI determined this IS a lead. Saving analysis.`);
+      await this.leadRepository.saveAnalysis(
+        leadId,
+        {
+          whyFit: analysisResult.whyFit,
+          needs: analysisResult.needs,
+          timing: analysisResult.timing,
+          contactInfo: analysisResult.contactInfo,
+          primaryContact: analysisResult.primaryContact,
+        },
+        LeadStatus.CLAIMING
+      );
+      lead.status = LeadStatus.CLAIMING;
+      lead.whyFit = analysisResult.whyFit;
+      lead.needs = analysisResult.needs;
+      lead.timing = analysisResult.timing;
+      lead.contactInfo = analysisResult.contactInfo;
+      lead.primaryContact = analysisResult.primaryContact;
+    }
+
+    // 5. dOrg Claim
+    if (lead.status === LeadStatus.CLAIMING) {
+      console.log(`[Lead ${leadId}] Step: Claiming lead in dOrg...`);
+      // Idempotency check: if dorgLeadId already exists, skip claim
+      if (lead.dorgLeadId) {
+        console.log(`[Lead ${leadId}] Already has dorgLeadId ${lead.dorgLeadId}, skipping claim.`);
+      } else {
+        const claimResult = await this.dorgApiClient.claimLead({
+          identifier: lead.primaryContact ?? lead.contactInfo?.split(";")[0] ?? "",
+          channel: lead.platform,
+        });
+
+        if (!claimResult.success) {
+          console.error(`[Lead ${leadId}] dOrg claim failed: ${claimResult.message}`);
+          await this.leadRepository.markClaimFailed(leadId, claimResult.message || "Unknown claim failure");
+          return;
+        }
+
+        console.log(`[Lead ${leadId}] dOrg claim successful. leadId: ${claimResult.leadId}`);
+        await this.leadRepository.saveDorgLeadId(leadId, claimResult.leadId!, LeadStatus.SURFACING);
+        lead.dorgLeadId = claimResult.leadId!;
+      }
+      lead.status = LeadStatus.SURFACING;
+    }
+
+    // 6. dOrg Surface
+    if (lead.status === LeadStatus.SURFACING) {
+      console.log(`[Lead ${leadId}] Step: Surfacing lead to dOrg...`);
+      const brief = buildSurfaceBrief(lead);
+      const surfaceResult = await this.dorgApiClient.surfaceLead({
+        leadId: lead.dorgLeadId!,
+        brief,
+      });
+
+      if (!surfaceResult.success) {
+        console.error(`[Lead ${leadId}] dOrg surface failed: ${surfaceResult.message}`);
+        throw new Error(surfaceResult.message || "Failed to surface lead");
+      }
+
+      console.log(`[Lead ${leadId}] dOrg surface successful. Marking as COMPLETED.`);
+      await this.leadRepository.markCompleted(leadId);
+    }
+    console.log(`[Lead ${leadId}] Lead processing job completed successfully.`);
+  }
+}

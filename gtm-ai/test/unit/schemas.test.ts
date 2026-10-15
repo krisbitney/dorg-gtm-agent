@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { CrawlerPostInputSchema } from "../../src/mastra/schemas/crawler-post-input-schema";
+import { LeadInputSchema } from "../../src/mastra/schemas/lead-input-schema";
 import { LeadScoreResultSchema } from "../../src/mastra/schemas/lead-score-result-schema";
 import { LeadAnalysisResultSchema } from "../../src/mastra/schemas/lead-analysis-result-schema";
 
@@ -21,13 +21,13 @@ describe("Schemas", () => {
     };
 
     test("valid crawler payload parses successfully", () => {
-      const result = CrawlerPostInputSchema.safeParse(validPayload);
+      const result = LeadInputSchema.safeParse(validPayload);
       expect(result.success).toBe(true);
     });
 
     test("invalid payload fails (missing id)", () => {
       const invalidPayload = { ...validPayload, id: undefined };
-      const result = CrawlerPostInputSchema.safeParse(invalidPayload);
+      const result = LeadInputSchema.safeParse(invalidPayload);
       expect(result.success).toBe(false);
     });
 

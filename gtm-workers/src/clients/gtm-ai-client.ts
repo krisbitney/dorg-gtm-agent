@@ -1,15 +1,16 @@
 import { MastraClient } from "@mastra/client-js";
 import { appEnv } from "../config/app-env.js";
-import type { Post } from "../storage/schema/posts-table.js";
+import type { Lead } from "../storage/schema/leads-table.js";
 
 /**
- * Input for the GTM AI workflows.
+ * Input for the scoring and analysis GTM AI workflows.
  */
-export interface GtmAiInput {
+export interface LeadScoreAndAnalysisInput {
   id: string;
   platform: string;
   url: string;
-  post: any;
+  content: any;
+  targetDescription: string;
 }
 
 /**
@@ -28,16 +29,55 @@ export type GtmAiAnalysisResult =
       isLead: true;
       whyFit: string;
       needs: string;
-      timing: string;
+      timing: string | null;
       contactInfo: string;
+      primaryContact: string;
+      draftMessage?: string;
     };
+
+/** Input for the search term generation workflow. */
+export interface SearchTermGenerationInput {
+  numberOfSearchTerms?: number;
+  /** Target site to search on (e.g. "https://reddit.com", "https://linkedin.com") */
+  sourceUrl: string;
+  targetDescription: string;
+}
+
+/** Output from the search term generation workflow. */
+export interface SearchTermGenerationOutput {
+  queries: string[];
+}
+
+/** State for the search-and-filter workflow (persists across steps). */
+export interface SearchAndFilterState {
+  searchQuery: string;
+  /** Target site to search on (e.g. "https://reddit.com", "https://linkedin.com") */
+  sourceUrl: string;
+  startDateTime: string;
+  endDateTime: string;
+  pages?: number;
+  targetDescription: string;
+}
+
+/** A raw scraped lead from the search-and-filter workflow. */
+export interface ScrapedLead {
+  url: string;
+  content: string;
+}
+
+/** Output from the search-and-filter workflow. */
+export interface SearchAndFilterOutput {
+  leads: ScrapedLead[];
+}
 
 /**
  * Interface for the GTM AI client.
  */
 export interface GtmAiClientInterface {
-  scorePost(post: GtmAiInput, context: any): Promise<GtmAiScoreResult>;
-  analyzePost(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult>;
+  scoreLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult>;
+  analyzeLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiAnalysisResult>;
+  generateSearchTerms(input: SearchTermGenerationInput, context: any): Promise<SearchTermGenerationOutput>;
+  searchAndFilter(state: SearchAndFilterState, context: any): Promise<SearchAndFilterOutput>;
 }
 
 /**
@@ -60,6 +100,7 @@ export class GtmAiClient implements GtmAiClientInterface {
     this.retryMaxDelayMs = appEnv.GTM_AI_RETRY_MAX_DELAY_MS;
   }
 
+  // TODO: handle other retryable error types
   private async runWithRetries<T>(
     options: {
       workflowName: string;
@@ -69,8 +110,8 @@ export class GtmAiClient implements GtmAiClientInterface {
     let attempt = 0;
 
     while (true) {
-      const { run, promise } = await options.operation();
       try {
+        const { run, promise } = await options.operation();
         return await this.runWithTimeout({
           workflowName: options.workflowName,
           operation: promise,
@@ -86,7 +127,7 @@ export class GtmAiClient implements GtmAiClientInterface {
       } catch (error: any) {
         attempt++;
         const isTimeout = error.message?.includes("timed out");
-        
+
         if (attempt > this.maxRetries || !isTimeout) {
           throw error;
         }
@@ -99,7 +140,7 @@ export class GtmAiClient implements GtmAiClientInterface {
         console.warn(
           `GTM AI client ${options.workflowName} attempt ${attempt} failed: ${error.message}. Retrying in ${delayMs}ms...`
         );
-        
+
         await Bun.sleep(delayMs);
       }
     }
@@ -133,9 +174,9 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI score workflow.
    */
-  async scorePost(post: GtmAiInput, context: any): Promise<GtmAiScoreResult> {
+  async scoreLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiScoreResult> {
     const workflow = this.client.getWorkflow("leadScoreWorkflow");
-    
+
     const result = await this.runWithRetries({
       workflowName: "leadScoreWorkflow",
       operation: async () => {
@@ -143,7 +184,7 @@ export class GtmAiClient implements GtmAiClientInterface {
         return {
           run,
           promise: run.startAsync({
-            inputData: post,
+            inputData: lead,
             requestContext: context,
           }),
         };
@@ -161,9 +202,9 @@ export class GtmAiClient implements GtmAiClientInterface {
   /**
    * Calls the GTM AI analysis workflow.
    */
-  async analyzePost(post: GtmAiInput, context: any): Promise<GtmAiAnalysisResult> {
+  async analyzeLead(lead: LeadScoreAndAnalysisInput, context: any): Promise<GtmAiAnalysisResult> {
     const workflow = this.client.getWorkflow("leadAnalysisWorkflow");
-    
+
     const result = await this.runWithRetries({
       workflowName: "leadAnalysisWorkflow",
       operation: async () => {
@@ -171,7 +212,7 @@ export class GtmAiClient implements GtmAiClientInterface {
         return {
           run,
           promise: run.startAsync({
-            inputData: post,
+            inputData: lead,
             requestContext: context,
           }),
         };
@@ -185,16 +226,75 @@ export class GtmAiClient implements GtmAiClientInterface {
 
     return result.result as GtmAiAnalysisResult;
   }
+
+  /**
+   * Calls the search term generation workflow to produce query strings for a site.
+   */
+  async generateSearchTerms(input: SearchTermGenerationInput, context: any): Promise<SearchTermGenerationOutput> {
+    const workflow = this.client.getWorkflow("search-term-generation-workflow");
+
+    const result = await this.runWithRetries({
+      workflowName: "search-term-generation-workflow",
+      operation: async () => {
+        const run = await workflow.createRun();
+        return {
+          run,
+          promise: run.startAsync({
+            inputData: input,
+            requestContext: context,
+          }),
+        };
+      },
+    });
+
+    if (result.status !== "success") {
+      const errorMsg = result.status === "failed" ? `: ${result.error.message}` : "";
+      throw new Error(`Search term generation workflow failed with status ${result.status}${errorMsg}`);
+    }
+
+    return result.result as SearchTermGenerationOutput;
+  }
+
+  /**
+   * Calls the search-and-filter workflow. Accepts state fields via initialState
+   * since the workflow's input schema is empty and all data lives in state.
+   */
+  async searchAndFilter(state: SearchAndFilterState, context: any): Promise<SearchAndFilterOutput> {
+    const workflow = this.client.getWorkflow("search-and-filter-workflow");
+
+    const result = await this.runWithRetries({
+      workflowName: "search-and-filter-workflow",
+      operation: async () => {
+        const run = await workflow.createRun();
+        return {
+          run,
+          promise: run.startAsync({
+            inputData: {},
+            initialState: state,
+            requestContext: context,
+          }),
+        };
+      },
+    });
+
+    if (result.status !== "success") {
+      const errorMsg = result.status === "failed" ? `: ${result.error.message}` : "";
+      throw new Error(`Search and filter workflow failed with status ${result.status}${errorMsg}`);
+    }
+
+    return result.result as SearchAndFilterOutput;
+  }
 }
 
 /**
- * Maps a database post row to the GTM AI input shape.
+ * Maps a database lead row to the GTM AI input shape.
  */
-export function mapPostToAiInput(post: Post): GtmAiInput {
+export function mapLeadToAiLeadScoreAndAnalysisInput(lead: Lead, targetDescription: string): LeadScoreAndAnalysisInput {
   return {
-    id: post.id,
-    platform: post.platform,
-    url: post.url,
-    post: post.post,
+    id: lead.id,
+    platform: lead.platform,
+    url: lead.url,
+    content: lead.content,
+    targetDescription,
   };
 }

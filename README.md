@@ -17,12 +17,10 @@ The dOrg GTM Agent is a distributed system designed to automate lead generation 
 - **GTM Workers**: Orchestrates the lead lifecycle. It includes an API to trigger crawls and handle webhooks from Apify, and a background worker that processes the queue of posts, manages the lead pipeline, and integrates with the dOrg API to claim and surface qualified leads.
 - **Infrastructure**: Uses **PostgreSQL** for persistent storage of lead data and **Valkey (Redis)** for efficient message queuing and URL deduplication via Bloom filters.
 
-![system-design.png](system-design.png)
-
 A microservices architecture is useful for a few reasons:
 1. There could be many different web crawlers. Each web crawler will typically run in bursts and shut down between bursts. 
 2. It simplifies the implementation to host the web crawler on a cloud service like Apify, which is designed for web crawlers and simplifies proxy management.
-3. LLM calls are relatively slow and scale differently from the orchestration workers, so hosting the AI service in a separate instance can facilitate scaling later on.
+3. LLM calls are relatively slow and scale differently from the orchestration workers, so hosting the AI service in a separate instance can facilitate proportional scaling.
 4. The AI service's advanced observability and monitoring tools work well when using Mastra's server tooling, which wraps server frameworks like Hono to monitor the AI request from start to finish.
 
 We could improve scalability further, at the cost of increased complexity, by using a more robust message queue like RabbitMQ or Kafka, or a document database for storing social media posts.

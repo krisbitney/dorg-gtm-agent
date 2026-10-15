@@ -1,12 +1,22 @@
 import { RedisLeadQueue } from "../storage/lead-queue.js";
-import { PostRepository } from "../storage/repositories/post-repository.js";
+import { RedisSearchTermStore } from "../storage/search-term-store.js";
+import { LeadRepository } from "../storage/repositories/lead-repository.js";
+import { SearchRunRepository } from "../storage/repositories/search-run-repository.js";
 import { GtmAiClient } from "../clients/gtm-ai-client.js";
 import { DorgApiClient } from "../clients/dorg-api-client.js";
-import { ProcessPostJob } from "../use-cases/process-post-job.js";
-import { ProcessQueueLoop } from "../use-cases/process-queue-loop.js";
+import { ProcessLeadJob } from "../worker/process-lead-job.js";
+import { ProcessQueueLoop } from "../worker/process-queue-loop.js";
+import { SearchWorkerLoop } from "../worker/search-worker-loop.js";
 import { appEnv } from "../config/app-env.js";
 import { runMigrations } from "../storage/migrate.js";
+import {RedisUrlDedupStore} from "../storage/url-dedup-store.js";
 
+// TODO: graceful shutdown
+//   Concern: Loops are infinite loops with no handling of `SIGTERM` or `SIGINT`. When the process receives a termination signal:
+//     - Items in the processing queue will be left stranded. `requeueProcessing` only runs at startup.
+//     - In-flight AI calls are aborted mid-request.
+//     - Database connections (`postgres()` client) are never closed.
+//     - Redis connections (`Bun.redis`) are never disconnected.
 /**
  * Entry point for the GTM Workers queue consumer.
  */
@@ -17,7 +27,10 @@ async function main(): Promise<void> {
   await runMigrations();
 
   const leadQueue = new RedisLeadQueue();
-  const postRepository = new PostRepository();
+  const searchTermStore = new RedisSearchTermStore();
+  const urlDedupStore = new RedisUrlDedupStore();
+  const postRepository = new LeadRepository();
+  const searchRunRepository = new SearchRunRepository();
   const gtmAiClient = new GtmAiClient();
   const dorgApiClient = new DorgApiClient();
 
@@ -27,15 +40,15 @@ async function main(): Promise<void> {
     await leadQueue.requeueProcessing();
   }
 
-  const concurrency = appEnv.WORKER_CONCURRENCY;
-  console.log(`Main: Starting ${concurrency} concurrent async worker loops...`);
+  const concurrency = appEnv.LEAD_WORKER_CONCURRENCY;
+  console.log(`Main: Starting ${concurrency} concurrent lead processing loop(s)...`);
 
-  const createJob = (runId: string) => 
-    new ProcessPostJob(postRepository, gtmAiClient, dorgApiClient, runId);
+  const createJob = (runId: string) =>
+    new ProcessLeadJob(postRepository, gtmAiClient, dorgApiClient, runId);
 
-  // Start the loops concurrently
+  // Start the lead processing loops concurrently
   for (let i = 0; i < concurrency; i++) {
-    const loopRunId = `${processRunId}-loop-${i}`;
+    const loopRunId = `${processRunId}-lead-loop-${i}`;
     const loop = new ProcessQueueLoop(
       leadQueue,
       postRepository,
@@ -43,13 +56,37 @@ async function main(): Promise<void> {
       loopRunId
     );
 
-    // Start the loop without awaiting it
     loop.execute().catch((error) => {
-      console.error(`Worker loop ${i} (ID: ${loopRunId}) failed:`, error);
+      console.error(`Lead processing loop ${i} (ID: ${loopRunId}) failed:`, error);
     });
   }
 
-  console.log(`Main: All ${concurrency} worker loops are running.`);
+  console.log(`Main: All ${concurrency} lead processing loop(s) are running.`);
+
+  // Start the search worker loops concurrently
+  const searchConcurrency = appEnv.SEARCH_WORKER_CONCURRENCY;
+  console.log(`Main: Starting ${searchConcurrency} concurrent search worker loop(s)...`);
+
+  for (let i = 0; i < searchConcurrency; i++) {
+    const searchLoopRunId = `${processRunId}-search-loop-${i}`;
+    const searchLoop = new SearchWorkerLoop(
+      gtmAiClient,
+      searchTermStore,
+      urlDedupStore,
+      leadQueue,
+      postRepository,
+      searchRunRepository,
+      searchLoopRunId
+    );
+
+    searchLoop.execute().catch((error) => {
+      console.error(`Search worker loop ${i} (ID: ${searchLoopRunId}) failed:`, error);
+    });
+  }
+
+  console.log(`Main: All ${searchConcurrency} search worker loop(s) are running.`);
+
+  console.log("Main: All worker loops are running.");
 }
 
 main().catch((error) => {
